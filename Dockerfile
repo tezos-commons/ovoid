@@ -8,18 +8,17 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Production OAuth needs the hosted client_id + redirect URI baked in at build
-# time (Vite inlines import.meta.env.VITE_* during `vite build`). Pass them with
-# --build-arg; harmless to omit for a dev/loopback build.
-#   docker build \
-#     --build-arg VITE_CLIENT_ID=https://app.example/client-metadata.json \
-#     --build-arg VITE_REDIRECT_URI=https://app.example/oauth/callback -t ovoid .
-ARG VITE_CLIENT_ID=""
-ARG VITE_REDIRECT_URI=""
-ENV VITE_CLIENT_ID=$VITE_CLIENT_ID
-ENV VITE_REDIRECT_URI=$VITE_REDIRECT_URI
-
 COPY . .
+
+# OAuth client_id == the URL of the hosted client-metadata.json, and the atproto
+# auth server requires that document's own `client_id` to equal the URL it's
+# fetched from. The app derives the client_id from window.location.origin at
+# runtime, so the only build-time concern is baking the deploy origin into the
+# static metadata file. Defaults to the production domain; override to retarget:
+#   docker build --build-arg APP_ORIGIN=https://staging.ovoid.at -t ovoid .
+ARG APP_ORIGIN=https://ovoid.at
+RUN sed -i "s#https://ovoid.at#${APP_ORIGIN}#g" public/client-metadata.json
+
 RUN npm run build
 
 # ---------- Stage 2: serve with nginx on :8080 ----------

@@ -1,8 +1,8 @@
 {
-  "client_id": "https://ovoid.example.com/client-metadata.json",
+  "client_id": "https://ovoid.at/client-metadata.json",
   "client_name": "Ovoid",
-  "client_uri": "https://ovoid.example.com",
-  "redirect_uris": ["https://ovoid.example.com/oauth/callback"],
+  "client_uri": "https://ovoid.at",
+  "redirect_uris": ["https://ovoid.at/oauth/callback"],
   "scope": "atproto transition:generic transition:chat.bsky",
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
