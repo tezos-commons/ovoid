@@ -1,0 +1,35 @@
+{
+  "name": "ovoid",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@atproto/api": "0.20.7",
+    "@atproto/oauth-client-browser": "0.4.1",
+    "@google/model-viewer": "^4.2.0",
+    "@tanstack/react-query": "5.100.14",
+    "@tanstack/react-virtual": "3.13.26",
+    "clsx": "2.1.1",
+    "hls.js": "^1.6.16",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "7.16.0",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@tanstack/react-query-devtools": "5.100.14",
+    "@types/node": "22.10.7",
+    "@types/react": "18.3.29",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "4.7.0",
+    "typescript": "5.9.3",
+    "vite": "5.4.21",
+    "vite-tsconfig-paths": "5.1.4"
+  }
+}

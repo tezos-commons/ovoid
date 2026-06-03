@@ -1,0 +1,144 @@
+/* ============================================================
+   Notifications feature styles. Tokens only — never hardcode hex.
+   ============================================================ */
+
+.notif-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+/* ---------- Cluster row (like / repost / follow) ---------- */
+.notif {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  transition: background 120ms ease;
+}
+.notif:hover {
+  background: var(--bg-contrast-25);
+}
+
+/* Subtle blue tint for unread (unseen-since-last-view) items. */
+.notif--unread {
+  background: var(--blue-25);
+}
+:root[data-theme='dim'] .notif--unread,
+:root[data-theme='dark'] .notif--unread {
+  /* On dark surfaces the light blue is overpowering; use a faint primary wash. */
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--bg));
+}
+.notif--unread:hover {
+  background: color-mix(in srgb, var(--color-primary) 16%, var(--bg));
+}
+
+/* Action-icon gutter aligns with PostCard's 42px avatar gutter. */
+.notif__icon {
+  flex: 0 0 42px;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.notif__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Overlapping stacked avatars. */
+.notif__avatars {
+  display: flex;
+  align-items: center;
+}
+.notif__avatar {
+  display: inline-flex;
+  margin-right: calc(-1 * var(--space-1));
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+  transition: transform 120ms ease;
+}
+.notif__avatar:hover {
+  transform: translateY(-2px);
+  z-index: 1;
+}
+.notif--unread .notif__avatar {
+  border-color: var(--blue-25);
+}
+:root[data-theme='dim'] .notif--unread .notif__avatar,
+:root[data-theme='dark'] .notif--unread .notif__avatar {
+  border-color: var(--bg);
+}
+.notif__avatars-more {
+  margin-left: var(--space-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-muted);
+}
+
+.notif__text {
+  font-size: var(--fs-base);
+  line-height: 1.4;
+  color: var(--text);
+}
+.notif__names {
+  font-weight: var(--fw-bold);
+}
+.notif__verb {
+  color: var(--text);
+}
+.notif__dot {
+  margin: 0 var(--space-1);
+  color: var(--text-faint);
+}
+.notif__time {
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+}
+
+/* Subject post preview (one-line, muted). */
+.notif__subject {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--fs-base);
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.notif__subject:hover {
+  color: var(--text);
+}
+
+/* ---------- Post row (reply / mention / quote) ---------- */
+.notif-post {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.notif-post.notif--unread {
+  background: var(--blue-25);
+}
+:root[data-theme='dim'] .notif-post.notif--unread,
+:root[data-theme='dark'] .notif-post.notif--unread {
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--bg));
+}
+.notif-post__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) 0
+    calc(var(--space-4) + 42px + var(--space-3));
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+/* PostCard already draws its own bottom border; suppress the inner one so the
+   row reads as a single unit. */
+.notif-post .postcard {
+  border-bottom: none;
+}

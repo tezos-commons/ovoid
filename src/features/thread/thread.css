@@ -1,0 +1,277 @@
+/* ============================================================
+   Thread / post-permalink screen
+   ============================================================ */
+
+/* ---------- Thread authors (page aside): grid + profile badge ---------- */
+.threadauthors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-gap);
+  /* A little breathing room below the snug top bar. Inside the sticky aside, so
+     it applies equally at rest and when pinned (no jump). */
+  margin-top: var(--space-3);
+}
+.threadauthors__grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-2);
+}
+.threadauthors__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  opacity: 0.65;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+.threadauthors__avatar:hover {
+  opacity: 1;
+}
+/* Highlight driven by hovering the author's post in the thread. */
+.threadauthors__avatar--hover {
+  opacity: 1;
+  border-color: var(--text-muted);
+}
+.threadauthors__avatar--active {
+  opacity: 1;
+  border-color: var(--color-primary);
+}
+.threadauthors__loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-5);
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+}
+
+.thread-loading {
+  display: grid;
+  place-items: center;
+  min-height: 40vh;
+}
+
+.thread-stub {
+  padding: var(--space-6) var(--space-4);
+  color: var(--text-muted);
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.thread-stub--child {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: var(--fs-sm);
+}
+
+.thread-empty {
+  padding: var(--space-6) var(--space-4);
+  color: var(--text-faint);
+  text-align: center;
+}
+
+/* ---------- Parent ancestor chain ----------
+   PostCard draws its avatar in a fixed 42px gutter column. We run a vertical
+   connector down that gutter for ancestors and reply children so the chain
+   reads as one continuous thread. 21px = half of the 42px avatar column. */
+.thread__parent {
+  position: relative;
+}
+.thread__parent .postcard {
+  border-bottom: none;
+}
+.thread__parent::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-4) + 20px);
+  top: calc(var(--space-3) + 42px);
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+/* ---------- Focused post ---------- */
+.thread__focused .postcard--focused {
+  border-bottom: 1px solid var(--border);
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-3);
+}
+.thread__focused .postcard__body {
+  font-size: var(--fs-lg);
+  line-height: 1.4;
+}
+
+/* ---------- Reply sort control ---------- */
+.thread__sort {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 5;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+/* Phone: the screen header is hidden, so pin the sort strip to the very top
+   instead of leaving a header-height gap above it. */
+@media (max-width: 1000px) {
+  .thread__sort {
+    top: 0;
+  }
+}
+.thread__sort .tabs {
+  padding: 0 var(--space-2);
+}
+
+/* ============================================================
+   Reply composer
+   ============================================================ */
+
+.reply-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.reply-composer--signedout {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.reply-composer__row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+.reply-composer__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-md);
+  line-height: 1.4;
+  padding: var(--space-1) 0;
+  field-sizing: content;          /* grow with content where supported */
+  max-height: 40vh;
+}
+.reply-composer__input::placeholder {
+  color: var(--text-faint);
+}
+.reply-composer__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: calc(32px + var(--space-3));  /* align under the textarea */
+}
+.reply-composer__error {
+  color: var(--color-danger);
+  font-size: var(--fs-sm);
+}
+
+/* Pasted-image thumbnails, aligned under the textarea. */
+.reply-composer__images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 0 calc(32px + var(--space-3));
+}
+.reply-composer__image {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--radius-embed);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.reply-composer__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.reply-composer__image-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+}
+.reply-composer__image-remove:hover {
+  background: rgba(0, 0, 0, 0.78);
+}
+/* ============================================================
+   Reply tree
+   ============================================================ */
+
+.replytree {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Reply nesting is rendered flush — no per-depth indentation. Depth is still
+   tracked (data-depth) for keys/collapse logic, but every level shares the
+   focused post's left edge. */
+
+.replytree__node {
+  position: relative;
+}
+
+.replytree__post {
+  position: relative;
+}
+
+/* Connector down the avatar gutter when a reply itself has children. */
+.replytree__post:has(.postcard--thread-child)::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-4) + 20px);
+  top: calc(var(--space-3) + 42px);
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.replytree__collapse {
+  position: absolute;
+  top: var(--space-3);
+  left: calc(var(--space-4) + 13px);
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;            /* revealed on row hover to stay unobtrusive */
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.replytree__node:hover > .replytree__post > .replytree__collapse {
+  display: flex;
+}
+
+.replytree__more {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-primary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.replytree__more:hover { text-decoration: underline; }

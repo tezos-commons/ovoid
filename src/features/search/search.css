@@ -1,0 +1,334 @@
+/* ============================================================
+   Search feature styles. Tokens only — no hardcoded colors.
+   ============================================================ */
+
+/* ---------- Recent searches (page aside) ---------- */
+.recentsearch {
+  display: flex;
+  flex-direction: column;
+}
+.recentsearch__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.recentsearch__title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+.recentsearch__clear {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.recentsearch__clear:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+.recentsearch__item {
+  width: 100%;
+  text-align: right;
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recentsearch__item:last-child {
+  border-bottom: none;
+}
+.recentsearch__item:hover {
+  color: var(--text);
+}
+.recentsearch__empty {
+  padding: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  text-align: right;
+}
+
+.search {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* ---------- Sticky header: search box + result tabs ---------- */
+
+.search__header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* The result tabs sit directly under the box; the box itself acts as the
+   52px screen-header band. Tabs (sticky at --header-height) stack below it. */
+.search__box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--header-height);
+  padding: 0 var(--space-3);
+}
+
+.search__box-icon {
+  color: var(--text-faint);
+  flex: 0 0 auto;
+}
+
+.search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  padding: 0 var(--space-2);
+  border: none;
+  background: var(--bg-contrast-25);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: var(--fs-md);
+  padding-left: var(--space-4);
+}
+.search__input::placeholder {
+  color: var(--text-faint);
+}
+.search__input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+/* Hide the native search clear (we render our own). */
+.search__input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search__clear {
+  position: absolute;
+  right: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  background: var(--bg-contrast-50);
+}
+.search__clear:hover {
+  color: var(--text);
+}
+
+/* The tabs strip needs to clear its own band so the underline isn't clipped. */
+.search__header .tabs--sticky {
+  border-bottom: none;
+}
+
+/* ---------- Typeahead dropdown ---------- */
+
+.typeahead {
+  position: absolute;
+  top: calc(var(--header-height) - var(--space-2));
+  left: var(--space-3);
+  right: var(--space-3);
+  z-index: var(--z-menu, 60);
+  background: var(--bg-overlay, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-menu);
+  overflow: hidden;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.typeahead__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  color: var(--text);
+  font-size: var(--fs-base);
+  background: none;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.typeahead__search:hover {
+  background: var(--bg-contrast-25);
+}
+.typeahead__search strong {
+  font-weight: var(--fw-semibold);
+}
+
+.typeahead__loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+/* ---------- Content area ---------- */
+
+.search__content {
+  flex: 1 1 auto;
+}
+
+.search__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.search__center {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-8, 40px) var(--space-4);
+}
+.search__center--muted {
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Person row (results + typeahead) ---------- */
+
+.personrow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+}
+.personrow:hover {
+  background: var(--bg-contrast-25);
+}
+.personrow--compact {
+  align-items: center;
+  border-bottom: none;
+  padding: var(--space-2) var(--space-4);
+}
+
+.personrow__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.personrow__name {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-base);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.personrow__handle {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.personrow__bio {
+  margin-top: var(--space-1);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- Feed row ---------- */
+
+.feedrow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+}
+.feedrow:hover {
+  background: var(--bg-contrast-25);
+}
+.feedrow__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.feedrow__name {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-base);
+  color: var(--text);
+}
+.feedrow__meta {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  margin-top: 1px;
+}
+.feedrow__likes {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.feedrow__desc {
+  margin-top: var(--space-1);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- Discover / empty state ---------- */
+
+.discover {
+  padding: var(--space-4) 0 var(--space-8, 40px);
+}
+.discover__section {
+  margin-bottom: var(--space-6);
+}
+.discover__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-3);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--text);
+}
+.discover__title svg {
+  color: var(--text-muted);
+}
+
+.discover__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-25);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+.chip:hover {
+  background: var(--bg-contrast-50);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}

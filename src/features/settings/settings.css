@@ -1,0 +1,323 @@
+/* Settings tree — sectioned list-of-rows pattern, borders over shadows. */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Section menu as the page aside (master in the master/detail layout). */
+.settings-nav {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--bg-contrast-25);
+  overflow: hidden;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-section:last-child {
+  border-bottom: none;
+}
+
+.settings-section__title {
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.settings-section__desc {
+  padding: 0 var(--space-4) var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* A single tappable / interactive row. */
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  cursor: default;
+}
+.settings-row--link {
+  cursor: pointer;
+}
+.settings-row--link:hover {
+  background: var(--bg-contrast-25);
+}
+.settings-row--danger .settings-row__label {
+  color: var(--color-danger);
+}
+
+.settings-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.settings-link:hover {
+  text-decoration: underline;
+}
+
+.settings-row__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.settings-row--danger .settings-row__icon {
+  color: var(--color-danger);
+}
+
+.settings-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.settings-row__label {
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+.settings-row__sub {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-row__trailing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+/* Chevron affordance for navigation rows. */
+.settings-chevron {
+  color: var(--text-faint);
+}
+
+/* Segmented control (theme / font pickers). */
+.settings-segment {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--bg-contrast-25);
+  border-radius: var(--radius-pill);
+}
+.settings-segment__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.settings-segment__btn--active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Theme swatch preview inside the appearance picker. */
+.theme-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+
+/* Toggle switch. */
+.settings-switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--bg-contrast-50);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+.settings-switch--on {
+  background: var(--color-primary);
+}
+.settings-switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-on-primary);
+  transition: transform 0.15s ease;
+}
+.settings-switch--on .settings-switch__knob {
+  transform: translateX(18px);
+}
+
+/* Inline editable list (muted words, app passwords). */
+.settings-pad {
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.settings-inline-form {
+  display: flex;
+  gap: var(--space-2);
+}
+.settings-input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-25);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-base);
+}
+.settings-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.settings-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.settings-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  background: var(--bg-contrast-25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sm);
+}
+.settings-chip__x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  border-radius: 50%;
+}
+.settings-chip__x:hover {
+  color: var(--text);
+  background: var(--bg-contrast-50);
+}
+
+.settings-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-1) 0;
+}
+.settings-kv__k {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.settings-kv__v {
+  font-size: var(--fs-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+}
+
+.settings-account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+.settings-account__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-note {
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.settings-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--bg-contrast-25);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* Muted / blocked account rows. */
+.modlist-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.modlist-row__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+.modlist-row__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.modlist-row__name {
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.modlist-row__main:hover .modlist-row__name {
+  text-decoration: underline;
+}
+.modlist-row__handle {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.modlist-row__labels {
+  margin-top: var(--space-1);
+}

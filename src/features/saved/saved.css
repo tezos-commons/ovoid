@@ -1,0 +1,115 @@
+/* ---- /saved screen ---- */
+
+.saved__center {
+  display: grid;
+  place-items: center;
+  min-height: 40vh;
+}
+
+/* Client-only bookmark notice banner */
+.saved__notice {
+  margin: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-contrast-25);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+}
+
+/* ---- Bookmarks list ---- */
+
+.saved__bookmark {
+  border-bottom: 1px solid var(--border);
+}
+
+.saved__bookmark-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 var(--space-4) var(--space-2);
+}
+
+/* ---- Saved feeds list ---- */
+
+.saved__feeds {
+  padding-bottom: var(--space-6);
+}
+
+.saved__section-title {
+  margin: 0;
+  padding: var(--space-4) var(--space-4) var(--space-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.savedrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.savedrow__link {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-embed);
+}
+
+.savedrow__link--static {
+  cursor: default;
+}
+
+a.savedrow__link:hover {
+  background: var(--bg-contrast-25);
+}
+
+.savedrow__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.savedrow__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: var(--radius-square-avatar);
+  background: var(--bg-contrast-50);
+  color: var(--color-primary);
+}
+
+.savedrow__text {
+  min-width: 0;
+}
+
+.savedrow__title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.savedrow__sub {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.savedrow__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}

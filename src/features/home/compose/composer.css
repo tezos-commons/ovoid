@@ -1,0 +1,167 @@
+/* ============================================================
+   Compose modal body. Imported by Composer.tsx so the styles load
+   wherever the global ComposeModal opens — not only after Home has
+   mounted (New Post is reachable from the top bar on any screen).
+   All colors/spacing via design tokens.
+   ============================================================ */
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: min(540px, 86vw);
+}
+.composer__context {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.composer__context-name {
+  color: var(--color-primary);
+}
+.composer__row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: var(--space-3);
+}
+.composer__main {
+  min-width: 0;
+}
+
+/* Layered editor: a highlight layer renders facets in blue beneath a
+   transparent-text textarea so links/mentions visibly colour while typing. */
+.composer__editor {
+  position: relative;
+}
+.composer__highlight,
+.composer__textarea {
+  font-family: inherit;
+  font-size: var(--fs-md);
+  line-height: 1.4;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: var(--space-2) 0;
+}
+.composer__highlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--text);
+}
+.composer__textarea {
+  position: relative;
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  border: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+}
+.composer__textarea::placeholder {
+  color: var(--text-faint);
+}
+.composer__textarea:focus {
+  outline: none;
+}
+
+/* ---------- Image attachments ---------- */
+.composer__images {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.composer__image {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.composer__image img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: var(--radius-embed);
+  border: 1px solid var(--border);
+}
+.composer__image-remove {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--scrim);
+  color: var(--color-on-primary);
+}
+.composer__alt {
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-embed);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- Quote preview ---------- */
+.composer__quote {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-embed);
+}
+.composer__quote-author {
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-1);
+}
+.composer__quote-text {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.composer__error {
+  color: var(--color-danger);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Footer: tools + counter + post ---------- */
+.composer__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+.composer__tools {
+  display: flex;
+  gap: var(--space-1);
+}
+.composer__tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  background: none;
+}
+.composer__tool:hover {
+  background: var(--blue-25);
+}
+.composer__tool:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+.composer__post {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}

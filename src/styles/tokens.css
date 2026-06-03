@@ -1,0 +1,143 @@
+/* ============================================================
+   Design tokens. Three themes selected via <html data-theme>.
+   Components read CSS vars only; never hardcode hex.
+   ============================================================ */
+
+:root {
+  /* Brand violet — theme-invariant. The -25/-50 tints are translucent so they
+     read correctly as accent washes over both dark and light backgrounds. */
+  --blue-25: rgba(124, 92, 255, 0.16);
+  --blue-50: rgba(124, 92, 255, 0.28);
+  --blue-500: #7c5cff;
+  --blue-600: #9277ff;
+  --blue-700: #6a47e0;
+  --blue-800: #5a39c4;
+
+  /* Semantic (theme-invariant) */
+  --color-primary: #7c5cff;
+  --color-primary-hover: #9277ff;
+  --color-like: #ec4899;
+  --color-repost: #22c55e;
+  --color-danger: #ef4444;
+  --color-on-primary: #ffffff;
+
+  /* Media embeds are capped so previews don't span the full wide column. */
+  --embed-media-max: 510px;
+  /* Letterbox behind images/video — black regardless of theme. */
+  --media-bg: #000000;
+
+  /* Spacing — 4px scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-pill: 999px;
+  --radius-card: 12px;
+  --radius-embed: 8px;
+  --radius-square-avatar: 8px;
+  --radius-panel: 16px;
+
+  /* Type scale */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-base: 15px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 24px;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --lh-tight: 1.25;
+  --lh-base: 1.4;
+
+  /* Layout */
+  --layout-max: 1400px;
+  --layout-gap: 16px;
+  --center-width: 900px;
+  --left-rail: 240px;
+  --left-rail-collapsed: 80px;
+  /* Panel-based shell: a rounded nav panel + a two-column page area
+     (page-specific aside + flexible main). */
+  --nav-panel: 250px;
+  --nav-panel-collapsed: 64px;
+  --page-aside: 360px;
+  --main-max: 820px;
+  --chat-width: 1340px;
+  --header-height: 52px;
+  --bottom-bar-height: 56px;
+  /* Sticky primary nav bar at the top (desktop). Set to 0 in the mobile
+     breakpoint, where the bar hides and the BottomTabBar takes over. */
+  --topbar-height: 56px;
+  --nftb-panel: 380px;
+  /* Bottom inset reserved for the mobile tab bar (0 on desktop; set to the bar
+     height in the mobile breakpoint). --app-height is the bounded height a
+     full-screen flex column should use — dynamic viewport minus the top bar and
+     that inset. */
+  --app-bottom-inset: 0px;
+  --app-height: calc(100dvh - var(--topbar-height) - var(--app-bottom-inset));
+
+  /* Breakpoints (reference; used in media queries) */
+  --bp-mobile: 800px;
+  --bp-desktop: 1300px;
+
+  /* Font */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Elevation */
+  --shadow-menu: 0 8px 28px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.1);
+
+  /* z-index scale */
+  --z-sticky: 10;
+  --z-nav: 20;
+  --z-modal: 100;
+  --z-toast: 200;
+}
+
+/* ---------------- Dark purple ---------------- */
+:root[data-theme='dark'] {
+  --bg: #030206;
+  --bg-contrast-25: #0b0815;
+  --bg-contrast-50: #130d20;
+  --bg-overlay: #07050e;
+  --border: #191230;
+  --text: #f3eefc;
+  --text-muted: #a89cc6;
+  --text-faint: #786c98;
+  --scrim: rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
+}
+
+/* ---------------- Dim (soft dark purple) — the default ---------------- */
+:root,
+:root[data-theme='dim'] {
+  --bg: #110c1d;
+  --bg-contrast-25: #1a1330;
+  --bg-contrast-50: #241b3c;
+  --bg-overlay: #150f26;
+  --border: #2d2247;
+  --text: #f1ecfb;
+  --text-muted: #b3a8d0;
+  --text-faint: #877ba6;
+  --scrim: rgba(4, 2, 10, 0.7);
+  color-scheme: dark;
+}
+
+/* ---------------- Light (lavender) ---------------- */
+:root[data-theme='light'] {
+  --bg: #ffffff;
+  --bg-contrast-25: #f3f0fb;
+  --bg-contrast-50: #e9e3f7;
+  --bg-overlay: #ffffff;
+  --border: #e3dcf3;
+  --text: #1a1426;
+  --text-muted: #574b6e;
+  --text-faint: #8b7fa6;
+  --scrim: rgba(20, 10, 40, 0.4);
+  color-scheme: light;
+}

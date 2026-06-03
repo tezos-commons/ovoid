@@ -1,0 +1,135 @@
+/* ============================================================
+   Reset + base. Inter is loaded from Google Fonts by default;
+   drop woff2 files into public/fonts and swap the @font-face
+   src to self-host.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:slnt,wght@-10,100..900&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* min-height (not height): #root must GROW to contain all content, otherwise it
+   stays one viewport tall and the sticky top bar — whose containing block is
+   #root — unsticks and scrolls away once you pass the first screenful. */
+#root {
+  min-height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Always reserve the document scrollbar's gutter. Otherwise a tall tab (with a
+     scrollbar) and a short one (without) yield different viewport widths, and the
+     centered `.page` (margin: 0 auto) jumps left/right when you switch between
+     them. `stable` reserves the space without forcing a visible track. */
+  scrollbar-gutter: stable;
+  /* Never allow horizontal document scroll. `clip` (not `hidden`) clamps the x
+     axis without turning the root into a scroll container — `hidden` forces
+     overflow-y to compute to `auto`, which would break the document scroll the
+     sticky menus rely on. A stray overflowing child is clipped, not scrolled. */
+  overflow-x: clip;
+}
+
+body {
+  max-width: 100%;
+  overflow-x: clip;
+  font-family: var(--font-family);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* Focus rings — visible only for keyboard users. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-contrast-50) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--bg-contrast-50);
+  border-radius: var(--radius-pill);
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

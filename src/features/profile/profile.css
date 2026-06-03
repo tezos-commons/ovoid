@@ -1,0 +1,602 @@
+/* ============================================================
+   Profile feature styles. All color/space/radius via tokens.
+   ============================================================ */
+
+/* ---- Profile aside (left column: card + nav + labeler) ---- */
+.profaside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-gap);
+  /* A little breathing room below the snug top bar. Inside the sticky aside, so
+     it applies equally at rest and when pinned (no jump). */
+  margin-top: var(--space-3);
+}
+
+/* ---- Profile card ---- */
+.profhead {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--bg-contrast-25);
+  overflow: hidden; /* clip the banner to the card's rounded corners */
+  padding-bottom: var(--space-2);
+}
+
+.profhead__banner {
+  display: block;
+  height: 130px;
+  background: var(--bg-contrast-50);
+  overflow: hidden;
+}
+.profhead__banner:hover {
+  opacity: 0.92;
+}
+.profhead__banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profhead__bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+  /* Pull content up so the avatar overlaps the banner. */
+  margin-top: -40px;
+  /* Stay above the banner's stacking context (its :hover opacity creates one),
+     so the overlapping avatar is never painted under the banner. */
+  position: relative;
+  z-index: 1;
+}
+
+.profhead__avatar {
+  display: block;
+  border: 4px solid var(--bg);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  line-height: 0;
+}
+.profhead__avatar:hover {
+  opacity: 0.92;
+}
+
+.profhead__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.profhead__identity {
+  padding: var(--space-3) var(--space-4) 0;
+}
+.profhead__nameline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.profhead__name {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold, 700);
+  line-height: 1.2;
+  margin: 0;
+  color: var(--text);
+}
+.profhead__handleline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.profhead__handle {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.profhead__chip {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  background: var(--bg-contrast-25);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-embed);
+}
+
+.profhead__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+/* ---------- Labeler service card ---------- */
+.labeler-card {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--bg-contrast-25);
+}
+.labeler-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.labeler-card__title { font-weight: var(--fw-bold); font-size: var(--fs-md); }
+.labeler-card__sub { color: var(--text-muted); font-size: var(--fs-sm); }
+.labeler-card__loading { padding: var(--space-3); display: flex; justify-content: center; }
+.labeler-card__empty { color: var(--text-muted); font-size: var(--fs-sm); margin-top: var(--space-2); }
+.labeler-card__defs {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.labeler-def {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+.labeler-def:first-child { border-top: none; padding-top: 0; }
+.labeler-def__name { font-weight: var(--fw-semibold); font-size: var(--fs-sm); text-transform: capitalize; }
+.labeler-def__desc { color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.4; }
+
+.profhead__bio {
+  padding: var(--space-3) var(--space-4) 0;
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.profhead__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+.profhead__count {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.profhead__count strong {
+  color: var(--text);
+  font-weight: var(--fw-semibold, 600);
+}
+.profhead__count:hover {
+  text-decoration: underline;
+}
+
+/* Phone: compact card — collapse the bio behind a Show more/less toggle and
+   trim the banner. The toggle is hidden on desktop, where the card is always
+   fully shown. */
+.profhead__expand {
+  display: none;
+}
+@media (max-width: 1000px) {
+  .profhead__banner {
+    height: 64px;
+  }
+  /* Smaller avatar (xl 96 → 72); parent selector beats the .av--xl size class. */
+  .profhead__avatar .av {
+    width: 72px;
+    height: 72px;
+    font-size: 26px;
+  }
+  .profhead__avatar {
+    border-width: 3px;
+  }
+  .profhead__bar {
+    margin-top: -32px;
+  }
+  .profhead__identity {
+    padding-top: var(--space-2);
+  }
+  .profhead__name {
+    font-size: var(--fs-lg);
+  }
+  .profhead__counts {
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--fs-xs);
+  }
+  .profhead__count {
+    font-size: var(--fs-xs);
+  }
+  .profhead--collapsed .profhead__bio {
+    display: none;
+  }
+  .profhead__expand {
+    display: block;
+    width: 100%;
+    padding: var(--space-2) var(--space-4);
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold, 600);
+    text-align: center;
+    cursor: pointer;
+  }
+}
+
+/* ---- Profile vertical section menu (replaces the horizontal tab strip) ---- */
+.profnav {
+  display: flex;
+  flex-direction: column;
+}
+.profnav__item {
+  width: 100%;
+  text-align: right;
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  border-bottom: 1px solid var(--border);
+}
+.profnav__item:last-child {
+  border-bottom: none;
+}
+.profnav__item:hover {
+  color: var(--text);
+}
+.profnav__item--active {
+  color: var(--color-primary);
+  font-weight: var(--fw-bold);
+}
+
+/* Phone: the vertical section menu becomes a horizontal, drag-scrollable tab
+   strip (drag handled by useDragScroll on the <nav>). */
+@media (max-width: 1000px) {
+  .profnav {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+    -webkit-overflow-scrolling: touch;
+    cursor: grab;
+    /* Pin to the top so the menu stays visible once scrolled past. */
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--bg);
+  }
+  .profnav::-webkit-scrollbar {
+    display: none;
+  }
+  .profnav.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+  .profnav__item {
+    width: auto;
+    flex: 0 0 auto;
+    text-align: center;
+    white-space: nowrap;
+    border-bottom: none;
+  }
+}
+
+/* ---- Feed / list containers within profile ---- */
+.proffeed__center {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6);
+}
+.proffeed__sentinel,
+.followlist__sentinel {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+  min-height: 1px;
+}
+
+.proflist {
+  display: flex;
+  flex-direction: column;
+}
+.profcard {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+}
+.profcard:hover {
+  background: var(--bg-contrast-25);
+}
+.profcard__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.profcard__name {
+  font-weight: var(--fw-semibold, 600);
+}
+.profcard__sub {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.profcard__desc {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- NFT tabs (objkt Created / Owned: collections → tokens) ---- */
+.nfttab {
+  display: flex;
+  flex-direction: column;
+}
+.nfttab__back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold, 600);
+}
+.nfttab__back:hover {
+  color: var(--color-primary);
+}
+.nfttab__back-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1000px) {
+  /* Floor every profile tab to a viewport tall, so a tab with too few items —
+     or the brief loading flash during the collections → tokens swap — can't
+     collapse the document and bounce the scroll up, which would un-pin the
+     sticky mobile menu. Always leaves room to scroll the card away. */
+  .proftab {
+    min-height: 100dvh;
+  }
+}
+
+.nftgrid {
+  display: flex;
+  flex-direction: column;
+}
+.nftgrid__cells {
+  display: grid;
+  /* Fixed 6 across; minmax(0,1fr) keeps wide artwork from stretching a track. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+@media (max-width: 640px) {
+  .nftgrid__cells {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.nftcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* Reset the UA button so it lays out like the surrounding cards. */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+.nftcard__thumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-embed);
+  background: var(--bg-contrast-25);
+  overflow: hidden;
+}
+.nftcard__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.nftcard:hover .nftcard__thumb {
+  opacity: 0.92;
+}
+.nftcard__noimg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  overflow: hidden;
+}
+.nftcard__name {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold, 600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Token-count badge: nested in the bottom-right of the preview. */
+.nftcard__count {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold, 600);
+  line-height: 1;
+  padding: 3px 6px;
+  border-top-left-radius: var(--radius-embed);
+}
+
+/* ---- Follower / following modal ---- */
+.followlist {
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+.followlist__center {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6);
+}
+.followlist__row {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+}
+.followlist__row:hover {
+  background: var(--bg-contrast-25);
+}
+.followlist__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.followlist__follow {
+  flex: 0 0 auto;
+  align-self: center;
+}
+.followlist__name {
+  font-weight: var(--fw-semibold, 600);
+}
+.followlist__handle {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.followlist__bio {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- Edit profile form ---- */
+.editprofile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.editprofile__banner {
+  position: relative;
+  display: block;
+  height: 130px;
+  border-radius: var(--radius-embed);
+  background: var(--bg-contrast-25);
+  overflow: hidden;
+  cursor: pointer;
+}
+.editprofile__banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.editprofile__banner-cta,
+.editprofile__avatar-cta {
+  position: absolute;
+  background: var(--scrim, rgba(0, 0, 0, 0.5));
+  color: var(--color-on-primary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold, 600);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+}
+.editprofile__banner-cta {
+  right: var(--space-2);
+  bottom: var(--space-2);
+}
+.editprofile__avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  margin-top: -48px;
+  margin-left: var(--space-2);
+  border: 4px solid var(--bg-overlay, var(--bg));
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.editprofile__avatar-cta {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.editprofile__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  position: relative;
+}
+.editprofile__field > label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--text-muted);
+}
+.editprofile__input,
+.editprofile__textarea {
+  width: 100%;
+  background: var(--bg-contrast-25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-embed);
+  padding: var(--space-3);
+  font: inherit;
+  font-size: var(--fs-base);
+  color: var(--text);
+  resize: vertical;
+}
+.editprofile__input:focus,
+.editprofile__textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+.editprofile__counter {
+  align-self: flex-end;
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+.editprofile__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}

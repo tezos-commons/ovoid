@@ -1,0 +1,382 @@
+/* ============================================================
+   Chat / DMs — two-pane within the fixed 600px center column.
+   Desktop: list rail (left) + detail pane (right).
+   Mobile (<800px): single column master/detail via [data-detail].
+   ============================================================ */
+
+.chat-screen {
+  display: grid;
+  grid-template-columns: minmax(260px, 300px) 1fr;
+  /* Fixed width, a bit wider than the regular content column, centered. The
+     height leaves room for the top+bottom margins so the card fits the viewport
+     exactly and the page itself never scrolls. */
+  width: 100%;
+  max-width: var(--chat-width);
+  height: calc(var(--app-height) - 2 * var(--layout-gap));
+  margin: var(--layout-gap) auto;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.chat-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.chat-pane--list {
+  border-right: 1px solid var(--border);
+}
+
+/* ---------- Conversation list ---------- */
+.convo-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.convo-list__state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.convo-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.convo-row:hover {
+  background: var(--bg-contrast-25);
+  text-decoration: none;
+}
+
+.convo-row--active {
+  background: var(--bg-contrast-50);
+}
+
+.convo-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.convo-row__top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.convo-row__name {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.convo-row__time {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.convo-row__bottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 2px;
+}
+
+.convo-row__preview {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.convo-row--unread .convo-row__preview {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.convo-row--unread .convo-row__name {
+  font-weight: 700;
+}
+
+.convo-row__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.convo-list__sentinel {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+/* ---------- Detail / message thread ---------- */
+.chat-empty-detail {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: var(--fs-md);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.msg-thread {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.msg-thread__scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  gap: 2px;
+}
+
+.msg-thread__center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.msg-thread__more,
+.msg-thread__start {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3);
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+/* Each message line is a flex column so the row's align-self (mine = right,
+   theirs = left) actually applies — a plain block wrapper would strand a
+   "mine" bubble at its max-width edge instead of the pane's right edge. */
+.msg-line {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tighten vertical spacing when the previous bubble is the same author. */
+.msg-grouped .msg-row {
+  margin-top: 1px;
+}
+
+.msg-row {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  margin-top: var(--space-2);
+}
+
+.msg-row--mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.msg-row--theirs {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.msg-bubble {
+  padding: var(--space-2) var(--space-3);
+  border-radius: 18px;
+  font-size: var(--fs-base);
+  line-height: 1.35;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.msg-bubble__text a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.msg-bubble--mine {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-bottom-right-radius: 5px;
+}
+
+/* Links inside own (blue) bubbles stay legible. */
+.msg-bubble--mine .msg-bubble__text a {
+  color: var(--color-on-primary);
+}
+
+.msg-bubble--theirs {
+  background: var(--bg-contrast-50);
+  color: var(--text);
+  border-bottom-left-radius: 5px;
+}
+
+.msg-bubble--deleted {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.msg-row__time {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  margin-top: 2px;
+  padding: 0 var(--space-1);
+}
+
+.msg-system {
+  align-self: center;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* ---------- Composer ---------- */
+.msg-composer {
+  border-top: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg);
+}
+
+.msg-composer__error {
+  color: var(--color-danger);
+  font-size: var(--fs-xs);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.msg-composer__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  background: var(--bg-contrast-25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+}
+
+.msg-composer__input {
+  flex: 1;
+  resize: none;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-base);
+  line-height: 1.4;
+  padding: 8px 0;
+  max-height: 160px;
+  outline: none;
+}
+
+.msg-composer__input::placeholder {
+  color: var(--text-faint);
+}
+
+.msg-composer__send {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.msg-composer__send:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+/* The chat card is a self-contained `overflow: hidden` container BELOW the
+   global top bar, so its pane headers must pin to the top of the pane (0). The
+   default `.screen-header { top: var(--topbar-height) }` would shift the sticky
+   header down by the top-bar height inside this card, overlapping the first
+   messages. */
+.chat-screen .screen-header {
+  top: 0;
+}
+
+/* ---------- Detail header (avatar + name) ---------- */
+/* The title links to the other member's profile — inherit header colour, no
+   underline, and let it carry the click target. */
+.chat-detail-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-pill);
+}
+
+.chat-detail-title:hover .chat-detail-title__name {
+  text-decoration: underline;
+}
+
+.chat-detail-title__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Back button only matters on mobile; hidden on desktop two-pane. */
+.chat-detail-back {
+  display: none;
+}
+
+/* ============================================================
+   Mobile master/detail (<800px): one column, swap by route.
+   ============================================================ */
+@media (max-width: 800px) {
+  .chat-screen {
+    grid-template-columns: 1fr;
+    height: var(--app-height);
+    max-width: none;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+  }
+
+  .chat-pane--list {
+    border-right: none;
+  }
+
+  /* Detail closed -> show list, hide detail. */
+  .chat-screen[data-detail='closed'] .chat-pane--detail {
+    display: none;
+  }
+
+  /* Detail open -> show detail, hide list (master/detail navigation). */
+  .chat-screen[data-detail='open'] .chat-pane--list {
+    display: none;
+  }
+
+  .chat-detail-back {
+    display: inline-flex;
+  }
+}

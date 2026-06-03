@@ -1,0 +1,180 @@
+/* ============================================================
+   Home feature styles. All colors/spacing via design tokens.
+   ============================================================ */
+
+/* The screen fills the viewport so the feed region can own its own scroll
+   (the InfiniteList virtualizer needs a bounded-height scroll parent).
+   --app-height is the dynamic viewport minus the mobile tab bar, so the feed
+   isn't clipped behind the bar at the mobile breakpoint. */
+.home {
+  display: flex;
+  flex-direction: column;
+  /* Subtract the page top inset (.page padding-top) so the screen + inset still
+     equal exactly one --app-height and never spawn a second scrollbar. The var
+     is inherited from .page: --layout-gap on desktop, 0 on mobile / full-width. */
+  height: calc(var(--app-height) - var(--page-top-gap, 0px));
+  min-height: 0;
+}
+
+/* The top bars keep their natural height. Without this they inherit the default
+   flex-shrink:1 and get squeezed: the feed column below uses flex-basis:auto in
+   the original, so its basis balloons to the virtualized inner height (total
+   size of all rows, thousands of px). That makes free space hugely negative and
+   the flex algorithm shrinks every shrinkable sibling — header, tabs, composer. */
+.home > .screen-header,
+.home > .feed-tabs,
+.home > .home__tabs-loading,
+.home > .composer-row {
+  flex: 0 0 auto;
+}
+
+/* flex-basis:0 (not auto) is load-bearing: the feed grows INTO the remaining
+   space rather than contributing its ~row-total content height to the column. */
+.home__feed {
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative;
+}
+
+.home__tabs-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Vertical feed menu (page aside) ---------- */
+.feednav {
+  display: flex;
+  flex-direction: column;
+}
+.feednav__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.feednav__title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+.feednav__loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3);
+}
+.feednav__item {
+  width: 100%;
+  text-align: right;
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  border-bottom: 1px solid var(--border);
+}
+.feednav__item:last-child {
+  border-bottom: none;
+}
+.feednav__item:hover {
+  color: var(--text);
+}
+.feednav__item--active {
+  color: var(--color-primary);
+  font-weight: var(--fw-bold);
+}
+
+/* Phone: vertical feed menu becomes a horizontal, drag-scrollable tab strip
+   (drag handled by useDragScroll on the <nav>). The head (title + edit gear) is
+   dropped; /feeds remains reachable from the bottom bar. */
+@media (max-width: 1000px) {
+  .feednav {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+    -webkit-overflow-scrolling: touch;
+    cursor: grab;
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--bg);
+  }
+  .feednav::-webkit-scrollbar {
+    display: none;
+  }
+  .feednav.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+  .feednav__head {
+    display: none;
+  }
+  .feednav__item {
+    width: auto;
+    flex: 0 0 auto;
+    text-align: center;
+    white-space: nowrap;
+    border-bottom: none;
+  }
+}
+
+/* ---------- Feed tab strip with trailing edit affordance ---------- */
+.feed-tabs {
+  position: sticky;
+  top: var(--header-height);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: stretch;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.feed-tabs__scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* The inner Tabs already draws a bottom border; collapse the duplicate. */
+.feed-tabs__scroll .tabs {
+  border-bottom: none;
+}
+/* Tabs is itself sticky; inside our sticky wrapper that is redundant and would
+   double-offset. Neutralise the inner sticky. */
+.feed-tabs__scroll .tabs--sticky {
+  position: static;
+  top: auto;
+}
+.feed-tabs__edit {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border-left: 1px solid var(--border);
+}
+
+/* ---------- Composer entry row ---------- */
+.composer-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  cursor: text;
+}
+.composer-row__input {
+  flex: 1 1 auto;
+  text-align: left;
+  color: var(--text-faint);
+  font-size: var(--fs-md);
+  background: none;
+  padding: var(--space-2) 0;
+}
+.composer-row__pencil {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}

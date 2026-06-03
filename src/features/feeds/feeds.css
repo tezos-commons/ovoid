@@ -1,0 +1,281 @@
+/* ============================================================
+   Feeds feature — discovery screen, feed cards, single feed view.
+   Colors/space/radius all read from tokens; no hardcoded values.
+   ============================================================ */
+
+.feeds,
+.feeds__discover {
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 1000px) {
+  /* Floor to a viewport tall so a short list still scrolls far enough to pin
+     the sticky mobile menu. */
+  .feeds {
+    min-height: 100dvh;
+  }
+}
+
+/* ---------- Vertical section menu (page aside) — mirrors Home's .feednav ---- */
+.feedsnav {
+  display: flex;
+  flex-direction: column;
+}
+.feedsnav__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.feedsnav__title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+.feedsnav__item {
+  width: 100%;
+  text-align: right;
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  border-bottom: 1px solid var(--border);
+}
+.feedsnav__item:last-child {
+  border-bottom: none;
+}
+.feedsnav__item:hover {
+  color: var(--text);
+}
+.feedsnav__item--active {
+  color: var(--color-primary);
+  font-weight: var(--fw-bold);
+}
+
+/* Phone: vertical menu becomes a horizontal, drag-scrollable tab strip (drag
+   handled by useDragScroll on the <nav>). The head is dropped — the screen
+   header already shows the "Feeds" title. */
+@media (max-width: 1000px) {
+  .feedsnav {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+    -webkit-overflow-scrolling: touch;
+    cursor: grab;
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--bg);
+  }
+  .feedsnav::-webkit-scrollbar {
+    display: none;
+  }
+  .feedsnav.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+  .feedsnav__head {
+    display: none;
+  }
+  .feedsnav__item {
+    width: auto;
+    flex: 0 0 auto;
+    text-align: center;
+    white-space: nowrap;
+    border-bottom: none;
+  }
+}
+
+.feeds__list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ----- section header (Pinned / Saved / Popular) ----- */
+.feeds__section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+.feeds__section-icon {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+.feeds__section-label {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--text);
+}
+.feeds__section-hint {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+/* ----- search-within-feeds input ----- */
+.feeds__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.feeds__search-icon {
+  position: absolute;
+  left: calc(var(--space-4) + var(--space-3));
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.feeds__search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-4) 0 calc(var(--space-6) + var(--space-4));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-25);
+  color: var(--text);
+  font-size: var(--fs-base);
+  outline: none;
+}
+.feeds__search-input:focus {
+  border-color: var(--color-primary);
+  background: var(--bg);
+}
+.feeds__search-input::placeholder {
+  color: var(--text-faint);
+}
+
+/* ----- "show more" pagination button ----- */
+.feeds__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-4);
+  border: none;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+.feeds__more:hover:not(:disabled) {
+  background: var(--bg-contrast-25);
+}
+.feeds__more:disabled {
+  cursor: default;
+  color: var(--text-faint);
+}
+
+.feeds__loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-8) 0;
+}
+
+/* ============================================================
+   FeedCard — discovery / list row
+   ============================================================ */
+.feedcard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.feedcard__main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+.feedcard__main:hover .feedcard__name {
+  text-decoration: underline;
+}
+.feedcard__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.feedcard__name {
+  font-size: var(--fs-md);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.feedcard__desc {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.feedcard__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.feedcard--skeleton {
+  align-items: center;
+}
+.feedcard--skeleton .feedcard__body {
+  gap: var(--space-2);
+}
+
+/* ============================================================
+   FeedView — single feed header
+   ============================================================ */
+.feedview__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.feedview__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.feedview__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.feedview__creator {
+  text-decoration: none;
+}
+.feedview__creator:hover {
+  text-decoration: underline;
+}
+.feedview__desc {
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.feedview__stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.feedview__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.feedview__heart--active {
+  color: var(--color-like);
+}

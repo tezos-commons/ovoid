@@ -1,0 +1,222 @@
+/* ============================================================
+   App shell: a compact hover-expand nav rail hugging the left edge + a
+   two-column page area (page-specific aside + flexible main) centered in the
+   remaining space.
+
+   Scroll model: the OUTER page document-scrolls; the page aside is
+   position:sticky so it pins. Screens that own an internal --app-height scroll
+   region (Home/.screen + InfiniteList) sit in .page__main and keep scrolling
+   internally — the shell adds no vertical padding, so those screens stay exactly
+   one viewport tall and never introduce a second scrollbar.
+   ============================================================ */
+
+.shell {
+  /* Single column below the sticky top bar; the page block centers in it. The
+     min-height is the viewport minus the top bar, so bar + shell == 100dvh and
+     internal-scroll screens introduce no second document scrollbar. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0 var(--layout-gap);
+  min-height: var(--app-height);
+  align-items: start;
+}
+
+/* Page area: reserved aside column + flexible (capped) main, centered within
+   the space to the right of the nav rail. */
+.page {
+  /* Content sits snug under the sticky top bar — no extra top inset. Kept as a
+     var so full-width/mobile (already 0) and the Home height calc reference one
+     source. The aside's sticky `top` matches this (== --topbar-height), so its
+     resting and stuck positions are identical and it never jumps on load. */
+  --page-top-gap: 0px;
+  display: grid;
+  grid-template-columns: var(--page-aside) minmax(0, var(--main-max));
+  gap: var(--layout-gap);
+  align-items: start;
+  padding-top: var(--page-top-gap);
+  /* DEFINITE width (not max-width): a grid item with auto side-margins is not
+     stretched, so max-width would let it shrink-to-fit its content and the width
+     would track the content (e.g. short vs long chat messages). A definite width
+     pins it regardless of content; margin auto still centers it in the column. */
+  width: min(100%, calc(var(--page-aside) + var(--layout-gap) + var(--main-max)));
+  margin: 0 auto;
+}
+/* Screens that run their own master/detail (Chat) drop the reserved aside and
+   fill the whole area. gap:0 — in a single column the empty aside + main would
+   otherwise add a phantom row-gap, pushing the page past the viewport height.
+   Chat owns its own outer margin, so it opts out of the page top inset. */
+.page--full {
+  --page-top-gap: 0px;
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, var(--chat-width));
+  gap: 0;
+}
+
+.page__aside {
+  position: sticky;
+  /* Pin directly below the sticky top bar — snug, matching the page's 0 top
+     inset so the aside's resting and stuck positions are identical. */
+  top: var(--topbar-height);
+  align-self: start;
+  max-height: calc(var(--app-height) - var(--layout-gap));
+  overflow-y: auto;
+}
+.page__main {
+  min-width: 0;
+}
+
+/* ---------------- Top bar (sticky primary nav) ---------------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-nav);
+  height: var(--topbar-height);
+  /* Brand left, nav centered, actions right. The 1fr side columns keep the nav
+     optically centered in the viewport regardless of brand/action widths. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--layout-gap);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.topbar__brand {
+  justify-self: start;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.topbar__nav {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.topbar__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  position: relative;
+}
+.topbar__item:hover {
+  background: var(--bg-contrast-50);
+  color: var(--text);
+  text-decoration: none;
+}
+.topbar__item--active {
+  color: var(--text);
+}
+.topbar__item .countpill {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+}
+
+.topbar__actions {
+  justify-self: end;
+}
+
+/* ---------------- Account avatar (bottom-left, divorced from the rail) -------- */
+.user-fab {
+  position: fixed;
+  left: var(--layout-gap);
+  bottom: var(--layout-gap);
+  z-index: var(--z-nav);
+  border-radius: var(--radius-pill);
+  line-height: 0;
+  box-shadow: var(--shadow-menu);
+}
+.user-fab:hover {
+  opacity: 0.9;
+}
+
+/* ---------------- Screen header ---------------- */
+.screen-header {
+  position: sticky;
+  /* Pin directly beneath the sticky top bar (0 on mobile, where it's hidden). */
+  top: var(--topbar-height);
+  z-index: var(--z-sticky);
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(8px);
+}
+.screen-header__title { font-size: var(--fs-lg); font-weight: var(--fw-bold); }
+
+/* ---------------- Bottom tab bar (mobile) ---------------- */
+.bottombar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--bottom-bar-height);
+  z-index: var(--z-nav);
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  align-items: stretch;
+}
+.bottombar__item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  position: relative;
+}
+.bottombar__item--active { color: var(--text); }
+.bottombar__item .countpill {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  margin-left: 4px;
+}
+
+/* ---------------- Breakpoints ----------------
+   <1000: single column, nav rail + account avatar hidden, bottom bar shown; the
+   page aside stacks above main (card → menu → feed) and goes static full-width.
+*/
+@media (max-width: 1000px) {
+  /* The mobile tab bar appears here, so full-height screens must reserve room;
+     the top bar hides, so it claims no vertical space. */
+  :root {
+    --app-bottom-inset: var(--bottom-bar-height);
+    --topbar-height: 0px;
+  }
+  .shell {
+    max-width: 100%;
+    padding: 0;
+  }
+  .topbar,
+  .user-fab { display: none; }
+  .page {
+    /* No nav rail on mobile, so there's nothing to align to — go full-bleed. */
+    --page-top-gap: 0px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    width: auto;
+    margin: 0;
+  }
+  .page__aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+  .bottombar { display: flex; }
+  /* Phone: drop the main-content title bar (the sticky tab strips that some
+     screens render below it are separate elements and stay). */
+  .screen-header { display: none; }
+}
