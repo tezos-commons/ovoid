@@ -7,11 +7,11 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  FeedSkeleton,
   InfiniteList,
   Menu,
   PostCard,
   Skeleton,
-  Spinner,
   Text,
   Icons,
 } from '@/components'
@@ -87,9 +87,7 @@ export default function FeedView() {
       ) : null}
 
       {posts.isLoading ? (
-        <div className="feeds__loading">
-          <Spinner />
-        </div>
+        <FeedSkeleton />
       ) : posts.isError ? (
         <ErrorState error={posts.error} onRetry={() => posts.refetch()} />
       ) : (

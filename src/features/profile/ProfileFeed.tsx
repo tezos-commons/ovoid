@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { AppBskyFeedDefs } from '@atproto/api'
-import { PostCard, Spinner, ErrorState, EmptyState } from '@/components'
+import { PostCard, Spinner, FeedSkeleton, ErrorState, EmptyState } from '@/components'
 import { useWindowScrollRestoration } from '@/lib/scroll-restoration'
 
 interface FeedPage {
@@ -63,11 +63,7 @@ export function ProfileFeed({ query, emptyTitle, emptyMessage, scrollKey }: Prof
   }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage, items.length])
 
   if (query.isLoading) {
-    return (
-      <div className="proffeed__center">
-        <Spinner />
-      </div>
-    )
+    return <FeedSkeleton />
   }
   if (query.isError) {
     return <ErrorState error={query.error} onRetry={() => query.refetch()} />

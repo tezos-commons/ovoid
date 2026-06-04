@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import type { AppBskyActorDefs, AppBskyFeedDefs } from '@atproto/api'
+import { useQuery, queryOptions } from '@tanstack/react-query'
+import type { Agent, AppBskyActorDefs, AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 
@@ -30,10 +30,9 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   }
 }
 
-/** Trending search terms for the empty state. unspecced — may 404 on some AppViews. */
-export function useTrending() {
-  const { agent } = useAgent()
-  return useQuery({
+/** Shared query config for trending topics (hook + nav prefetch). */
+export function trendingOptions(agent: Agent) {
+  return queryOptions({
     queryKey: qk.trending(),
     staleTime: 5 * 60_000,
     queryFn: () =>
@@ -62,10 +61,9 @@ export function useTrending() {
   })
 }
 
-/** Suggested accounts to follow for the empty state. */
-export function useSuggestedActors(limit = 8) {
-  const { agent } = useAgent()
-  return useQuery({
+/** Shared query config for suggested accounts (hook + nav prefetch). */
+export function suggestedActorsOptions(agent: Agent, limit = 8) {
+  return queryOptions({
     queryKey: qk.suggestedActors(limit),
     staleTime: 5 * 60_000,
     queryFn: () =>
@@ -76,11 +74,10 @@ export function useSuggestedActors(limit = 8) {
   })
 }
 
-/** Popular custom feeds for the Feeds tab and discover state. unspecced. */
-export function usePopularFeeds(query?: string, limit = 12) {
-  const { agent } = useAgent()
+/** Shared query config for popular custom feeds (hook + nav prefetch). */
+export function popularFeedsOptions(agent: Agent, query?: string, limit = 12) {
   const q = query?.trim() || undefined
-  return useQuery({
+  return queryOptions({
     queryKey: qk.discoverFeeds(q, limit),
     staleTime: 60_000,
     queryFn: () =>
@@ -92,4 +89,22 @@ export function usePopularFeeds(query?: string, limit = 12) {
         return res.data.feeds
       }, []),
   })
+}
+
+/** Trending search terms for the empty state. unspecced — may 404 on some AppViews. */
+export function useTrending() {
+  const { agent } = useAgent()
+  return useQuery(trendingOptions(agent))
+}
+
+/** Suggested accounts to follow for the empty state. */
+export function useSuggestedActors(limit = 8) {
+  const { agent } = useAgent()
+  return useQuery(suggestedActorsOptions(agent, limit))
+}
+
+/** Popular custom feeds for the Feeds tab and discover state. unspecced. */
+export function usePopularFeeds(query?: string, limit = 12) {
+  const { agent } = useAgent()
+  return useQuery(popularFeedsOptions(agent, query, limit))
 }

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import clsx from 'clsx'
 import type { ChatBskyConvoDefs } from '@atproto/api'
-import { Avatar, Button, EmptyState, ErrorState, Spinner } from '@/components'
+import { Avatar, Button, EmptyState, ErrorState, MessageThreadSkeleton, Spinner } from '@/components'
 import { MessageBubble } from './MessageBubble'
 import { MessageComposer } from './MessageComposer'
 import { useMessages, useMarkRead, type MessageItem } from './use-messages'
@@ -97,9 +97,7 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
     <div className="msg-thread">
       <div className="msg-thread__scroll" ref={scrollRef}>
         {q.isLoading ? (
-          <div className="msg-thread__center">
-            <Spinner />
-          </div>
+          <MessageThreadSkeleton />
         ) : messages.length === 0 ? (
           <div className="msg-thread__center">
             <EmptyState

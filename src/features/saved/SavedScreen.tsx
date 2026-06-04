@@ -4,6 +4,7 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  FeedSkeleton,
   InfiniteList,
   PostCard,
   Spinner,
@@ -73,11 +74,7 @@ function BookmarksTab() {
   const remove = useRemoveBookmark()
 
   if (isLoading) {
-    return (
-      <div className="saved__center">
-        <Spinner size="lg" />
-      </div>
-    )
+    return <FeedSkeleton />
   }
   if (isError) {
     return <ErrorState error={error} onRetry={() => refetch()} title="Couldn't load bookmarks" />

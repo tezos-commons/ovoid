@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { AppBskyLabelerDefs } from '@atproto/api'
 import { ScreenHeader } from '@/components/layout/ScreenHeader'
-import { Button, Spinner, ErrorState } from '@/components'
+import { Button, SettingsSkeleton, ErrorState } from '@/components'
 import { CloseIcon } from '@/components/Icon'
 import { useLabelerSubscription } from '@/features/profile/use-labeler'
 import { Section, Row, Switch } from './components'
@@ -39,11 +39,7 @@ export default function ModerationSettings() {
     <>
       <ScreenHeader title="Moderation" showBack />
       <div className="settings">
-        {isLoading && (
-          <div style={{ padding: 'var(--space-6)', display: 'flex', justifyContent: 'center' }}>
-            <Spinner />
-          </div>
-        )}
+        {isLoading && <SettingsSkeleton sections={3} />}
         {error && <ErrorState error={error} onRetry={() => refetch()} />}
 
         {!isLoading && !error && (

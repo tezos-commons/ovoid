@@ -5,13 +5,16 @@ import type { AppBskyFeedDefs } from '@atproto/api'
 import { ErrorState, Spinner, IconButton } from '@/components'
 import { PageAside } from '@/components/layout'
 import { GearIcon } from '@/components/Icon'
-import { useAuth } from '@/lib/api/agent'
+import { useAuth, useAgent } from '@/lib/api/agent'
 import { useDragScroll } from '@/lib/use-drag-scroll'
 import { useIsMobile } from '@/lib/use-is-mobile'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { runWhenIdle } from '@/lib/idle'
 import { FeedView } from './FeedView'
 import { usePinnedFeeds, type HomeTab } from './use-pinned-feeds'
 import { useTimeline } from './use-timeline'
-import { useCustomFeed } from './use-custom-feed'
+import { useCustomFeed, customFeedOptions } from './use-custom-feed'
 import { useNewPosts } from './use-new-posts'
 import './home.css'
 
@@ -33,6 +36,7 @@ const FOLLOWING_KEY = 'following'
  */
 export function HomeScreen() {
   const { isAuthed } = useAuth()
+  const { agent, did } = useAgent()
   const navigate = useNavigate()
   const pinned = usePinnedFeeds()
   const tabs: HomeTab[] = pinned.data ?? [
@@ -49,6 +53,22 @@ export function HomeScreen() {
   useEffect(() => {
     if (!tabs.some((t) => t.key === activeKey)) setActiveKey(FOLLOWING_KEY)
   }, [tabs, activeKey])
+
+  // Preload every pinned feed's first page once the strip is known, so clicking
+  // a feed name renders instantly instead of cold-fetching. Only the active tab
+  // is `enabled`, so without this each switch starts from an empty cache. Idle +
+  // concurrency-bounded so it never delays the active feed's first paint.
+  useEffect(() => {
+    if (!isAuthed) return
+    const feeds = tabs.filter((t) => t.kind !== 'following' && t.value)
+    if (feeds.length === 0) return
+    return runWhenIdle(() => {
+      for (const t of feeds) {
+        const opts = customFeedOptions(agent, did, t.value, t.kind === 'list' ? 'list' : 'feed')
+        schedulePrefetch(opts.queryKey, () => queryClient.prefetchInfiniteQuery(opts))
+      }
+    })
+  }, [tabs, agent, did, isAuthed])
 
   const isFollowing = activeTab?.kind === 'following'
   const timeline = useTimeline(isAuthed && isFollowing)

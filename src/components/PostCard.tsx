@@ -15,6 +15,12 @@ import { LabelChips, hasBotLabel } from './LabelChips'
 import { RichText } from '@/lib/rich-text'
 import { relativeTime, absoluteTime } from '@/lib/time'
 import { RepostIcon, BotIcon } from './Icon'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { threadOptions } from '@/features/thread/use-thread'
+import { profileOptions } from '@/features/profile/use-profile'
 
 /** Robot badge shown before the name of an account labeled `bot`. */
 function BotBadge({ labels }: { labels?: AppBskyFeedDefs.PostView['labels'] }) {
@@ -82,6 +88,19 @@ export function PostCard({
     if (!focused) navigate(permalink)
   }
 
+  // Warm the two things tapping this card can lead to — the post's thread and
+  // the author's profile — once the card has dwelt on screen. Skipped for the
+  // focused post (its thread is already open). RQ dedupes + respects staleTime,
+  // so a warmed cache makes the navigation render without a skeleton.
+  const { agent } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLElement>(() => {
+    if (focused) return
+    const thread = threadOptions(agent, post.uri)
+    schedulePrefetch(thread.queryKey, () => queryClient.prefetchQuery(thread))
+    const profile = profileOptions(agent, author.handle || author.did)
+    schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+  })
+
   // Reply context: in a feed row, surface the thread ROOT (first post) above a
   // reply. The root is only useful when it's a real, distinct post; we skip it
   // for the focused thread view and for thread children (which already show
@@ -100,6 +119,7 @@ export function PostCard({
 
   const card = (
     <article
+      ref={prefetchRef}
       className={clsx(
         'postcard',
         focused && 'postcard--focused',

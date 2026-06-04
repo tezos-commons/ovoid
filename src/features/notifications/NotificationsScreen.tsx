@@ -4,7 +4,7 @@ import {
 } from '@/components/layout/ScreenHeader'
 import {
   Tabs,
-  Spinner,
+  NotificationsSkeleton,
   ErrorState,
   EmptyState,
   InfiniteList,
@@ -92,9 +92,7 @@ export default function NotificationsScreen() {
   if (isLoading) {
     return (
       <Screen top={header}>
-        <div className="notif-loading">
-          <Spinner />
-        </div>
+        <NotificationsSkeleton />
       </Screen>
     )
   }

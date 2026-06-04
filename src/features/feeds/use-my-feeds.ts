@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import type { AppBskyActorDefs, AppBskyFeedDefs } from '@atproto/api'
+import { useQuery, queryOptions } from '@tanstack/react-query'
+import type { Agent, AppBskyActorDefs, AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 import { getPrefs } from '@/lib/prefs'
@@ -30,12 +30,10 @@ export interface MyFeeds {
  * Keyed by viewer DID; depends on the same prefs the toggles invalidate, so
  * pinning/saving anywhere refreshes this list.
  */
-export function useMyFeeds() {
-  const { agent, did, isAuthed } = useAgent()
-
-  return useQuery<MyFeeds>({
+/** Shared query config for the viewer's hydrated saved feeds (hook + nav prefetch). */
+export function myFeedsOptions(agent: Agent, did: string | undefined) {
+  return queryOptions<MyFeeds>({
     queryKey: qk.myFeeds(did),
-    enabled: isAuthed,
     staleTime: 60_000,
     queryFn: async () => {
       const prefs = await getPrefs(agent)
@@ -69,4 +67,9 @@ export function useMyFeeds() {
       return { pinned, saved, all }
     },
   })
+}
+
+export function useMyFeeds() {
+  const { agent, did, isAuthed } = useAgent()
+  return useQuery({ ...myFeedsOptions(agent, did), enabled: isAuthed })
 }

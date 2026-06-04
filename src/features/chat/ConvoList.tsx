@@ -2,9 +2,14 @@ import { useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
 import type { ChatBskyConvoDefs } from '@atproto/api'
-import { Avatar, EmptyState, ErrorState, Spinner } from '@/components'
+import { Avatar, ConvoListSkeleton, EmptyState, ErrorState, Spinner } from '@/components'
 import { relativeTime } from '@/lib/time'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
 import { useConvos } from './use-convos'
+import { messagesOptions } from './use-messages'
 import { isChatPermissionError } from './chat-errors'
 import { ChatScopeMissing } from './MessageThread'
 
@@ -66,11 +71,7 @@ export function ConvoList({ viewerDid, activeConvoId }: ConvoListProps) {
   }
 
   if (q.isLoading) {
-    return (
-      <div className="convo-list__state">
-        <Spinner />
-      </div>
-    )
+    return <ConvoListSkeleton />
   }
 
   if (q.convos.length === 0) {
@@ -86,42 +87,66 @@ export function ConvoList({ viewerDid, activeConvoId }: ConvoListProps) {
 
   return (
     <div className="convo-list" role="list">
-      {q.convos.map((convo) => {
-        const other = otherMember(convo, viewerDid)
-        const name = other?.displayName?.trim() || (other?.handle ? `@${other.handle}` : 'Unknown')
-        const unread = convo.unreadCount > 0
-        return (
-          <Link
-            key={convo.id}
-            to={`/messages/${convo.id}`}
-            className={clsx('convo-row', {
-              'convo-row--active': convo.id === activeConvoId,
-              'convo-row--unread': unread,
-            })}
-            role="listitem"
-          >
-            <Avatar
-              src={other?.avatar}
-              alt={name}
-              fallback={other?.displayName ?? other?.handle}
-              size="md"
-            />
-            <div className="convo-row__body">
-              <div className="convo-row__top">
-                <span className="convo-row__name">{name}</span>
-                <span className="convo-row__time">{lastTime(convo)}</span>
-              </div>
-              <div className="convo-row__bottom">
-                <span className="convo-row__preview">{previewOf(convo)}</span>
-                {unread && <span className="convo-row__dot" aria-label={`${convo.unreadCount} unread`} />}
-              </div>
-            </div>
-          </Link>
-        )
-      })}
+      {q.convos.map((convo) => (
+        <ConvoRow
+          key={convo.id}
+          convo={convo}
+          viewerDid={viewerDid}
+          activeConvoId={activeConvoId}
+        />
+      ))}
       <div ref={sentinelRef} className="convo-list__sentinel">
         {q.isFetchingNextPage && <Spinner size="sm" />}
       </div>
     </div>
+  )
+}
+
+/**
+ * One convo row. Extracted so it can prefetch its message thread's head page
+ * once it scrolls into view — opening the conversation then renders instantly.
+ */
+function ConvoRow({
+  convo,
+  viewerDid,
+  activeConvoId,
+}: {
+  convo: ChatBskyConvoDefs.ConvoView
+  viewerDid: string | undefined
+  activeConvoId?: string
+}) {
+  const { chatAgent } = useAgent()
+  const other = otherMember(convo, viewerDid)
+  const name = other?.displayName?.trim() || (other?.handle ? `@${other.handle}` : 'Unknown')
+  const unread = convo.unreadCount > 0
+
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    if (!chatAgent) return
+    const opts = messagesOptions(chatAgent, convo.id)
+    schedulePrefetch(opts.queryKey, () => queryClient.prefetchInfiniteQuery(opts))
+  })
+
+  return (
+    <Link
+      ref={prefetchRef}
+      to={`/messages/${convo.id}`}
+      className={clsx('convo-row', {
+        'convo-row--active': convo.id === activeConvoId,
+        'convo-row--unread': unread,
+      })}
+      role="listitem"
+    >
+      <Avatar src={other?.avatar} alt={name} fallback={other?.displayName ?? other?.handle} size="md" />
+      <div className="convo-row__body">
+        <div className="convo-row__top">
+          <span className="convo-row__name">{name}</span>
+          <span className="convo-row__time">{lastTime(convo)}</span>
+        </div>
+        <div className="convo-row__bottom">
+          <span className="convo-row__preview">{previewOf(convo)}</span>
+          {unread && <span className="convo-row__dot" aria-label={`${convo.unreadCount} unread`} />}
+        </div>
+      </div>
+    </Link>
   )
 }

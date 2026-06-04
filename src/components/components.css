@@ -278,6 +278,28 @@
   100% { background-position: 0 50%; }
 }
 
+/* Skeleton variants reuse the real row containers (.postcard, .convo-row, …)
+   for exact geometry; these neutralize the interactive affordances those
+   containers carry (pointer cursor, hover wash) since a skeleton is inert. */
+.postcard--skel,
+.convo-row--skel {
+  cursor: default;
+}
+.postcard--skel:hover,
+.convo-row--skel:hover {
+  background: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* ---------- Img (fade-in on decode) ---------- */
+.img-fade { opacity: 0; transition: opacity 220ms ease; }
+.img-fade--in { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .img-fade { opacity: 1; transition: none; }
+}
+
 /* ---------- InfiniteList ---------- */
 .inflist {
   position: relative;

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Spinner, ErrorState, EmptyState } from '@/components'
+import { Spinner, NftGridSkeleton, ErrorState, EmptyState } from '@/components'
 import { BackIcon } from '@/components/Icon'
 import { shortAddr } from '@/components/embeds/providers/objkt-data'
 import { qk } from '@/lib/query-keys'
@@ -103,12 +103,7 @@ function CollectionGrid({ query, onOpen, emptyTitle, emptyMessage }: CollectionG
     return () => io.disconnect()
   }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage, items.length])
 
-  if (query.isLoading)
-    return (
-      <div className="proffeed__center">
-        <Spinner />
-      </div>
-    )
+  if (query.isLoading) return <NftGridSkeleton />
   if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />
   if (items.length === 0) return <EmptyState title={emptyTitle} message={emptyMessage} />
 

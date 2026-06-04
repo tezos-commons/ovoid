@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { AppBskyFeedDefs } from '@atproto/api'
-import { EmptyState, ErrorState, Icons, InfiniteList, PostCard, Spinner } from '@/components'
+import { EmptyState, ErrorState, FeedSkeleton, Icons, InfiniteList, PostCard } from '@/components'
 import { useListFeed } from './use-list'
 
 /** Feed tab (curate lists only): getListFeed of member posts. */
@@ -12,11 +12,7 @@ export function ListFeed({ listUri }: { listUri: string }) {
   )
 
   if (feed.isLoading) {
-    return (
-      <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
-        <Spinner />
-      </div>
-    )
+    return <FeedSkeleton />
   }
   if (feed.isError) {
     return <ErrorState error={feed.error} onRetry={() => feed.refetch()} />

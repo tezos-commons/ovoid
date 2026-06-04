@@ -3,6 +3,7 @@ import { TopBar } from './TopBar'
 import { BottomTabBar } from './BottomTabBar'
 import { UserFab } from './UserFab'
 import { ShellLayout } from './PageLayout'
+import { useWarmNavDestinations } from '@/features/prefetch-routes'
 import './layout.css'
 
 export interface AppShellProps {
@@ -20,6 +21,8 @@ export interface AppShellProps {
  * BottomTabBar and the columns stack (see layout.css).
  */
 export function AppShell({ children, onNewPost, fullWidth }: AppShellProps) {
+  // Warm the landing data behind every nav destination once the shell mounts.
+  useWarmNavDestinations()
   return (
     <>
       <TopBar onNewPost={onNewPost} />

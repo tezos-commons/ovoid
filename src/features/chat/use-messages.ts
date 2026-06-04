@@ -2,9 +2,10 @@ import { useCallback, useEffect } from 'react'
 import {
   useInfiniteQuery,
   useQueryClient,
+  infiniteQueryOptions,
   type InfiniteData,
 } from '@tanstack/react-query'
-import type { ChatBskyConvoDefs, ChatBskyConvoGetMessages } from '@atproto/api'
+import type { Agent, ChatBskyConvoDefs, ChatBskyConvoGetMessages } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 
@@ -15,6 +16,25 @@ export type MessageItem =
 
 type Page = ChatBskyConvoGetMessages.OutputSchema
 export type MessagesData = InfiniteData<Page, string | undefined>
+
+/**
+ * Shared infinite-query config for a convo's messages, consumed by both
+ * `useMessages` and the convo-list prefetcher. `refetchInterval` only applies to
+ * mounted observers, so prefetching warms the head page without starting a poll.
+ */
+export function messagesOptions(chatAgent: Agent, convoId: string) {
+  return infiniteQueryOptions({
+    queryKey: qk.messages(convoId),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      chatAgent.chat.bsky.convo
+        .getMessages({ convoId, cursor: pageParam, limit: 50 })
+        .then((r) => r.data),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.cursor || undefined,
+    refetchInterval: 6_000,
+    staleTime: 2_000,
+  })
+}
 
 /**
  * Paged + polled message history for one convo.

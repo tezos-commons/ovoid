@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { Img } from './Img'
 
 export interface AvatarProps {
   src?: string
@@ -14,7 +15,7 @@ export function Avatar({ src, alt = '', size = 'md', shape = 'round', fallback }
   if (src) {
     return (
       <span className={cls}>
-        <img src={src} alt={alt} loading="lazy" />
+        <Img src={src} alt={alt} />
       </span>
     )
   }

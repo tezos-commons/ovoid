@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Spinner, Icons } from '@/components'
+import { PeopleSkeleton, Icons } from '@/components'
 import { useTrending, useSuggestedActors, usePopularFeeds } from './use-discover'
 import { PersonCard } from './PersonCard'
 import { FeedCard } from './FeedCard'
@@ -22,11 +22,7 @@ export function DiscoverState() {
     trending.isLoading && suggested.isLoading && feeds.isLoading
 
   if (loadingAll) {
-    return (
-      <div className="search__center">
-        <Spinner />
-      </div>
-    )
+    return <PeopleSkeleton />
   }
 
   return (

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/layout/ScreenHeader'
-import { Avatar, Spinner, Button } from '@/components'
+import { Avatar, SettingsAccountSkeleton, Button } from '@/components'
 import { useAuth } from '@/lib/api/agent'
 import { Section, Row } from './components'
 import { useAccount, useSessionInfo } from './use-account'
@@ -20,23 +20,21 @@ export default function AccountSettings() {
     <>
       <ScreenHeader title="Account" showBack />
       <div className="settings">
-        <div className="settings-account">
-          {isLoading ? (
-            <Spinner />
-          ) : (
-            <>
-              <Avatar
-                src={profile?.avatar}
-                size="lg"
-                fallback={(profile?.handle ?? '?').charAt(0).toUpperCase()}
-              />
-              <span className="settings-account__meta">
-                <strong>{profile?.displayName || profile?.handle}</strong>
-                <span className="settings-row__sub">@{profile?.handle}</span>
-              </span>
-            </>
-          )}
-        </div>
+        {isLoading ? (
+          <SettingsAccountSkeleton />
+        ) : (
+          <div className="settings-account">
+            <Avatar
+              src={profile?.avatar}
+              size="lg"
+              fallback={(profile?.handle ?? '?').charAt(0).toUpperCase()}
+            />
+            <span className="settings-account__meta">
+              <strong>{profile?.displayName || profile?.handle}</strong>
+              <span className="settings-row__sub">@{profile?.handle}</span>
+            </span>
+          </div>
+        )}
 
         <Section title="Identity">
           <div className="settings-pad">

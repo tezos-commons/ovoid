@@ -1,11 +1,45 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
-import type { AppBskyFeedDefs } from '@atproto/api'
+import { useInfiniteQuery, infiniteQueryOptions } from '@tanstack/react-query'
+import type { Agent, AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 
 type Page = { feed: AppBskyFeedDefs.FeedViewPost[]; cursor?: string }
 
 const PAGE_LIMIT = 30
+
+/**
+ * Shared infinite-query config for a pinned custom feed / list, consumed by both
+ * `useCustomFeed` and the home-strip prefetcher. Keyed by (did, uri) exactly as
+ * the active-tab hook is, so a prefetch warms the entry the tab will render.
+ */
+export function customFeedOptions(
+  agent: Agent,
+  did: string | undefined,
+  uri: string,
+  kind: 'feed' | 'list' = 'feed',
+) {
+  return infiniteQueryOptions({
+    queryKey: qk.feed(did, uri),
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }): Promise<Page> => {
+      if (kind === 'list') {
+        const res = await agent.app.bsky.feed.getListFeed({
+          list: uri,
+          cursor: pageParam,
+          limit: PAGE_LIMIT,
+        })
+        return res.data
+      }
+      const res = await agent.app.bsky.feed.getFeed({
+        feed: uri,
+        cursor: pageParam,
+        limit: PAGE_LIMIT,
+      })
+      return res.data
+    },
+    getNextPageParam: (last) => last.cursor || undefined,
+  })
+}
 
 /**
  * The timeline behind a pinned Home tab. The source endpoint depends on the
@@ -24,27 +58,8 @@ export function useCustomFeed(
   enabled = true,
 ) {
   const { agent, did } = useAgent()
-
   return useInfiniteQuery({
-    queryKey: qk.feed(did, uri ?? ''),
+    ...customFeedOptions(agent, did, uri ?? '', kind),
     enabled: enabled && !!uri,
-    initialPageParam: undefined as string | undefined,
-    queryFn: async ({ pageParam }): Promise<Page> => {
-      if (kind === 'list') {
-        const res = await agent.app.bsky.feed.getListFeed({
-          list: uri as string,
-          cursor: pageParam,
-          limit: PAGE_LIMIT,
-        })
-        return res.data
-      }
-      const res = await agent.app.bsky.feed.getFeed({
-        feed: uri as string,
-        cursor: pageParam,
-        limit: PAGE_LIMIT,
-      })
-      return res.data
-    },
-    getNextPageParam: (last) => last.cursor || undefined,
   })
 }

@@ -6,7 +6,7 @@ import {
   InfiniteList,
   ErrorState,
   EmptyState,
-  Spinner,
+  FeedSkeleton,
   Icons,
 } from '@/components'
 
@@ -44,11 +44,7 @@ export function FeedView({
   }
 
   if (query.isLoading) {
-    return (
-      <div style={{ display: 'grid', placeItems: 'center', padding: 'var(--space-6)' }}>
-        <Spinner size="lg" />
-      </div>
-    )
+    return <FeedSkeleton />
   }
 
   return (

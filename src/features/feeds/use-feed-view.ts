@@ -3,13 +3,51 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  queryOptions,
+  infiniteQueryOptions,
 } from '@tanstack/react-query'
 import type { Agent, AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
 import { qk } from '@/lib/query-keys'
 
 type GeneratorView = AppBskyFeedDefs.GeneratorView
 type FeedViewPost = AppBskyFeedDefs.FeedViewPost
+
+/**
+ * Warm everything the feed-view route reads, from a GeneratorView a card already
+ * holds: seed the immutable actor+rkey→uri resolution (zero-cost, no fetch),
+ * prefetch the generator metadata, and prefetch the first page of posts. Called
+ * from feed cards when they scroll into view.
+ */
+export function prefetchFeedFromGenerator(
+  agent: Agent,
+  did: string | undefined,
+  gen: GeneratorView,
+) {
+  const uri = gen.uri
+  const rkey = uri.split('/').pop() ?? ''
+  const actor = gen.creator.handle || gen.creator.did
+  // Immutable resolution — seed directly so the route skips resolveHandle.
+  queryClient.setQueryData(qk.feedGeneratorUri(actor, rkey), uri)
+  const meta = feedGeneratorOptions(agent, uri)
+  schedulePrefetch(meta.queryKey, () => queryClient.prefetchQuery(meta))
+  const posts = feedPostsOptions(agent, did, uri)
+  schedulePrefetch(posts.queryKey, () => queryClient.prefetchInfiniteQuery(posts))
+}
+
+/** Shared query config for a feed generator's metadata (hook + prefetch). */
+export function feedGeneratorOptions(agent: Agent, uri: string) {
+  return queryOptions<GeneratorView>({
+    queryKey: qk.feedGenerator(uri),
+    staleTime: 60_000,
+    queryFn: async () => {
+      const res = await agent.app.bsky.feed.getFeedGenerator({ feed: uri })
+      return res.data.view
+    },
+  })
+}
 
 /**
  * Build the generator AT-URI from the route's actor + rkey.
@@ -47,14 +85,23 @@ export function useGeneratorUri(actor: string, rkey: string) {
 /** Single feed generator metadata (name, creator, description, like state). */
 export function useFeedGenerator(uri: string | undefined) {
   const { agent } = useAgent()
-  return useQuery<GeneratorView>({
-    queryKey: qk.feedGenerator(uri ?? ''),
+  return useQuery({
+    ...feedGeneratorOptions(agent, uri ?? ''),
     enabled: !!uri,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const res = await agent.app.bsky.feed.getFeedGenerator({ feed: uri! })
-      return res.data.view
-    },
+  })
+}
+
+/** Shared infinite-query config for a feed generator's posts (hook + prefetch). */
+export function feedPostsOptions(agent: Agent, did: string | undefined, uri: string) {
+  return infiniteQueryOptions({
+    queryKey: qk.feed(did, uri),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      agent.app.bsky.feed
+        .getFeed({ feed: uri, cursor: pageParam, limit: 30 })
+        .then((r) => r.data),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.cursor || undefined,
+    staleTime: 30_000,
   })
 }
 
@@ -62,15 +109,8 @@ export function useFeedGenerator(uri: string | undefined) {
 export function useFeedPosts(uri: string | undefined) {
   const { agent, did } = useAgent()
   return useInfiniteQuery({
-    queryKey: qk.feed(did, uri ?? ''),
+    ...feedPostsOptions(agent, did, uri ?? ''),
     enabled: !!uri,
-    queryFn: ({ pageParam }) =>
-      agent.app.bsky.feed
-        .getFeed({ feed: uri!, cursor: pageParam, limit: 30 })
-        .then((r) => r.data),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.cursor || undefined,
-    staleTime: 30_000,
   })
 }
 

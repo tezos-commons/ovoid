@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import type { AppBskyGraphDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { ScreenHeader } from '@/components/layout'
-import { ErrorState, Spinner, Tabs } from '@/components'
+import { ErrorState, ListHeaderSkeleton, FeedSkeleton, Tabs } from '@/components'
 import './lists.css'
 import { useList, useListUri } from './use-list'
 import { isCurate } from './PurposeChip'
@@ -39,9 +39,8 @@ export function ListDetail() {
     return (
       <>
         <ScreenHeader title="List" showBack />
-        <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
-          <Spinner />
-        </div>
+        <ListHeaderSkeleton />
+        <FeedSkeleton count={4} />
       </>
     )
   }

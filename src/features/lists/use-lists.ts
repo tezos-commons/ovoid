@@ -1,7 +1,20 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
-import type { AppBskyGraphDefs } from '@atproto/api'
+import { useInfiniteQuery, infiniteQueryOptions } from '@tanstack/react-query'
+import type { Agent, AppBskyGraphDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
+
+/** Shared infinite-query config for an actor's lists (hook + nav prefetch). */
+export function listsByActorOptions(agent: Agent, actor: string) {
+  return infiniteQueryOptions({
+    queryKey: qk.lists(actor),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      agent.app.bsky.graph
+        .getLists({ actor, cursor: pageParam, limit: 50 })
+        .then((r) => r.data),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.cursor || undefined,
+  })
+}
 
 /**
  * Lists owned by an actor — app.bsky.graph.getLists.
@@ -13,14 +26,8 @@ import { qk } from '@/lib/query-keys'
 export function useLists(actor: string | undefined) {
   const { agent } = useAgent()
   return useInfiniteQuery({
-    queryKey: qk.lists(actor ?? ''),
+    ...listsByActorOptions(agent, actor ?? ''),
     enabled: !!actor,
-    queryFn: ({ pageParam }) =>
-      agent.app.bsky.graph
-        .getLists({ actor: actor!, cursor: pageParam, limit: 50 })
-        .then((r) => r.data),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.cursor || undefined,
   })
 }
 

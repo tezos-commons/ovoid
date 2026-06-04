@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { AppBskyActorDefs } from '@atproto/api'
-import { Avatar, Button, Menu, IconButton, LabelChips, hasBotLabel } from '@/components'
-import { MoreIcon, BotIcon } from '@/components/Icon'
+import { Avatar, Button, Img, Menu, IconButton, LabelChips, hasBotLabel } from '@/components'
+import { MoreIcon, BotIcon, ChatIcon } from '@/components/Icon'
 import { RichText } from '@/lib/rich-text'
+import { useStartConvo } from '@/features/chat/use-start-convo'
+import { isChatPermissionError } from '@/features/chat/chat-errors'
 import { useFollow } from './use-follow'
 import { useMuteBlock } from './use-mute-block'
 import { useTezosAddress } from './use-nfts'
@@ -48,6 +50,30 @@ export function ProfileCard({ profile, isSelf, isAuthed }: ProfileCardProps) {
   const followsYou = !!profile.viewer?.followedBy
   const actorRoute = `/profile/${profile.handle || profile.did}`
 
+  // DM entry point, gated on the recipient's incoming-DM policy (default
+  // 'following' per the platform). 'following' means they accept DMs from
+  // accounts THEY follow — i.e. only when they follow the viewer (followedBy).
+  // The server enforces this too; gating just keeps the button from appearing
+  // when a send would be rejected.
+  const startConvo = useStartConvo()
+  const chatPref = profile.associated?.chat?.allowIncoming ?? 'following'
+  const canMessage =
+    isAuthed &&
+    !isSelf &&
+    !blocking &&
+    !profile.viewer?.blockedBy &&
+    (chatPref === 'all' || (chatPref === 'following' && followsYou))
+  const openChat = () =>
+    startConvo.mutate(profile.did, {
+      onSuccess: (convoId) => navigate(`/messages/${convoId}`),
+      onError: (err) =>
+        window.alert(
+          isChatPermissionError(err)
+            ? 'Messaging isn’t available for this account.'
+            : 'Could not start the conversation. Please try again.',
+        ),
+    })
+
   const menuItems = [
     {
       key: 'copy',
@@ -91,7 +117,7 @@ export function ProfileCard({ profile, isSelf, isAuthed }: ProfileCardProps) {
         className="profhead__banner"
         aria-label={`View @${profile.handle}'s profile`}
       >
-        {profile.banner && <img src={profile.banner} alt="" loading="lazy" />}
+        {profile.banner && <Img src={profile.banner} alt="" />}
       </Link>
 
       <div className="profhead__bar">
@@ -100,6 +126,17 @@ export function ProfileCard({ profile, isSelf, isAuthed }: ProfileCardProps) {
         </Link>
 
         <div className="profhead__actions">
+          {canMessage && (
+            <IconButton
+              label="Message"
+              type="button"
+              onClick={openChat}
+              disabled={startConvo.isPending}
+            >
+              <ChatIcon size={20} />
+            </IconButton>
+          )}
+
           <Menu
             trigger={
               <IconButton label="More options" type="button">

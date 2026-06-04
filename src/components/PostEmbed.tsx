@@ -10,6 +10,7 @@ import {
   type AppBskyFeedDefs,
 } from '@atproto/api'
 import { Avatar } from './Avatar'
+import { Img } from './Img'
 import { VideoPlayer } from './VideoPlayer'
 import { GenericExternalCard } from './embeds/GenericExternalCard'
 import { matchExternal } from './embeds/external-registry'
@@ -94,7 +95,7 @@ function ImagesEmbed({ images }: { images: AppBskyEmbedImages.ViewImage[] }) {
           }}
           style={single && ar ? { aspectRatio: `${ar.width} / ${ar.height}` } : undefined}
         >
-          <img src={img.thumb} alt={img.alt} loading="lazy" />
+          <Img src={img.thumb} alt={img.alt} />
         </button>
       ))}
     </div>

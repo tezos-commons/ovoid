@@ -1,4 +1,4 @@
-import { Spinner, Icons } from '@/components'
+import { PeopleSkeleton, Icons } from '@/components'
 import { useTypeahead } from './use-typeahead'
 import { PersonCard } from './PersonCard'
 
@@ -27,11 +27,7 @@ export function TypeaheadDropdown({ query, onSubmitSearch, onPick }: TypeaheadDr
         </span>
       </button>
 
-      {isLoading && actors.length === 0 && (
-        <div className="typeahead__loading">
-          <Spinner size="sm" />
-        </div>
-      )}
+      {isLoading && actors.length === 0 && <PeopleSkeleton count={4} compact />}
 
       {actors.map((actor) => (
         <PersonCard key={actor.did} actor={actor} compact onNavigate={onPick} />

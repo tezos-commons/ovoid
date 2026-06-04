@@ -1,11 +1,31 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, queryOptions } from '@tanstack/react-query'
 import {
   AppBskyFeedDefs,
+  type Agent,
   type AppBskyActorDefs,
   type AppBskyFeedGetPostThread,
 } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
+
+/**
+ * Shared query config for a post thread, consumed by both `useThread` and the
+ * visibility prefetcher (so the key + fetcher never drift). `uri` is a full
+ * at:// post uri.
+ */
+export function threadOptions(agent: Agent, uri: string) {
+  return queryOptions({
+    queryKey: qk.thread(uri),
+    queryFn: async () => {
+      const res = await agent.app.bsky.feed.getPostThread({
+        uri,
+        depth: 10,
+        parentHeight: 80,
+      })
+      return res.data
+    },
+  })
+}
 
 /**
  * Build the post AT-URI from the route params. getPostThread accepts a handle
@@ -32,18 +52,7 @@ export type ThreadNode = AppBskyFeedGetPostThread.OutputSchema['thread']
 export function useThread(actor: string, rkey: string) {
   const { agent } = useAgent()
   const uri = buildPostUri(actor, rkey)
-
-  return useQuery({
-    queryKey: qk.thread(uri),
-    queryFn: async () => {
-      const res = await agent.app.bsky.feed.getPostThread({
-        uri,
-        depth: 10,
-        parentHeight: 80,
-      })
-      return res.data
-    },
-  })
+  return useQuery(threadOptions(agent, uri))
 }
 
 /**

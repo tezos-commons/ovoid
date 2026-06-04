@@ -6,7 +6,7 @@ import {
   Avatar,
   Button,
   Screen,
-  Spinner,
+  ModListSkeleton,
   ErrorState,
   EmptyState,
   InfiniteList,
@@ -45,9 +45,7 @@ export default function ModerationListScreen({ kind }: { kind: Kind }) {
   if (q.isLoading) {
     return (
       <Screen top={header}>
-        <div className="settings" style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-6)' }}>
-          <Spinner />
-        </div>
+        <ModListSkeleton />
       </Screen>
     )
   }

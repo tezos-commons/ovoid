@@ -1,7 +1,8 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, infiniteQueryOptions } from '@tanstack/react-query'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 import type {
+  Agent,
   AppBskyNotificationListNotifications,
 } from '@atproto/api'
 
@@ -35,17 +36,24 @@ const PAGE_LIMIT = 50
  * viewing (use-update-seen), and threading it through the query key would
  * refetch the whole list every time the badge clears.
  */
-export function useNotifications() {
-  const { agent, did, isAuthed } = useAgent()
-  return useInfiniteQuery({
+/** Shared infinite-query config for the notifications list (hook + nav prefetch). */
+export function notificationsOptions(agent: Agent, did: string | undefined) {
+  return infiniteQueryOptions({
     queryKey: qk.notifications(did),
-    enabled: isAuthed,
-    queryFn: ({ pageParam }) =>
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
       agent.app.bsky.notification
         .listNotifications({ cursor: pageParam, limit: PAGE_LIMIT })
         .then((r) => r.data),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.cursor || undefined,
     staleTime: 30_000,
+  })
+}
+
+export function useNotifications() {
+  const { agent, did, isAuthed } = useAgent()
+  return useInfiniteQuery({
+    ...notificationsOptions(agent, did),
+    enabled: isAuthed,
   })
 }

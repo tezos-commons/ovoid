@@ -1,11 +1,58 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import type { AppBskyGraphDefs } from '@atproto/api'
+import { useInfiniteQuery, useQuery, infiniteQueryOptions } from '@tanstack/react-query'
+import type { Agent, AppBskyGraphDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
 import { qk } from '@/lib/query-keys'
-import { buildListUri } from './list-uri'
+import { buildListUri, parseListUri } from './list-uri'
+import { isCurate } from './PurposeChip'
 
 export type ListView = AppBskyGraphDefs.ListView
 export type ListItemView = AppBskyGraphDefs.ListItemView
+
+/** Shared infinite-query config for a list's header+members (hook + prefetch). */
+export function listOptions(agent: Agent, listUri: string) {
+  return infiniteQueryOptions({
+    queryKey: qk.list(listUri),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      agent.app.bsky.graph
+        .getList({ list: listUri, cursor: pageParam, limit: 50 })
+        .then((r) => r.data),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.cursor || undefined,
+  })
+}
+
+/** Shared infinite-query config for a curate-list's member feed (hook + prefetch). */
+export function listFeedOptions(agent: Agent, did: string | undefined, listUri: string) {
+  return infiniteQueryOptions({
+    queryKey: qk.feed(did, listUri),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      agent.app.bsky.feed
+        .getListFeed({ list: listUri, cursor: pageParam, limit: 30 })
+        .then((r) => r.data),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.cursor || undefined,
+  })
+}
+
+/**
+ * Warm the list-detail route from a ListView a card already holds: seed the
+ * immutable actor+rkey→uri resolution, prefetch the list header+members, and —
+ * for curate lists, which alone have a feed tab — prefetch the member feed.
+ */
+export function prefetchListFromView(agent: Agent, did: string | undefined, list: ListView) {
+  const parsed = parseListUri(list.uri)
+  if (!parsed) return
+  const actor = list.creator.handle || list.creator.did
+  queryClient.setQueryData(qk.listUri(actor, parsed.rkey), list.uri)
+  const meta = listOptions(agent, list.uri)
+  schedulePrefetch(meta.queryKey, () => queryClient.prefetchInfiniteQuery(meta))
+  if (isCurate(list.purpose)) {
+    const feed = listFeedOptions(agent, did, list.uri)
+    schedulePrefetch(feed.queryKey, () => queryClient.prefetchInfiniteQuery(feed))
+  }
+}
 
 /**
  * Resolve a route (actor, rkey) to the list's AT-URI.
@@ -46,14 +93,8 @@ export const REFERENCE = 'app.bsky.graph.defs#referencelist'
 export function useList(listUri: string | undefined) {
   const { agent } = useAgent()
   return useInfiniteQuery({
-    queryKey: qk.list(listUri ?? ''),
+    ...listOptions(agent, listUri ?? ''),
     enabled: !!listUri,
-    queryFn: ({ pageParam }) =>
-      agent.app.bsky.graph
-        .getList({ list: listUri!, cursor: pageParam, limit: 50 })
-        .then((r) => r.data),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.cursor || undefined,
   })
 }
 
@@ -65,17 +106,11 @@ export function useList(listUri: string | undefined) {
  */
 export function useListFeed(listUri: string | undefined, enabled = true) {
   const { agent, did } = useAgent()
+  // The key reuses the custom-feed namespace so the feed cache invalidates with
+  // other feed reads on account switch; the list URI disambiguates it.
   return useInfiniteQuery({
-    // Reuse the custom-feed key namespace so the feed cache is invalidated with
-    // other feed reads on account switch; the list URI disambiguates it.
-    queryKey: qk.feed(did, listUri ?? ''),
+    ...listFeedOptions(agent, did, listUri ?? ''),
     enabled: !!listUri && enabled,
-    queryFn: ({ pageParam }) =>
-      agent.app.bsky.feed
-        .getListFeed({ list: listUri!, cursor: pageParam, limit: 30 })
-        .then((r) => r.data),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.cursor || undefined,
   })
 }
 

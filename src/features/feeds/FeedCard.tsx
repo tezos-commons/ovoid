@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom'
 import type { AppBskyActorDefs, AppBskyFeedDefs } from '@atproto/api'
 import { Avatar, Button, Text, Icons } from '@/components'
 import { useAgent } from '@/lib/api/agent'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
 import { useFeedPrefs, useSavedFeedsState } from './use-feed-prefs'
+import { prefetchFeedFromGenerator } from './use-feed-view'
 
 type GeneratorView = AppBskyFeedDefs.GeneratorView
 type SavedFeed = AppBskyActorDefs.SavedFeed
@@ -35,8 +37,11 @@ interface FeedCardProps {
  * write. The card itself (link to the feed view) is public-capable.
  */
 export function FeedCard({ feed, savedState, compact }: FeedCardProps) {
-  const { isAuthed } = useAgent()
+  const { agent, did, isAuthed } = useAgent()
   const sharedState = useSavedFeedsState()
+  const prefetchRef = usePrefetchOnVisible<HTMLDivElement>(() =>
+    prefetchFeedFromGenerator(agent, did, feed),
+  )
   const saved = savedState ?? sharedState.data?.byValue.get(feed.uri)
 
   const { pin, unpin, save, unsave } = useFeedPrefs()
@@ -49,7 +54,7 @@ export function FeedCard({ feed, savedState, compact }: FeedCardProps) {
   const saveBusy = save.isPending || unsave.isPending
 
   return (
-    <div className="feedcard">
+    <div ref={prefetchRef} className="feedcard">
       <Link to={feedPermalink(feed)} className="feedcard__main">
         <Avatar
           src={feed.avatar}

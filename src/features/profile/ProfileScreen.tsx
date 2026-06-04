@@ -1,20 +1,23 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { PageAside } from '@/components/layout'
-import { Spinner, ErrorState, EmptyState } from '@/components'
+import { ProfileCardSkeleton, FeedSkeleton, ErrorState, EmptyState } from '@/components'
 import type { TabItem } from '@/components'
 import { useAgent } from '@/lib/api/agent'
 import { useIsMobile } from '@/lib/use-is-mobile'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { runWhenIdle } from '@/lib/idle'
 import { useProfile } from './use-profile'
-import { useAuthorFeed } from './use-author-feed'
-import { useActorLikes } from './use-actor-likes'
+import { useAuthorFeed, authorFeedOptions } from './use-author-feed'
+import { useActorLikes, actorLikesOptions } from './use-actor-likes'
 import { ProfileCard } from './ProfileCard'
 import { ProfileNav } from './ProfileNav'
 import { LabelerCard } from './LabelerCard'
 import { ProfileFeed } from './ProfileFeed'
 import { ProfileFeedsTab, ProfileListsTab } from './ProfileFeedsTab'
 import { NftTab } from './NftTab'
-import { useTezosAddress } from './use-nfts'
+import { useTezosAddress, objktCollectionsOptions } from './use-nfts'
 import './profile.css'
 
 type TabKey =
@@ -40,7 +43,7 @@ type TabKey =
  */
 export default function ProfileScreen() {
   const { actor } = useParams<{ actor: string }>()
-  const { did, isAuthed } = useAgent()
+  const { agent, did, isAuthed } = useAgent()
   const profileQ = useProfile(actor)
   const [params, setParams] = useSearchParams()
   const isMobile = useIsMobile()
@@ -74,6 +77,27 @@ export default function ProfileScreen() {
   // Guard against a stale/invalid tab from the URL (e.g. ?tab=likes on someone else).
   const activeKey: TabKey = tabs.some((t) => t.key === requested) ? requested : 'posts'
 
+  // Warm every sibling tab's first page on idle, so switching tabs renders
+  // instantly. Only the active tab's query is `enabled`, so without this each
+  // tab is a cold fetch. RQ dedupes the active tab's key against its live query.
+  useEffect(() => {
+    if (!actor) return
+    return runWhenIdle(() => {
+      const warm = (opts: { queryKey: readonly unknown[] }) =>
+        schedulePrefetch(opts.queryKey, () =>
+          queryClient.prefetchInfiniteQuery(opts as Parameters<typeof queryClient.prefetchInfiniteQuery>[0]),
+        )
+      warm(authorFeedOptions(agent, did, actor, 'posts_no_replies'))
+      warm(authorFeedOptions(agent, did, actor, 'posts_with_replies'))
+      warm(authorFeedOptions(agent, did, actor, 'posts_with_media'))
+      if (isSelf) warm(actorLikesOptions(agent, did, actor))
+      if (tezosAddr) {
+        warm(objktCollectionsOptions(tezosAddr, 'created'))
+        warm(objktCollectionsOptions(tezosAddr, 'owned'))
+      }
+    })
+  }, [actor, agent, did, isSelf, tezosAddr])
+
   const setTab = (key: string) => {
     const next = new URLSearchParams(params)
     if (key === 'posts') next.delete('tab')
@@ -91,10 +115,17 @@ export default function ProfileScreen() {
   const likes = useActorLikes(actor, { enabled: activeKey === 'likes' && isSelf })
 
   if (profileQ.isLoading) {
+    // Mirror the loaded two-column shape: header card in the aside, feed in the
+    // main column — so the real data fills these boxes rather than reflowing.
     return (
       <>
-        <div className="proffeed__center">
-          <Spinner />
+        <PageAside>
+          <div className="profaside">
+            <ProfileCardSkeleton />
+          </div>
+        </PageAside>
+        <div className="proftab">
+          <FeedSkeleton />
         </div>
       </>
     )

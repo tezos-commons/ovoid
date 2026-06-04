@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { AppBskyFeedDefs } from '@atproto/api'
-import { PostCard, Spinner, ErrorState, Tabs } from '@/components'
+import { PostCard, ThreadSkeleton, ErrorState, Tabs } from '@/components'
 import { PageAside } from '@/components/layout'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import {
@@ -60,13 +60,7 @@ export default function ThreadScreen() {
   }, [data])
 
   if (isLoading) {
-    return (
-      <>
-        <div className="thread-loading">
-          <Spinner size="lg" />
-        </div>
-      </>
-    )
+    return <ThreadSkeleton />
   }
 
   if (isError) {

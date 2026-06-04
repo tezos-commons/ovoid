@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { AppBskyActorDefs } from '@atproto/api'
-import { Avatar, Button, Dialog, Spinner, ErrorState, EmptyState } from '@/components'
+import { Avatar, Button, Dialog, Spinner, PeopleSkeleton, ErrorState, EmptyState } from '@/components'
 import { RichText } from '@/lib/rich-text'
 import { useAgent } from '@/lib/api/agent'
 import { useCloseOnBack } from '@/lib/use-close-on-back'
@@ -50,11 +50,7 @@ export function FollowListModal({ actor, mode, open, onClose }: FollowListModalP
   return (
     <Dialog open={open} onClose={onClose} title={mode === 'followers' ? 'Followers' : 'Following'}>
       <div className="followlist">
-        {q.isLoading && (
-          <div className="followlist__center">
-            <Spinner />
-          </div>
-        )}
+        {q.isLoading && <PeopleSkeleton count={6} />}
         {q.isError && <ErrorState error={q.error} onRetry={() => q.refetch()} />}
         {!q.isLoading && !q.isError && people.length === 0 && (
           <EmptyState

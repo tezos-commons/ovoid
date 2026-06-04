@@ -1,10 +1,29 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
-import type { ChatBskyConvoDefs } from '@atproto/api'
+import { useInfiniteQuery, infiniteQueryOptions } from '@tanstack/react-query'
+import type { Agent, ChatBskyConvoDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 
 export interface UseConvosResult {
   convos: ChatBskyConvoDefs.ConvoView[]
+}
+
+/** Shared infinite-query config for the convo list (hook + nav prefetch). */
+export function convosOptions(
+  chatAgent: Agent,
+  did: string | undefined,
+  status?: 'request' | 'accepted',
+) {
+  return infiniteQueryOptions({
+    queryKey: [...qk.convos(did), { status }],
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      chatAgent.chat.bsky.convo
+        .listConvos({ cursor: pageParam, limit: 40, status })
+        .then((r) => r.data),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.cursor || undefined,
+    refetchInterval: 15_000,
+    staleTime: 10_000,
+  })
 }
 
 /**
@@ -19,21 +38,8 @@ export function useConvos(opts?: { status?: 'request' | 'accepted' }) {
   const { chatAgent, did, isAuthed } = useAgent()
 
   const query = useInfiniteQuery({
-    queryKey: [...qk.convos(did), { status: opts?.status }] as const,
+    ...convosOptions(chatAgent as Agent, did, opts?.status),
     enabled: isAuthed && !!chatAgent,
-    queryFn: ({ pageParam }) =>
-      chatAgent!.chat.bsky.convo
-        .listConvos({
-          cursor: pageParam,
-          limit: 40,
-          status: opts?.status,
-        })
-        .then((r) => r.data),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.cursor || undefined,
-    // Convo list freshness drives the unread dots; poll while mounted.
-    refetchInterval: 15_000,
-    staleTime: 10_000,
   })
 
   const convos = query.data?.pages.flatMap((p) => p.convos) ?? []

@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom'
 import type { AppBskyGraphDefs } from '@atproto/api'
 import { Avatar } from '@/components'
+import { useAgent } from '@/lib/api/agent'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
 import { PurposeChip } from './PurposeChip'
 import { listPermalink } from './list-uri'
+import { prefetchListFromView } from './use-list'
 
 interface ListCardProps {
   list: AppBskyGraphDefs.ListView
@@ -12,8 +15,12 @@ interface ListCardProps {
 export function ListCard({ list }: ListCardProps) {
   const to = listPermalink(list.uri, list.creator.handle || list.creator.did)
   const count = list.listItemCount ?? 0
+  const { agent, did } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() =>
+    prefetchListFromView(agent, did, list),
+  )
   return (
-    <Link className="list-card" to={to}>
+    <Link ref={prefetchRef} className="list-card" to={to}>
       <Avatar
         src={list.avatar}
         alt={list.name}

@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, infiniteQueryOptions } from '@tanstack/react-query'
 import { qk } from '@/lib/query-keys'
 import {
   fetchCollectionName,
@@ -10,6 +10,17 @@ import {
   type NftKind,
   type NftToken,
 } from './objkt'
+
+/** Shared infinite-query config for an address's collections (hook + prefetch). */
+export function objktCollectionsOptions(addr: string, kind: NftKind) {
+  return infiniteQueryOptions<NftCollection[]>({
+    queryKey: qk.objktCollections(addr, kind),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => fetchObjktCollections(addr, kind, pageParam as number),
+    getNextPageParam: (last, all) =>
+      last.length < NFT_PAGE_SIZE ? undefined : all.length * NFT_PAGE_SIZE,
+  })
+}
 
 /**
  * Resolve a profile's verified Tezos address (or null). Keyed by DID and held
@@ -36,13 +47,9 @@ export function useObjktCollections(
   kind: NftKind,
   opts?: { enabled?: boolean },
 ) {
-  return useInfiniteQuery<NftCollection[]>({
-    queryKey: qk.objktCollections(addr ?? '', kind),
+  return useInfiniteQuery({
+    ...objktCollectionsOptions(addr ?? '', kind),
     enabled: !!addr && opts?.enabled !== false,
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) => fetchObjktCollections(addr!, kind, pageParam as number),
-    getNextPageParam: (last, all) =>
-      last.length < NFT_PAGE_SIZE ? undefined : all.length * NFT_PAGE_SIZE,
   })
 }
 

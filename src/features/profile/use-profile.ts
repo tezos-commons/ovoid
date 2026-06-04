@@ -1,7 +1,22 @@
-import { useQuery } from '@tanstack/react-query'
-import type { AppBskyActorDefs } from '@atproto/api'
+import { useQuery, queryOptions } from '@tanstack/react-query'
+import type { Agent, AppBskyActorDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
+
+/**
+ * Shared query config for a detailed profile, consumed by both `useProfile` and
+ * the visibility prefetcher. `actor` is a handle or DID; the key matches the
+ * link's actor string so a prefetch warms the exact entry the route will read.
+ */
+export function profileOptions(agent: Agent, actor: string) {
+  return queryOptions<AppBskyActorDefs.ProfileViewDetailed>({
+    queryKey: qk.profile(actor),
+    queryFn: async () => {
+      const res = await agent.app.bsky.actor.getProfile({ actor })
+      return res.data
+    },
+  })
+}
 
 /**
  * Detailed profile for an actor (handle or DID). Public-capable: when signed out
@@ -16,12 +31,8 @@ import { qk } from '@/lib/query-keys'
  */
 export function useProfile(actor: string | undefined) {
   const { agent } = useAgent()
-  return useQuery<AppBskyActorDefs.ProfileViewDetailed>({
-    queryKey: qk.profile(actor ?? ''),
+  return useQuery({
+    ...profileOptions(agent, actor ?? ''),
     enabled: !!actor,
-    queryFn: async () => {
-      const res = await agent.app.bsky.actor.getProfile({ actor: actor! })
-      return res.data
-    },
   })
 }

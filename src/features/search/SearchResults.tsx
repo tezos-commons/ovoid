@@ -6,6 +6,8 @@ import {
   ErrorState,
   EmptyState,
   Spinner,
+  FeedSkeleton,
+  PeopleSkeleton,
   Icons,
 } from '@/components'
 import { useSearchPosts, type PostSort } from './use-search-posts'
@@ -31,7 +33,7 @@ export function PostResults({ q, sort }: { q: string; sort: PostSort }) {
     [query.data],
   )
 
-  if (query.isLoading) return <LoadingState />
+  if (query.isLoading) return <FeedSkeleton />
   if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />
 
   return (
@@ -64,7 +66,7 @@ export function PeopleResults({ q }: { q: string }) {
     [query.data],
   )
 
-  if (query.isLoading) return <LoadingState />
+  if (query.isLoading) return <PeopleSkeleton />
   if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />
 
   return (

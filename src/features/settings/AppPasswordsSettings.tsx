@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { ScreenHeader } from '@/components/layout/ScreenHeader'
-import { Button, Spinner, EmptyState } from '@/components'
+import { Button, SettingsListSkeleton, EmptyState } from '@/components'
 import { Section, Row, Switch } from './components'
 import { useSessionInfo } from './use-account'
 import {
@@ -111,11 +111,7 @@ export default function AppPasswordsSettings() {
         </Section>
 
         <Section title="Existing app passwords">
-          {list.isLoading && (
-            <div style={{ padding: 'var(--space-5)', display: 'flex', justifyContent: 'center' }}>
-              <Spinner />
-            </div>
-          )}
+          {list.isLoading && <SettingsListSkeleton count={2} trailing />}
 
           {list.error != null && (
             <p className="settings-note">

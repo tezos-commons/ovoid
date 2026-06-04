@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom'
 import type { AppBskyActorDefs } from '@atproto/api'
 import { Avatar } from '@/components'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { profileOptions } from '@/features/profile/use-profile'
 
 export interface PersonCardProps {
   actor: AppBskyActorDefs.ProfileView | AppBskyActorDefs.ProfileViewBasic
@@ -16,12 +21,20 @@ export interface PersonCardProps {
  * the profile, which is where Follow is offered.
  */
 export function PersonCard({ actor, compact = false, onNavigate }: PersonCardProps) {
-  const to = `/profile/${actor.handle || actor.did}`
+  const actorRef = actor.handle || actor.did
+  const to = `/profile/${actorRef}`
   const description =
     'description' in actor ? (actor as AppBskyActorDefs.ProfileView).description : undefined
 
+  const { agent } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    const opts = profileOptions(agent, actorRef)
+    schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
+  })
+
   return (
     <Link
+      ref={prefetchRef}
       to={to}
       className={compact ? 'personrow personrow--compact' : 'personrow'}
       onClick={onNavigate}

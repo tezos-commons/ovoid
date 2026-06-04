@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Spinner, ErrorState, EmptyState } from '@/components'
+import { Spinner, NftGridSkeleton, ErrorState, EmptyState } from '@/components'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
 import type { useObjktTokens } from './use-nfts'
 import type { NftToken } from './objkt'
@@ -37,12 +37,7 @@ export function NftGrid({ query, emptyTitle, emptyMessage }: NftGridProps) {
     return () => io.disconnect()
   }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage, items.length])
 
-  if (query.isLoading)
-    return (
-      <div className="proffeed__center">
-        <Spinner />
-      </div>
-    )
+  if (query.isLoading) return <NftGridSkeleton />
   if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />
   if (items.length === 0) return <EmptyState title={emptyTitle} message={emptyMessage} />
 

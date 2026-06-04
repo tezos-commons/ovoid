@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { Avatar, Icons } from '@/components'
+import { useAgent } from '@/lib/api/agent'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { prefetchFeedFromGenerator } from '@/features/feeds/use-feed-view'
 
 export interface FeedCardProps {
   feed: AppBskyFeedDefs.GeneratorView
@@ -19,8 +22,12 @@ function feedPermalink(feed: AppBskyFeedDefs.GeneratorView): string {
  * reimplemented here; the row links to the canonical feed view where those live.
  */
 export function FeedCard({ feed }: FeedCardProps) {
+  const { agent, did } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() =>
+    prefetchFeedFromGenerator(agent, did, feed),
+  )
   return (
-    <Link to={feedPermalink(feed)} className="feedrow">
+    <Link ref={prefetchRef} to={feedPermalink(feed)} className="feedrow">
       <Avatar
         src={feed.avatar}
         alt={feed.displayName}
