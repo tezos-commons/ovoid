@@ -185,13 +185,60 @@ const DETAILS_QUERY =
   'supply ' +
   'listings(where:{status:{_eq:"active"}} order_by:{price:asc} limit:10){price amount currency_id seller_address} ' +
   'offers_active(order_by:{price:desc} limit:10){price currency_id buyer_address} ' +
-  'events(order_by:{timestamp:desc} limit:14){event_type price timestamp}}}'
+  'events(order_by:{timestamp:desc} limit:14){event_type marketplace_event_type price timestamp}}}'
 
 interface DetailsRow {
   supply?: number
   listings?: Array<{ price: number; amount: number; currency_id: number; seller_address?: string }>
   offers_active?: Array<{ price: number; currency_id: number; buyer_address?: string }>
-  events?: Array<{ event_type?: string | null; price?: number | null; timestamp: string }>
+  events?: Array<{
+    event_type?: string | null
+    marketplace_event_type?: string | null
+    price?: number | null
+    timestamp: string
+  }>
+}
+
+/**
+ * objkt event rows carry two type fields: `marketplace_event_type` for trade
+ * events (auctions / listings / offers / sales) and `event_type` for FA2 token
+ * movements (mint / transfer / burn). Marketplace rows leave `event_type` null,
+ * so the marketplace field MUST be read first — otherwise every auction,
+ * listing, offer and sale collapses to "Transfer". Unknown codes are prettified
+ * rather than mislabeled.
+ */
+const EVENT_LABELS: Record<string, string> = {
+  english_auction_create: 'Auction created',
+  english_auction_bid: 'Bid',
+  english_auction_settle: 'Auction settled',
+  english_auction_cancel: 'Auction cancelled',
+  dutch_auction_create: 'Dutch auction',
+  dutch_auction_buy: 'Sale',
+  dutch_auction_cancel: 'Auction cancelled',
+  list_create: 'Listed',
+  ask: 'Listed',
+  list_buy: 'Sale',
+  list_cancel: 'Listing cancelled',
+  offer_create: 'Offer',
+  offer: 'Offer',
+  bid: 'Offer',
+  offer_accept: 'Offer accepted',
+  offer_fulfill: 'Sale',
+  offer_cancel: 'Offer cancelled',
+  mint: 'Mint',
+  transfer: 'Transfer',
+  burn: 'Burn',
+}
+
+function prettifyCode(code: string): string {
+  const s = code.replace(/_/g, ' ')
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+export function eventLabel(marketplaceType?: string | null, tokenType?: string | null): string {
+  const raw = marketplaceType || tokenType
+  if (!raw) return 'Transfer'
+  return EVENT_LABELS[raw] ?? prettifyCode(raw)
 }
 
 export function useTezosTokenDetails(
@@ -222,7 +269,7 @@ export function useTezosTokenDetails(
           buyer: o.buyer_address,
         })),
         events: (row.events ?? []).map((e) => ({
-          type: e.event_type ?? 'transfer',
+          type: eventLabel(e.marketplace_event_type, e.event_type),
           price: e.price ?? undefined,
           at: e.timestamp,
         })),
