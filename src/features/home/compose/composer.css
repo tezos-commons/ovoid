@@ -66,38 +66,72 @@
   outline: none;
 }
 
-/* ---------- Image attachments ---------- */
+/* ---------- Image attachments ----------
+   A lone image gets the full editor width; 2+ tile in a 2-column grid. The
+   image is clipped inside a rounded frame so the remove button and ALT badge
+   overlay it cleanly; the alt-text field sits beneath each tile. */
 .composer__images {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
+}
+.composer__images[data-count='1'] {
+  grid-template-columns: 1fr;
 }
 .composer__image {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
-.composer__image img {
+.composer__image-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-embed);
+  border: 1px solid var(--border);
+  background: var(--bg-contrast-25);
+}
+.composer__image-frame img {
+  display: block;
   width: 100%;
   aspect-ratio: 16 / 10;
   object-fit: cover;
-  border-radius: var(--radius-embed);
-  border: 1px solid var(--border);
+}
+/* A single attachment shows taller and less aggressively cropped. */
+.composer__images[data-count='1'] .composer__image-frame img {
+  aspect-ratio: 3 / 2;
+  max-height: 420px;
 }
 .composer__image-remove {
   position: absolute;
-  top: var(--space-1);
-  right: var(--space-1);
+  top: var(--space-2);
+  right: var(--space-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-pill);
   background: var(--scrim);
-  color: var(--color-on-primary);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+.composer__image-remove:hover {
+  background: var(--color-danger);
+}
+.composer__image-altbadge {
+  position: absolute;
+  left: var(--space-2);
+  bottom: var(--space-2);
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.05em;
+  border-radius: 5px;
+  background: var(--scrim);
+  color: #fff;
+  backdrop-filter: blur(4px);
 }
 .composer__alt {
   width: 100%;
@@ -107,6 +141,13 @@
   border-radius: var(--radius-embed);
   background: var(--bg);
   color: var(--text);
+}
+.composer__alt::placeholder {
+  color: var(--text-faint);
+}
+.composer__alt:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 /* ---------- Quote preview ---------- */

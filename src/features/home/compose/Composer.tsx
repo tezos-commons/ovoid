@@ -121,21 +121,24 @@ export function Composer({ target, onPosted }: ComposerProps) {
           </div>
 
           {images.length > 0 && (
-            <div className="composer__images">
+            <div className="composer__images" data-count={images.length}>
               {images.map((img, i) => (
                 <div className="composer__image" key={img.url}>
-                  <img src={img.url} alt={img.alt || 'attachment preview'} />
-                  <button
-                    type="button"
-                    className="composer__image-remove"
-                    aria-label="Remove image"
-                    onClick={() => removeImage(i)}
-                  >
-                    <Icons.CloseIcon size={16} />
-                  </button>
+                  <div className="composer__image-frame">
+                    <img src={img.url} alt={img.alt || 'attachment preview'} />
+                    <button
+                      type="button"
+                      className="composer__image-remove"
+                      aria-label="Remove image"
+                      onClick={() => removeImage(i)}
+                    >
+                      <Icons.CloseIcon size={16} />
+                    </button>
+                    {img.alt.trim() && <span className="composer__image-altbadge">ALT</span>}
+                  </div>
                   <input
                     className="composer__alt"
-                    placeholder="Alt text"
+                    placeholder="Add alt text…"
                     value={img.alt}
                     onChange={(e) => setAlt(i, e.target.value)}
                   />
@@ -181,7 +184,7 @@ export function Composer({ target, onPosted }: ComposerProps) {
             disabled={images.length >= MAX_IMAGES}
             onClick={() => fileRef.current?.click()}
           >
-            <Icons.HashIcon size={20} />
+            <Icons.ImageIcon size={20} />
           </button>
         </div>
 

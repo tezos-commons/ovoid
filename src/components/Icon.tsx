@@ -66,6 +66,14 @@ export const HashIcon: IconFC = ({ size, ...rest }) => (
   </svg>
 )
 
+export const ImageIcon: IconFC = ({ size, ...rest }) => (
+  <svg {...svg(size, rest)}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <circle cx="8.5" cy="9.5" r="1.5" />
+    <path d="m3 17 5-4 4 3 3-2.5 6 4.5" />
+  </svg>
+)
+
 export const ListIcon: IconFC = ({ size, ...rest }) => (
   <svg {...svg(size, rest)}>
     <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
