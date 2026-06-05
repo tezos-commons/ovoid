@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { TopBar } from './TopBar'
 import { BottomTabBar } from './BottomTabBar'
+import { ComposeFab } from './ComposeFab'
 import { UserFab } from './UserFab'
 import { ShellLayout } from './PageLayout'
 import { useWarmNavDestinations } from '@/features/prefetch-routes'
@@ -28,6 +29,7 @@ export function AppShell({ children, onNewPost, fullWidth }: AppShellProps) {
       <TopBar onNewPost={onNewPost} />
       <ShellLayout fullWidth={fullWidth}>{children}</ShellLayout>
       <UserFab />
+      <ComposeFab onNewPost={onNewPost} />
       <BottomTabBar />
     </>
   )

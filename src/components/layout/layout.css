@@ -139,6 +139,29 @@
   opacity: 0.9;
 }
 
+/* ---------------- Compose FAB (mobile, feed surfaces only) ----------------
+   The desktop New Post action lives in the (hidden-on-mobile) top bar, so on
+   phones we float compose bottom-right, resting just above the bottom tab bar.
+   Desktop hides it; the breakpoint below reveals it. */
+.compose-fab {
+  display: none;
+  position: fixed;
+  right: calc(var(--layout-gap) + var(--space-3));
+  /* Sit above the bottom tab bar, plus a gap of breathing room. */
+  bottom: calc(var(--bottom-bar-height) + var(--layout-gap) + var(--space-3));
+  z-index: var(--z-nav);
+  width: 60px;
+  height: 60px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-menu);
+}
+.compose-fab svg { width: 24px; height: 24px; }
+.compose-fab:active { background: var(--color-primary-hover); }
+
 /* ---------------- Screen header ---------------- */
 .screen-header {
   position: sticky;
@@ -177,6 +200,9 @@
   color: var(--text-muted);
   position: relative;
 }
+/* Larger touch-target glyphs on mobile — overrides the icons' inline
+   width/height presentation attributes (CSS wins) without touching call sites. */
+.bottombar__item svg { width: 23px; height: 23px; }
 .bottombar__item--active { color: var(--text); }
 .bottombar__item .countpill {
   position: absolute;
@@ -216,6 +242,7 @@
     overflow: visible;
   }
   .bottombar { display: flex; }
+  .compose-fab { display: flex; }
   /* Phone: drop the main-content title bar (the sticky tab strips that some
      screens render below it are separate elements and stay). */
   .screen-header { display: none; }
