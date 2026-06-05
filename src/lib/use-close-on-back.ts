@@ -8,25 +8,51 @@ import { useEffect, useRef } from 'react'
  * own popstate handling is a no-op). A popstate (Back) calls `close`; a close
  * via the UI (button / ESC / backdrop) consumes the entry with history.back(),
  * keeping history balanced. `close` is read through a ref so an inline callback
- * doesn't re-run the effect (which would churn history entries every render) —
- * the effect depends only on `open`.
+ * doesn't re-run the effect — the effect depends only on `open`.
+ *
+ * StrictMode safety: on a conditionally-mounted overlay React (dev) runs the
+ * mount effect setup→cleanup→setup synchronously. A naive cleanup that calls
+ * history.back() immediately would fire a popstate that the *re-registered*
+ * listener from the second setup catches, instantly closing the overlay. So the
+ * cleanup's consume is *deferred* via a timer held in a ref; a synchronous
+ * re-setup cancels the pending consume and reuses the existing sentinel instead
+ * of pushing a second one. A real unmount lets the timer fire and balance.
  */
 export function useCloseOnBack(open: boolean, close: () => void): void {
   const closeRef = useRef(close)
   closeRef.current = close
+  // Pending deferred history.back() (sentinel consume), shared across effect runs
+  // of this hook instance so a StrictMode re-setup can cancel it.
+  const pendingConsume = useRef<number | null>(null)
 
   useEffect(() => {
     if (!open) return
-    window.history.pushState({ ...window.history.state, overlay: true }, '')
+
+    if (pendingConsume.current !== null) {
+      // A just-run cleanup scheduled a consume (StrictMode remount or fast
+      // re-open): cancel it and reuse the sentinel that's still on the stack.
+      clearTimeout(pendingConsume.current)
+      pendingConsume.current = null
+    } else {
+      window.history.pushState({ ...window.history.state, overlay: true }, '')
+    }
+
     let closedByBack = false
     const onPopState = () => {
       closedByBack = true
       closeRef.current()
     }
     window.addEventListener('popstate', onPopState)
+
     return () => {
       window.removeEventListener('popstate', onPopState)
-      if (!closedByBack) window.history.back()
+      if (closedByBack) return // user Back already popped the sentinel
+      // Defer so a synchronous StrictMode re-setup can cancel this; on a real
+      // close/unmount nothing cancels it and the sentinel is consumed next tick.
+      pendingConsume.current = window.setTimeout(() => {
+        pendingConsume.current = null
+        window.history.back()
+      }, 0)
     }
   }, [open])
 }

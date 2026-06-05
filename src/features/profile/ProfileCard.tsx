@@ -14,6 +14,13 @@ import './profile.css'
 
 export interface ProfileCardProps {
   profile: AppBskyActorDefs.ProfileViewDetailed
+  /**
+   * The exact actor string the route used (handle OR DID). The profile cache is
+   * keyed by this raw string (qk.profile(actor)), so follow / mute / block must
+   * patch the SAME key or their optimistic write lands on a different (often
+   * empty) entry and the UI never updates. Do NOT substitute profile.handle here.
+   */
+  actor: string
   /** True when the viewer is looking at their own profile. */
   isSelf: boolean
   isAuthed: boolean
@@ -33,10 +40,12 @@ function formatCount(n: number | undefined): string {
  * followers / following / posts counts. Rendered as a rounded card that sits in
  * the two-column page aside.
  */
-export function ProfileCard({ profile, isSelf, isAuthed }: ProfileCardProps) {
+export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardProps) {
   const navigate = useNavigate()
-  const follow = useFollow(profile.handle || profile.did)
-  const { mute, block } = useMuteBlock(profile.handle || profile.did)
+  // Key follow/mute/block off the route actor so their optimistic cache patch
+  // hits the same qk.profile(actor) entry this screen reads from.
+  const follow = useFollow(actor)
+  const { mute, block } = useMuteBlock(actor)
   const [listMode, setListMode] = useState<'followers' | 'following' | null>(null)
   const [expanded, setExpanded] = useState(false)
   const tezosAddr = useTezosAddress(profile.did).data ?? undefined

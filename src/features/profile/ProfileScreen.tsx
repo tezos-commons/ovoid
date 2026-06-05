@@ -146,7 +146,7 @@ export default function ProfileScreen() {
     <>
       <PageAside>
         <div className="profaside">
-          <ProfileCard profile={profile} isSelf={isSelf} isAuthed={isAuthed} />
+          <ProfileCard profile={profile} actor={actor!} isSelf={isSelf} isAuthed={isAuthed} />
           {/* Desktop: menu lives in the aside. On mobile it moves into the main
               column (below) so it shares the feed's scroll container and sticks. */}
           {!isMobile && <ProfileNav items={tabs} activeKey={activeKey} onChange={setTab} />}

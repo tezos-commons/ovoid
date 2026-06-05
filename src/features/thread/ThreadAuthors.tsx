@@ -44,7 +44,7 @@ export function ThreadAuthors({ authors, focusedDid }: ThreadAuthorsProps) {
 
   const selected = byDid?.get(selectedDid)
   const badge = selected ? (
-    <ProfileCard profile={selected} isSelf={selected.did === did} isAuthed={isAuthed} />
+    <ProfileCard profile={selected} actor={selected.did} isSelf={selected.did === did} isAuthed={isAuthed} />
   ) : (
     <div className="threadauthors__loading">
       <Spinner />
