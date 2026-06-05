@@ -4,13 +4,12 @@ import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 
 /**
- * Batch-hydrate the subject posts referenced by like/repost clusters
- * (notification.reasonSubject), which arrive as bare AT-URIs without a view.
- * getPosts caps at 25 URIs/call, so we chunk. Result is a uri→PostView map the
- * NotificationGroup uses to render the subject preview line.
- *
- * This is the ONLY N-hydration we do: feed-style notifications (reply/mention/
- * quote) already carry their record, so they need no extra fetch.
+ * Batch-hydrate the posts a notification list references by bare AT-URI:
+ *   - like/repost cluster subjects (notification.reasonSubject), and
+ *   - reply/mention/quote notifications themselves — their list payload carries
+ *     the raw record but no embed *view*, so images and quoted posts only render
+ *     once we fetch the hydrated PostView here.
+ * getPosts caps at 25 URIs/call, so we chunk. Result is a uri→PostView map.
  */
 const CHUNK = 25
 

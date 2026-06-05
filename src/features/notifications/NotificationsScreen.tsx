@@ -16,6 +16,7 @@ import { useUpdateSeen } from './use-update-seen'
 import {
   groupNotifications,
   collectSubjectUris,
+  collectPostUris,
   type NotifGroup,
 } from './grouping'
 import { useSubjectPosts } from './use-subject-posts'
@@ -74,9 +75,14 @@ export default function NotificationsScreen() {
     return groupNotifications(filtered)
   }, [flat, tab])
 
-  // Hydrate like/repost cluster subjects for the preview line.
-  const subjectUris = useMemo(() => collectSubjectUris(groups), [groups])
-  const { data: subjects } = useSubjectPosts(subjectUris)
+  // Hydrate the posts referenced by the visible groups: like/repost cluster
+  // subjects + the reply/mention/quote notifications themselves (for their embed
+  // view — images, quoted posts). One batched getPosts covers both.
+  const hydrateUris = useMemo(
+    () => [...collectSubjectUris(groups), ...collectPostUris(groups)],
+    [groups],
+  )
+  const { data: posts } = useSubjectPosts(hydrateUris)
 
   const header = (
     <ScreenHeader title="Notifications">
@@ -127,11 +133,11 @@ export default function NotificationsScreen() {
         }
         renderItem={(g) =>
           g.kind === 'post' ? (
-            <PostRow group={g} />
+            <PostRow group={g} post={posts?.[g.postUri]} />
           ) : (
             <ClusterRow
               group={g}
-              subject={g.subjectUri ? subjects?.[g.subjectUri] : undefined}
+              subject={g.subjectUri ? posts?.[g.subjectUri] : undefined}
             />
           )
         }

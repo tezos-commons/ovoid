@@ -19,6 +19,7 @@ export type NotifReason =
   | 'starterpack-joined'
   | 'like-via-repost'
   | 'repost-via-repost'
+  | 'subscribed-post'
   | (string & {})
 
 /** Filter applied client-side by the active tab. */

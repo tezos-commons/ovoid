@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
 import type { AppBskyFeedDefs } from '@atproto/api'
-import { Avatar, PostCard } from '@/components'
+import { Avatar, PostCard, PostEmbed } from '@/components'
 import {
   HeartIcon,
   RepostIcon,
   PersonIcon,
   ReplyIcon,
+  BellIcon,
 } from '@/components/Icon'
 import { relativeTime } from '@/lib/time'
 import type { ClusterGroup, PostGroup } from './grouping'
@@ -126,10 +127,19 @@ export function ClusterRow({
           </time>
         </div>
 
-        {subject && subjectText(subject) && (
-          <Link to={subjectPermalink(subject)} className="notif__subject">
-            {subjectText(subject)}
-          </Link>
+        {subject && (subjectText(subject) || subject.embed) && (
+          <div className="notif__subject">
+            {subjectText(subject) && (
+              <Link to={subjectPermalink(subject)} className="notif__subject-text">
+                {subjectText(subject)}
+              </Link>
+            )}
+            {subject.embed && (
+              <div className="notif__subject-embed" onClick={(e) => e.stopPropagation()}>
+                <PostEmbed embed={subject.embed} />
+              </div>
+            )}
+          </div>
         )}
       </div>
     </article>
@@ -141,12 +151,12 @@ export function ClusterRow({
    ============================================================ */
 
 /**
- * Synthesize a PostView from a notification. The notification carries the raw
- * post record + author + uri + cid + indexedAt, which is everything PostCard
- * needs to render the body and header. Engagement counts and the viewer's
- * like/repost state are not present in the notification payload, so the action
- * row renders at zero — acceptable for a notification preview; tapping through
- * to the thread shows live counts.
+ * Synthesize a PostView from a notification as a *fallback* until the hydrated
+ * view loads. The notification carries the raw record + author + uri + cid +
+ * indexedAt — enough to render body and header, but no embed *view*, so images
+ * and quoted posts are absent. The screen hydrates the real PostView via
+ * getPosts and passes it to PostRow; this stand-in only shows for the brief
+ * window before that resolves.
  */
 function notifToPostView(n: Notification): AppBskyFeedDefs.PostView {
   return {
@@ -164,14 +174,29 @@ const POST_VERB: Record<string, string> = {
   reply: 'replied to you',
   mention: 'mentioned you',
   quote: 'quoted your post',
+  'subscribed-post': 'New post',
 }
 
-export function PostRow({ group }: { group: PostGroup }) {
-  const post = notifToPostView(group.notif)
+/** Label glyph per post reason. subscribed-post is the profile-bell alert, so it
+ *  reads as a notification (bell) rather than a reply to you. */
+function postLabelIcon(reason: string) {
+  return reason === 'subscribed-post' ? <BellIcon size={14} /> : <ReplyIcon size={14} />
+}
+
+export function PostRow({
+  group,
+  post: hydrated,
+}: {
+  group: PostGroup
+  /** Hydrated PostView (carries the embed view); falls back to the notification
+   *  record until it loads. */
+  post?: AppBskyFeedDefs.PostView
+}) {
+  const post = hydrated ?? notifToPostView(group.notif)
   return (
     <div className={clsx('notif-post', !group.isRead && 'notif--unread')}>
       <div className="notif-post__label">
-        <ReplyIcon size={14} />
+        {postLabelIcon(group.reason)}
         <span>{POST_VERB[group.reason] ?? 'posted'}</span>
       </div>
       <PostCard post={post} hideActions />

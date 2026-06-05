@@ -10,11 +10,14 @@ const CLUSTERED_REASONS: ReadonlySet<string> = new Set([
   'starterpack-joined',
 ])
 
-/** Reasons that render as a full PostCard (the notification IS a post). */
+/** Reasons that render as a full PostCard (the notification IS a post). The
+ *  notification's own uri is the post; `subscribed-post` is the "new post from a
+ *  user you've subscribed to" alert (the profile bell). */
 const POSTCARD_REASONS: ReadonlySet<string> = new Set([
   'reply',
   'mention',
   'quote',
+  'subscribed-post',
 ])
 
 export function isPostCardReason(reason: string): boolean {
@@ -54,32 +57,28 @@ export type NotifGroup = ClusterGroup | PostGroup
 /**
  * Group a flat, reverse-chronological notification list.
  *
- * Algorithm (single pass, O(n)): walk newest→oldest. For a clustered reason,
- * fold into the *current open cluster* iff it has the same (reason, subjectUri);
- * otherwise flush and open a new one. PostCard reasons always flush the open
- * cluster and emit a standalone group. This preserves chronological order while
- * collapsing the common "Alice, Bob and 3 others liked your post" run.
+ * Algorithm (single pass, O(n)): walk newest→oldest and key every clustered
+ * reason by (reason, subjectUri). All notifications sharing a key fold into one
+ * group *regardless of position* — so `like A, reply, like A` collapses the two
+ * likes into a single "Alice and Bob liked your post" row, not two rows split by
+ * the reply. PostCard reasons (reply/mention/quote) are never merged; each emits
+ * its own group in place.
  *
- * We only fold *contiguous* runs — a like, then a reply, then a like will NOT
- * merge the two likes. That matches Bluesky and keeps the merged timestamp
- * honest.
+ * Ordering stays correct: a cluster is appended to `out` at its first (= newest,
+ * since we walk newest→oldest) member, fixing its position; later folds only add
+ * strictly-older members, so a group's `latestAt` never rises after creation and
+ * `out` remains sorted by newest-member descending.
  */
 export function groupNotifications(notifs: Notification[]): NotifGroup[] {
   const out: NotifGroup[] = []
-  let open: ClusterGroup | null = null
-
-  const flush = () => {
-    if (open) {
-      out.push(open)
-      open = null
-    }
-  }
+  // (reason, subjectUri) -> the group collecting its authors. Spans the whole
+  // list, so non-contiguous matches still merge.
+  const clusters = new Map<string, ClusterGroup>()
 
   for (const n of notifs) {
     const reason = n.reason as string
 
     if (POSTCARD_REASONS.has(reason)) {
-      flush()
       out.push({
         kind: 'post',
         key: n.uri,
@@ -95,32 +94,30 @@ export function groupNotifications(notifs: Notification[]): NotifGroup[] {
 
     if (CLUSTERED_REASONS.has(reason)) {
       const subjectUri = n.reasonSubject
-      const matches =
-        open != null &&
-        open.reason === reason &&
-        open.subjectUri === subjectUri
-      if (matches && open) {
+      const key = `${reason}:${subjectUri ?? 'none'}`
+      const open = clusters.get(key)
+      if (open) {
         open.authors.push(n.author)
         if (n.indexedAt > open.latestAt) open.latestAt = n.indexedAt
         open.isRead = open.isRead && n.isRead
       } else {
-        flush()
-        open = {
+        const group: ClusterGroup = {
           kind: 'cluster',
-          key: `${reason}:${subjectUri ?? 'none'}:${n.uri}`,
+          key,
           reason: n.reason as NotifReason,
           subjectUri,
           authors: [n.author],
           latestAt: n.indexedAt,
           isRead: n.isRead,
         }
+        clusters.set(key, group)
+        out.push(group)
       }
       continue
     }
 
     // Unknown/other reason (verified, unverified, …): render as a one-author
-    // cluster so nothing is silently dropped.
-    flush()
+    // cluster so nothing is silently dropped. Keyed by URI so these never merge.
     out.push({
       kind: 'cluster',
       key: `${reason}:${n.uri}`,
@@ -132,8 +129,18 @@ export function groupNotifications(notifs: Notification[]): NotifGroup[] {
     })
   }
 
-  flush()
   return out
+}
+
+/** Collect the URIs of post-card notifications (reply/mention/quote). These are
+ *  hydrated via getPosts so the rendered card carries its embed *view* (images,
+ *  quoted post) — the raw notification record only holds blob refs, not a view. */
+export function collectPostUris(groups: NotifGroup[]): string[] {
+  const set = new Set<string>()
+  for (const g of groups) {
+    if (g.kind === 'post') set.add(g.postUri)
+  }
+  return [...set]
 }
 
 /** Collect the distinct subject URIs of clustered like/repost groups for hydration. */

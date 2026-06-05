@@ -100,19 +100,27 @@
   font-size: var(--fs-sm);
 }
 
-/* Subject post preview (one-line, muted). */
+/* Subject post preview: clamped text + the post's own media/quote embed. */
 .notif__subject {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.notif__subject-text {
+  display: -webkit-box;
   color: var(--text-muted);
   font-size: var(--fs-base);
   line-height: 1.4;
   overflow: hidden;
-  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-.notif__subject:hover {
+.notif__subject-text:hover {
   color: var(--text);
+}
+/* Constrain the embedded media so a liked image doesn't dominate the row. */
+.notif__subject-embed {
+  max-width: 320px;
 }
 
 /* ---------- Post row (reply / mention / quote) ---------- */
