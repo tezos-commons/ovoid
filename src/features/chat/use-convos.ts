@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useInfiniteQuery, infiniteQueryOptions } from '@tanstack/react-query'
 import type { Agent, ChatBskyConvoDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
@@ -21,8 +22,10 @@ export function convosOptions(
         .then((r) => r.data),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.cursor || undefined,
+    // staleTime matches the poll: the interval already bounds staleness, so a
+    // shorter value only bought redundant refetches on remount between ticks.
     refetchInterval: 15_000,
-    staleTime: 10_000,
+    staleTime: 15_000,
   })
 }
 
@@ -42,7 +45,10 @@ export function useConvos(opts?: { status?: 'request' | 'accepted' }) {
     enabled: isAuthed && !!chatAgent,
   })
 
-  const convos = query.data?.pages.flatMap((p) => p.convos) ?? []
+  // Memoized on the cache entry so the 15s poll (usually identical data, same
+  // reference via structural sharing) doesn't hand the list a fresh array and
+  // defeat ConvoRow's memo.
+  const convos = useMemo(() => query.data?.pages.flatMap((p) => p.convos) ?? [], [query.data])
 
   return { ...query, convos }
 }

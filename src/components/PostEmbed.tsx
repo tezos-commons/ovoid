@@ -16,6 +16,12 @@ import { GenericExternalCard } from './embeds/GenericExternalCard'
 import { matchExternal } from './embeds/external-registry'
 import { RichText } from '@/lib/rich-text'
 import { useDragScroll } from '@/lib/use-drag-scroll'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { threadOptions, buildPostUri } from '@/features/thread/use-thread'
+import { profileOptions } from '@/features/profile/use-profile'
 import { useUiStore } from '@/store/ui-store'
 
 type Embed = AppBskyFeedDefs.PostView['embed']
@@ -228,8 +234,20 @@ function QuotePost({
   // Bound nesting: a top-level quote shows its own media; deeper quotes don't.
   const nested = depth < 1 ? record.embeds?.[0] : undefined
 
+  // Same warming as PostCard: the quote navigates to its thread, the avatar to
+  // the quoted author's profile. The thread uri must mirror the permalink's
+  // actor (handle-first) — that's the key ThreadScreen will read.
+  const { agent } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLDivElement>(() => {
+    const thread = threadOptions(agent, buildPostUri(a.handle || a.did, rkey))
+    schedulePrefetch(thread.queryKey, () => queryClient.prefetchQuery(thread))
+    const profile = profileOptions(agent, a.handle || a.did)
+    schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+  })
+
   return (
     <div
+      ref={prefetchRef}
       className="embed embed--quote"
       role="link"
       onClick={(e) => {

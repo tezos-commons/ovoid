@@ -4,6 +4,7 @@ import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { qk } from '@/lib/query-keys'
+import { customFeedOptions } from '@/features/home/use-custom-feed'
 import { buildListUri, parseListUri } from './list-uri'
 import { isCurate } from './PurposeChip'
 
@@ -23,17 +24,14 @@ export function listOptions(agent: Agent, listUri: string) {
   })
 }
 
-/** Shared infinite-query config for a curate-list's member feed (hook + prefetch). */
+/**
+ * Shared infinite-query config for a curate-list's member feed (hook +
+ * prefetch). Thin alias over customFeedOptions so qk.feed(did, uri) has
+ * exactly one queryFn definition that can't drift between the home strip and
+ * this route.
+ */
 export function listFeedOptions(agent: Agent, did: string | undefined, listUri: string) {
-  return infiniteQueryOptions({
-    queryKey: qk.feed(did, listUri),
-    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
-      agent.app.bsky.feed
-        .getListFeed({ list: listUri, cursor: pageParam, limit: 30 })
-        .then((r) => r.data),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.cursor || undefined,
-  })
+  return customFeedOptions(agent, did, listUri, 'list')
 }
 
 /**

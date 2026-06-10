@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useMemo, type ReactNode } from 'react'
 import { Agent, RichText as AtpRichText, type AppBskyFeedPost } from '@atproto/api'
 import { Link } from 'react-router-dom'
 import { bskyUrlToInternalPath, rewriteSelfLinksToBsky } from './bsky-links'
@@ -27,15 +27,22 @@ interface Seg {
  * Links / tags render as plain anchors; mentions route to /profile/:did.
  */
 export function RichText({ text, facets, className, omitLinkUris }: RichTextProps) {
-  const rt = new AtpRichText({ text, facets: facets ?? undefined })
-
-  const segs: Seg[] = []
-  for (const s of rt.segments()) {
-    if (s.isLink() && s.link) segs.push({ text: s.text, link: s.link.uri })
-    else if (s.isMention() && s.mention) segs.push({ text: s.text, mentionDid: s.mention.did })
-    else if (s.isTag() && s.tag) segs.push({ text: s.text, tag: s.tag.tag })
-    else segs.push({ text: s.text })
-  }
+  // The facet walk (UTF-8 byteSlice over every segment) is the expensive part;
+  // memoize it on the record's identity. `facets` comes from the query cache,
+  // where structural sharing keeps it referentially stable across re-renders.
+  // The omitLinkUris filter below stays outside — it's trivial, and its array
+  // is rebuilt per parent render so it can't key a memo.
+  const segs = useMemo(() => {
+    const rt = new AtpRichText({ text, facets: facets ?? undefined })
+    const out: Seg[] = []
+    for (const s of rt.segments()) {
+      if (s.isLink() && s.link) out.push({ text: s.text, link: s.link.uri })
+      else if (s.isMention() && s.mention) out.push({ text: s.text, mentionDid: s.mention.did })
+      else if (s.isTag() && s.tag) out.push({ text: s.text, tag: s.tag.tag })
+      else out.push({ text: s.text })
+    }
+    return out
+  }, [text, facets])
 
   let kept = segs
   if (omitLinkUris && omitLinkUris.length) {

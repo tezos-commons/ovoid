@@ -3,6 +3,12 @@ import type { AppBskyFeedDefs } from '@atproto/api'
 
 export type PostPatcher = (post: AppBskyFeedDefs.PostView) => AppBskyFeedDefs.PostView
 
+/** Patcher for a new reply landing under `post` (feeds show the count only). */
+export const bumpReplyCount: PostPatcher = (post) => ({
+  ...post,
+  replyCount: (post.replyCount ?? 0) + 1,
+})
+
 type FeedItem = { post?: AppBskyFeedDefs.PostView; reply?: unknown; reason?: unknown }
 type FeedPage = { feed?: FeedItem[]; cursor?: string }
 type InfiniteShape = { pages?: FeedPage[]; pageParams?: unknown[] }

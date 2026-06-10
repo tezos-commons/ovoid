@@ -21,6 +21,8 @@ export function useUnreadCount(pollMs = 30_000) {
         .getUnreadCount()
         .then((r) => r.data.count),
     refetchInterval: pollMs,
-    staleTime: 15_000,
+    // Match the poll: refetchInterval already guarantees pollMs freshness, so a
+    // shorter staleTime only buys redundant refetches on remount between ticks.
+    staleTime: pollMs,
   })
 }

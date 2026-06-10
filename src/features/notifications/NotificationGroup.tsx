@@ -10,6 +10,12 @@ import {
   BellIcon,
 } from '@/components/Icon'
 import { relativeTime } from '@/lib/time'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { threadOptions, buildPostUri } from '@/features/thread/use-thread'
+import { profileOptions } from '@/features/profile/use-profile'
 import type { ClusterGroup, PostGroup } from './grouping'
 import type { Notification } from './use-notifications'
 
@@ -89,8 +95,29 @@ export function ClusterRow({
   const shown = group.authors.slice(0, MAX_AVATARS)
   const overflow = group.authors.length - shown.length
 
+  // Warm the row's tap targets: the subject post's thread (likes/reposts), or —
+  // for subject-less clusters like follows — the leading actors' profiles. The
+  // subject's author is the viewer, whose profile the nav warm already covers.
+  const { agent } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLElement>(() => {
+    if (subject) {
+      // Mirror subjectPermalink's actor (handle-first) — ThreadScreen keys by
+      // the uri built from the route, not by the canonical DID-authority uri.
+      const rkey = subject.uri.split('/').pop() ?? ''
+      const actor = subject.author.handle || subject.author.did
+      const thread = threadOptions(agent, buildPostUri(actor, rkey))
+      schedulePrefetch(thread.queryKey, () => queryClient.prefetchQuery(thread))
+      return
+    }
+    for (const a of group.authors.slice(0, 3)) {
+      const profile = profileOptions(agent, a.handle || a.did)
+      schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+    }
+  })
+
   return (
     <article
+      ref={prefetchRef}
       className={clsx('notif', !group.isRead && 'notif--unread')}
       aria-label={`${summarize(group.authors)} ${clusterVerb(group.reason)}`}
     >

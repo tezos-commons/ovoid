@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Avatar, Button, Menu, Text } from '@/components'
 import { HashIcon, ListIcon, HomeIcon } from '@/components/Icon'
+import { useAgent } from '@/lib/api/agent'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { prefetchFeedFromGenerator } from '@/features/feeds/use-feed-view'
+import { prefetchListFromView } from '@/features/lists/use-list'
 import type { HydratedSavedFeed } from './use-saved-feeds'
 
 interface SavedFeedRowProps {
@@ -66,6 +70,15 @@ export function SavedFeedRow({
   const pinned = item.saved.pinned
   const isTimeline = item.saved.type === 'timeline'
 
+  // Warm the row's destination from the view we already hold (same helpers the
+  // feed/list cards use). The timeline row needs nothing — the nav warm covers /.
+  const { agent, did } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLDivElement>(() => {
+    const { view } = item
+    if (view.kind === 'feed') prefetchFeedFromGenerator(agent, did, view.feed)
+    else if (view.kind === 'list') prefetchListFromView(agent, did, view.list)
+  })
+
   const body = (
     <div className="savedrow__main">
       {avatar ? (
@@ -89,7 +102,7 @@ export function SavedFeedRow({
   )
 
   return (
-    <div className="savedrow">
+    <div className="savedrow" ref={prefetchRef}>
       {to ? (
         <Link to={to} className="savedrow__link">
           {body}

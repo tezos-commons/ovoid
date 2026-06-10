@@ -1,6 +1,8 @@
 import { useQuery, queryOptions } from '@tanstack/react-query'
 import type { Agent, AppBskyActorDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
+import { findCachedProfileBasic } from '@/lib/feed-cache'
+import { queryClient } from '@/lib/query-client'
 import { qk } from '@/lib/query-keys'
 
 /**
@@ -11,8 +13,28 @@ import { qk } from '@/lib/query-keys'
 export function profileOptions(agent: Agent, actor: string) {
   return queryOptions<AppBskyActorDefs.ProfileViewDetailed>({
     queryKey: qk.profile(actor),
+    // A ProfileViewBasic from a cached feed is a structural subset of the
+    // detailed view (counts/banner are optional and formatters tolerate their
+    // absence), so the header paints instantly; the fetch fills in the rest.
+    // $type is dropped — it's the one field where the views differ, and the
+    // placeholder must not masquerade as a basic view to discriminators.
+    // Observer-only — never persisted to the cache.
+    placeholderData: (): AppBskyActorDefs.ProfileViewDetailed | undefined => {
+      const basic = findCachedProfileBasic(actor)
+      if (!basic) return undefined
+      const { $type: _drop, ...rest } = basic
+      return rest
+    },
     queryFn: async () => {
       const res = await agent.app.bsky.actor.getProfile({ actor })
+      // The same profile is reachable by handle (post-header links) and by DID
+      // (mention facets). Seed the counterpart key so whichever identifier the
+      // next link uses, the entry is already warm — one fetch, both aliases.
+      for (const alias of [res.data.did, res.data.handle]) {
+        if (alias && alias !== actor && alias !== 'handle.invalid') {
+          queryClient.setQueryData(qk.profile(alias), res.data)
+        }
+      }
       return res.data
     },
   })

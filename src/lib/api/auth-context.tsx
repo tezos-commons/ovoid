@@ -10,6 +10,7 @@ import {
 import { Agent } from '@atproto/api'
 import type { OAuthSession } from '@atproto/oauth-client-browser'
 import { getOAuthClient } from '../oauth/client'
+import { clearAllCaches } from '../query-client'
 import { bootstrap } from '../auth-bootstrap'
 import { withChatProxy } from './proxy'
 import { getPrefs, selectLabelerDids } from '../prefs'
@@ -160,6 +161,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { status: 'signedOut' }
     })
+    // Neither cache layer may outlive the session that filled it: profiles and
+    // threads are keyed without the viewer DID but carry viewer state, so a
+    // later account would inherit the previous viewer's data.
+    void clearAllCaches()
   }, [])
 
   const value = useMemo<AuthContextValue>(() => {

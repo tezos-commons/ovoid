@@ -1,13 +1,26 @@
-import { Suspense } from 'react'
+import { Suspense, lazy } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AppShell } from '@/components/layout'
 import { Spinner, Lightbox } from '@/components'
-import { useComposer } from '@/store/compose-store'
+import { useComposer, useComposerStore } from '@/store/compose-store'
+import { useNftBrowserStore } from '@/store/nft-browser-store'
+import { useArtifactStore } from '@/store/artifact-store'
 import { PostActionsBridge } from '@/features/post/PostActionsBridge'
-import { ComposeModal } from '@/features/home/compose/ComposeModal'
-import { NftBrowser } from '@/components/embeds/NftBrowser'
-import { ArtifactPlayer } from '@/components/embeds/ArtifactPlayer'
 import { useEscapeBack } from '@/lib/use-escape-back'
+
+// Interaction-gated overlays. Code-split AND conditionally mounted: a lazy
+// component that always renders (even returning null) still loads its chunk at
+// startup, so the store flag gates the mount and the import fires on first use.
+// This keeps the composer and the NFT/objkt graph out of the entry bundle.
+const ComposeModal = lazy(() =>
+  import('@/features/home/compose/ComposeModal').then((m) => ({ default: m.ComposeModal })),
+)
+const NftBrowser = lazy(() =>
+  import('@/components/embeds/NftBrowser').then((m) => ({ default: m.NftBrowser })),
+)
+const ArtifactPlayer = lazy(() =>
+  import('@/components/embeds/ArtifactPlayer').then((m) => ({ default: m.ArtifactPlayer })),
+)
 
 /**
  * Top-level layout shared by every screen. Hosts the AppShell, a Suspense
@@ -23,6 +36,12 @@ export function RootLayout() {
   const { openCompose } = useComposer()
   const { pathname } = useLocation()
   const fullWidth = FULL_WIDTH_PREFIXES.some((p) => pathname.startsWith(p))
+
+  const composeOpen = useComposerStore((s) => s.open)
+  const nftOpen = useNftBrowserStore((s) => s.open)
+  // The player stays mounted through mini ⇄ full so audio survives; it only
+  // unmounts (stopping playback) when explicitly closed.
+  const artifactMode = useArtifactStore((s) => s.mode)
 
   // Desktop: ESC steps back through overlay layers (mirrors back-swipe).
   useEscapeBack()
@@ -40,9 +59,11 @@ export function RootLayout() {
           <Outlet />
         </Suspense>
       </AppShell>
-      <ComposeModal />
-      <NftBrowser />
-      <ArtifactPlayer />
+      <Suspense fallback={null}>
+        {composeOpen && <ComposeModal />}
+        {nftOpen && <NftBrowser />}
+        {artifactMode !== 'closed' && <ArtifactPlayer />}
+      </Suspense>
       <Lightbox />
     </PostActionsBridge>
   )

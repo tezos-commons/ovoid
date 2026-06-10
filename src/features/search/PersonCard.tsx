@@ -6,6 +6,7 @@ import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
 import { profileOptions } from '@/features/profile/use-profile'
+import { authorFeedOptions } from '@/features/profile/use-author-feed'
 
 export interface PersonCardProps {
   actor: AppBskyActorDefs.ProfileView | AppBskyActorDefs.ProfileViewBasic
@@ -26,10 +27,14 @@ export function PersonCard({ actor, compact = false, onNavigate }: PersonCardPro
   const description =
     'description' in actor ? (actor as AppBskyActorDefs.ProfileView).description : undefined
 
-  const { agent } = useAgent()
+  const { agent, did } = useAgent()
   const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
     const opts = profileOptions(agent, actorRef)
     schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
+    // The profile screen fires its default Posts tab on mount — warm it too, or
+    // the navigation renders a warm header over a cold, skeletoning feed.
+    const posts = authorFeedOptions(agent, did, actorRef, 'posts_no_replies')
+    schedulePrefetch(posts.queryKey, () => queryClient.prefetchInfiniteQuery(posts))
   })
 
   return (

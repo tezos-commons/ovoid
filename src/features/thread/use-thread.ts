@@ -6,12 +6,19 @@ import {
   type AppBskyFeedGetPostThread,
 } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
+import { findCachedFeedItem } from '@/lib/feed-cache'
 import { qk } from '@/lib/query-keys'
 
 /**
  * Shared query config for a post thread, consumed by both `useThread` and the
  * visibility prefetcher (so the key + fetcher never drift). `uri` is a full
  * at:// post uri.
+ *
+ * placeholderData synthesizes a single-node thread (plus the immediate parent
+ * when the feed row carried one) from whatever feed cache already holds the
+ * post, so tapping a post paints instantly even when the prefetch hasn't
+ * landed. It is observer-only — never written to the cache — and ThreadScreen
+ * shows a replies skeleton while `isPlaceholderData`.
  */
 export function threadOptions(agent: Agent, uri: string) {
   return queryOptions({
@@ -23,6 +30,26 @@ export function threadOptions(agent: Agent, uri: string) {
         parentHeight: 80,
       })
       return res.data
+    },
+    placeholderData: (): AppBskyFeedGetPostThread.OutputSchema | undefined => {
+      const item = findCachedFeedItem(uri)
+      if (!item) return undefined
+      // Both uris here are canonical (same cache), so plain equality is right.
+      const parent =
+        item.reply &&
+        AppBskyFeedDefs.isPostView(item.reply.parent) &&
+        item.reply.parent.uri !== item.post.uri
+          ? item.reply.parent
+          : undefined
+      return {
+        thread: {
+          $type: 'app.bsky.feed.defs#threadViewPost',
+          post: item.post,
+          ...(parent
+            ? { parent: { $type: 'app.bsky.feed.defs#threadViewPost', post: parent } }
+            : {}),
+        },
+      }
     },
   })
 }

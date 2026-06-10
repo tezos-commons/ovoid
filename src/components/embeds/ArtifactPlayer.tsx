@@ -25,7 +25,16 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
  * no referrer leaked.
  */
 export function ArtifactPlayer() {
-  const { mode, src, title, fa, tokenId, minimize, expand, close } = useArtifactStore()
+  // Per-field selectors — a whole-store subscription would re-render this (and
+  // everything below it) on any artifact-state write, even while closed.
+  const mode = useArtifactStore((s) => s.mode)
+  const src = useArtifactStore((s) => s.src)
+  const title = useArtifactStore((s) => s.title)
+  const fa = useArtifactStore((s) => s.fa)
+  const tokenId = useArtifactStore((s) => s.tokenId)
+  const minimize = useArtifactStore((s) => s.minimize)
+  const expand = useArtifactStore((s) => s.expand)
+  const close = useArtifactStore((s) => s.close)
   const closeBrowser = useNftBrowserStore((s) => s.close)
   const openBrowser = useNftBrowserStore((s) => s.openNft)
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)

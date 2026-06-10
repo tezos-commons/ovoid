@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import clsx from 'clsx'
 import type { ChatBskyConvoDefs } from '@atproto/api'
 import { RichText } from '@/lib/rich-text'
@@ -19,7 +20,15 @@ export interface MessageBubbleProps {
   showTime?: boolean
 }
 
-export function MessageBubble({ message, viewerDid, showTime = true }: MessageBubbleProps) {
+/**
+ * memo: the thread re-renders on every 6s poll; message views are referentially
+ * stable via structural sharing, so unchanged bubbles skip entirely.
+ */
+export const MessageBubble = memo(function MessageBubble({
+  message,
+  viewerDid,
+  showTime = true,
+}: MessageBubbleProps) {
   // SystemMessageView carries no sender; only message/deleted views do.
   const senderDid = 'sender' in message ? message.sender?.did : undefined
   const mine = senderDid === viewerDid
@@ -56,4 +65,4 @@ export function MessageBubble({ message, viewerDid, showTime = true }: MessageBu
       {showTime && <span className="msg-row__time">{clockTime(message.sentAt)}</span>}
     </div>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -31,8 +31,10 @@ export function messagesOptions(chatAgent: Agent, convoId: string) {
         .then((r) => r.data),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.cursor || undefined,
+    // staleTime matches the poll: the interval already bounds staleness, so a
+    // shorter value only bought redundant refetches on remount between ticks.
     refetchInterval: 6_000,
-    staleTime: 2_000,
+    staleTime: 6_000,
   })
 }
 
@@ -51,26 +53,26 @@ export function useMessages(convoId: string | undefined) {
   const { chatAgent, isAuthed } = useAgent()
   const enabled = isAuthed && !!chatAgent && !!convoId
 
+  // Spread the shared factory so the hook and the convo-list prefetcher can
+  // never drift on key or config. chatAgent! is safe: without one, `enabled`
+  // is false and the queryFn never runs.
   const query = useInfiniteQuery({
-    queryKey: convoId ? qk.messages(convoId) : ['bsky', 'chat', 'messages', { convoId: '' }],
+    ...messagesOptions(chatAgent!, convoId ?? ''),
     enabled,
-    queryFn: ({ pageParam }) =>
-      chatAgent!.chat.bsky.convo
-        .getMessages({ convoId: convoId!, cursor: pageParam, limit: 50 })
-        .then((r) => r.data),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.cursor || undefined,
-    refetchInterval: 6_000,
-    staleTime: 2_000,
   })
 
   // Flattened oldest-first for natural top-to-bottom rendering. Each page is
-  // newest-first; later pages are older — so reverse pages and items.
-  const messages: MessageItem[] =
-    query.data?.pages
-      .flatMap((p) => p.messages as MessageItem[])
-      .slice()
-      .reverse() ?? []
+  // newest-first; later pages are older — so reverse pages and items. Memoized
+  // on the cache entry: the 6s poll usually returns identical data, and a fresh
+  // array here would defeat MessageBubble's memo for the whole thread.
+  const messages: MessageItem[] = useMemo(
+    () =>
+      query.data?.pages
+        .flatMap((p) => p.messages as MessageItem[])
+        .slice()
+        .reverse() ?? [],
+    [query.data],
+  )
 
   return { ...query, messages }
 }

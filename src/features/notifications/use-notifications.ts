@@ -1,5 +1,6 @@
 import { useInfiniteQuery, infiniteQueryOptions } from '@tanstack/react-query'
 import { useAgent } from '@/lib/api/agent'
+import { MAX_FEED_PAGES } from '@/lib/query-client'
 import { qk } from '@/lib/query-keys'
 import type {
   Agent,
@@ -47,6 +48,7 @@ export function notificationsOptions(agent: Agent, did: string | undefined) {
         .then((r) => r.data),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.cursor || undefined,
+    maxPages: MAX_FEED_PAGES,
     staleTime: 30_000,
   })
 }

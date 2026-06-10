@@ -31,7 +31,17 @@ type Pane = 'details' | 'artist'
  * Mounted once at the app root; renders nothing until a token preview opens it.
  */
 export function NftBrowser() {
-  const { open, fa, tokenId, list, index, openNft, go, close } = useNftBrowserStore()
+  // Per-field selectors — see ArtifactPlayer; the browser is mounted at the
+  // root for its whole life, so a whole-store subscription would tick on every
+  // openNft/go write even while it renders null.
+  const open = useNftBrowserStore((s) => s.open)
+  const fa = useNftBrowserStore((s) => s.fa)
+  const tokenId = useNftBrowserStore((s) => s.tokenId)
+  const list = useNftBrowserStore((s) => s.list)
+  const index = useNftBrowserStore((s) => s.index)
+  const openNft = useNftBrowserStore((s) => s.openNft)
+  const go = useNftBrowserStore((s) => s.go)
+  const close = useNftBrowserStore((s) => s.close)
   const [pane, setPane] = useState<Pane>('details')
 
   const hasPrev = index > 0

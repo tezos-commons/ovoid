@@ -4,13 +4,13 @@ import {
   useQuery,
   useQueryClient,
   queryOptions,
-  infiniteQueryOptions,
 } from '@tanstack/react-query'
 import type { Agent, AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { qk } from '@/lib/query-keys'
+import { customFeedOptions } from '@/features/home/use-custom-feed'
 
 type GeneratorView = AppBskyFeedDefs.GeneratorView
 type FeedViewPost = AppBskyFeedDefs.FeedViewPost
@@ -91,18 +91,13 @@ export function useFeedGenerator(uri: string | undefined) {
   })
 }
 
-/** Shared infinite-query config for a feed generator's posts (hook + prefetch). */
+/**
+ * Shared infinite-query config for a feed generator's posts (hook + prefetch).
+ * Thin alias over customFeedOptions so qk.feed(did, uri) has exactly one
+ * queryFn definition that can't drift between the home strip and this route.
+ */
 export function feedPostsOptions(agent: Agent, did: string | undefined, uri: string) {
-  return infiniteQueryOptions({
-    queryKey: qk.feed(did, uri),
-    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
-      agent.app.bsky.feed
-        .getFeed({ feed: uri, cursor: pageParam, limit: 30 })
-        .then((r) => r.data),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.cursor || undefined,
-    staleTime: 30_000,
-  })
+  return customFeedOptions(agent, did, uri, 'feed')
 }
 
 /** The posts produced by a feed generator (infinite, viewer-scoped cache). */

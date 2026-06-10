@@ -6,6 +6,7 @@ import {
 } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
+import { bumpReplyCount, patchPostInAllFeeds } from '@/lib/optimistic'
 import { buildPost } from '@/lib/rich-text'
 import { uploadImage } from '@/lib/blob'
 import type { ComposeTarget } from '@/store/compose-store'
@@ -24,6 +25,19 @@ export interface CreatePostArgs {
 }
 
 type StrongRef = { uri: string; cid: string }
+
+type InfiniteShape = { pages: unknown[]; pageParams: unknown[] }
+
+/**
+ * Drop all but the head page of an infinite cache entry. An invalidated infinite
+ * query refetches every cached page sequentially, so a deep scroll session would
+ * replay N requests for one new post; one head page is enough — deeper pages
+ * re-load on demand.
+ */
+function trimToHeadPage<T extends InfiniteShape>(data: T | undefined): T | undefined {
+  if (!data || data.pages.length <= 1) return data
+  return { ...data, pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) }
+}
 
 /** Copy the thread root from the parent: root is parent.record.reply.root, else parent itself. */
 function resolveReply(parent: AppBskyFeedDefs.PostView): {
@@ -115,10 +129,29 @@ export function useCreatePost() {
       })
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_data, { target }) => {
+      // Trim the timeline before invalidating, but only when nobody is looking
+      // at it — an active observer keeps its pages (background refetch preserves
+      // the scroll position); an inactive cache would refetch every page on next
+      // mount for no benefit.
+      const timeline = qc.getQueryCache().find({ queryKey: qk.timeline(did) })
+      if (timeline && timeline.getObserversCount() === 0) {
+        qc.setQueryData<InfiniteShape>(qk.timeline(did), trimToHeadPage)
+      }
       void qc.invalidateQueries({ queryKey: qk.timeline(did) })
-      if (handle) {
-        void qc.invalidateQueries({ queryKey: qk.authorFeed(did, handle) })
+
+      // The author-feed tabs are keyed { actor, filter } per tab, and the actor
+      // may be cached under handle or DID — sweep all variants through the
+      // filterless prefix (qk.authorFeed with filter undefined matches nothing).
+      for (const actor of [handle, did]) {
+        if (actor) void qc.invalidateQueries({ queryKey: qk.authorFeedAll(did, actor) })
+      }
+
+      if (target.replyTo) {
+        // Same reconciliation as use-reply: bump the parent's count wherever it
+        // is cached and refetch the thread tree it belongs to.
+        patchPostInAllFeeds(qc, did, target.replyTo.uri, bumpReplyCount)
+        void qc.invalidateQueries({ queryKey: qk.threads })
       }
     },
   })

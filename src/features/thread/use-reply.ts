@@ -7,6 +7,7 @@ import {
 } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
+import { bumpReplyCount, patchPostInAllFeeds } from '@/lib/optimistic'
 import { buildPost } from '@/lib/rich-text'
 import { uploadImage } from '@/lib/blob'
 import type { PendingImage } from '@/features/home/compose/use-create-post'
@@ -50,7 +51,7 @@ function rootRef(parent: AppBskyFeedDefs.PostView): ComAtprotoRepoStrongRef.Main
  * invalidated to splice in the new reply with correct ordering/connectors.
  */
 export function useReply() {
-  const { agent, isAuthed } = useAgent()
+  const { agent, did, isAuthed } = useAgent()
   const qc = useQueryClient()
 
   return useMutation({
@@ -81,13 +82,15 @@ export function useReply() {
       return res
     },
     onSuccess: (_res, { parent }) => {
+      // A reply changes exactly two things: the parent's replyCount wherever
+      // that post is cached, and the tree of the thread it belongs to. Patch the
+      // count immutably — invalidating the feed family would refetch every
+      // cached page of every active feed for a number that we already know.
+      patchPostInAllFeeds(qc, did, parent.uri, bumpReplyCount)
       // Refetch the thread so the new reply appears in-tree. The root uri (which
       // keys the open ThreadScreen query) may differ from the parent uri, so
       // invalidate the whole thread domain rather than one key.
-      void qc.invalidateQueries({ queryKey: ['bsky', 'thread'] })
-      // Reply count on the parent lives in every feed that shows it.
-      void qc.invalidateQueries({ predicate: (query) => qk.isFeedKey(query.queryKey) })
-      void parent
+      void qc.invalidateQueries({ queryKey: qk.threads })
     },
   })
 }

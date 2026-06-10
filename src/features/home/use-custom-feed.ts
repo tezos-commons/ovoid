@@ -1,6 +1,7 @@
 import { useInfiniteQuery, infiniteQueryOptions } from '@tanstack/react-query'
 import type { Agent, AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
+import { MAX_FEED_PAGES } from '@/lib/query-client'
 import { qk } from '@/lib/query-keys'
 
 type Page = { feed: AppBskyFeedDefs.FeedViewPost[]; cursor?: string }
@@ -38,6 +39,7 @@ export function customFeedOptions(
       return res.data
     },
     getNextPageParam: (last) => last.cursor || undefined,
+    maxPages: MAX_FEED_PAGES,
   })
 }
 

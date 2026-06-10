@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
 import type { ChatBskyConvoDefs } from '@atproto/api'
@@ -105,8 +105,10 @@ export function ConvoList({ viewerDid, activeConvoId }: ConvoListProps) {
 /**
  * One convo row. Extracted so it can prefetch its message thread's head page
  * once it scrolls into view — opening the conversation then renders instantly.
+ * memo: the list re-renders on every 15s poll; convo views are referentially
+ * stable via structural sharing, so unchanged rows skip.
  */
-function ConvoRow({
+const ConvoRow = memo(function ConvoRow({
   convo,
   viewerDid,
   activeConvoId,
@@ -149,4 +151,4 @@ function ConvoRow({
       </div>
     </Link>
   )
-}
+})

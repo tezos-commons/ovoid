@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import clsx from 'clsx'
 import { useNavigate, Link } from 'react-router-dom'
 import { AppBskyFeedPost, AppBskyFeedDefs } from '@atproto/api'
@@ -19,8 +20,9 @@ import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
-import { threadOptions } from '@/features/thread/use-thread'
+import { threadOptions, buildPostUri } from '@/features/thread/use-thread'
 import { profileOptions } from '@/features/profile/use-profile'
+import { authorFeedOptions } from '@/features/profile/use-author-feed'
 
 /** Robot badge shown before the name of an account labeled `bot`. */
 function BotBadge({ labels }: { labels?: AppBskyFeedDefs.PostView['labels'] }) {
@@ -62,8 +64,13 @@ function postRecord(post: AppBskyFeedDefs.PostView): AppBskyFeedPost.Record | nu
  * enlarged thread root (larger body, absolute timestamp, no row hover/click).
  * Network mutations are not wired here — feature hooks pass handlers via the
  * ActionRow once they exist; for now the actions are inert affordances.
+ *
+ * memo: the virtualizer re-renders its parent on every scroll frame, and React
+ * Query's structural sharing keeps `post`/`reason`/`reply` referentially stable
+ * unless that post actually changed — so a shallow compare skips the whole
+ * card (rich-text walk, embeds) for untouched rows.
  */
-export function PostCard({
+export const PostCard = memo(function PostCard({
   post,
   reason,
   reply,
@@ -88,17 +95,26 @@ export function PostCard({
     if (!focused) navigate(permalink)
   }
 
-  // Warm the two things tapping this card can lead to — the post's thread and
-  // the author's profile — once the card has dwelt on screen. Skipped for the
-  // focused post (its thread is already open). RQ dedupes + respects staleTime,
-  // so a warmed cache makes the navigation render without a skeleton.
-  const { agent } = useAgent()
+  // Warm what tapping this card can lead to — the post's thread, the author's
+  // profile, and the profile's default Posts tab (the screen fires it on mount,
+  // so a warm header with a cold feed would still skeleton) — once the card has
+  // dwelt on screen. Skipped for the focused post (its thread is already open).
+  // RQ dedupes + respects staleTime, so a warmed cache makes the navigation
+  // render without a skeleton.
+  const { agent, did } = useAgent()
   const prefetchRef = usePrefetchOnVisible<HTMLElement>(() => {
     if (focused) return
-    const thread = threadOptions(agent, post.uri)
+    const actor = author.handle || author.did
+    // ThreadScreen keys its query by the uri built from the PERMALINK's actor
+    // (handle when present) — warming post.uri (DID authority) would populate
+    // an entry the destination never reads.
+    const rkey = post.uri.split('/').pop() ?? ''
+    const thread = threadOptions(agent, buildPostUri(actor, rkey))
     schedulePrefetch(thread.queryKey, () => queryClient.prefetchQuery(thread))
-    const profile = profileOptions(agent, author.handle || author.did)
+    const profile = profileOptions(agent, actor)
     schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+    const posts = authorFeedOptions(agent, did, actor, 'posts_no_replies')
+    schedulePrefetch(posts.queryKey, () => queryClient.prefetchInfiniteQuery(posts))
   })
 
   // Reply context: in a feed row, surface the thread ROOT (first post) above a
@@ -247,4 +263,4 @@ export function PostCard({
       {card}
     </div>
   )
-}
+})

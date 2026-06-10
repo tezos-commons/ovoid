@@ -20,10 +20,22 @@ export const qk = {
   authorFeed: (did: string | undefined, actor: string, filter?: string) =>
     ['bsky', did, 'feed', 'author', { actor, filter }] as const,
 
+  /**
+   * Prefix matching every filter variant of an actor's author feed. The full key
+   * carries `filter` as an own property of the params object, so partial-matching
+   * with `{ actor, filter: undefined }` does NOT hit `{ actor, filter: 'posts_…' }`
+   * entries — invalidation must go through this filterless form.
+   */
+  authorFeedAll: (did: string | undefined, actor: string) =>
+    ['bsky', did, 'feed', 'author', { actor }] as const,
+
   actorLikes: (did: string | undefined, actor: string) =>
     ['bsky', did, 'feed', 'likes', { actor }] as const,
 
   thread: (uri: string) => ['bsky', 'thread', { uri }] as const,
+
+  /** Prefix for the whole thread domain (invalidate when reply structure changes). */
+  threads: ['bsky', 'thread'] as const,
 
   searchPosts: (q: string, sort?: 'top' | 'latest') =>
     ['bsky', 'search', 'posts', { q, sort }] as const,

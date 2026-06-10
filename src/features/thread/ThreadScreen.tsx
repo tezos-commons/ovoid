@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { AppBskyFeedDefs } from '@atproto/api'
-import { PostCard, ThreadSkeleton, ErrorState, Tabs } from '@/components'
+import { PostCard, ThreadSkeleton, FeedSkeleton, ErrorState, Tabs } from '@/components'
 import { PageAside } from '@/components/layout'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import {
@@ -38,7 +38,7 @@ const SORT_TABS = [
  */
 export default function ThreadScreen() {
   const { actor = '', rkey = '' } = useParams()
-  const { data, isLoading, isError, error, refetch } = useThread(actor, rkey)
+  const { data, isLoading, isPlaceholderData, isError, error, refetch } = useThread(actor, rkey)
   const [sort, setSort] = useState<SortKey>('top')
   const isMobile = useIsMobile()
 
@@ -53,10 +53,16 @@ export default function ThreadScreen() {
   }
 
   // Scroll the focused post into view on load so the parent chain doesn't push
-  // it off-screen when the chain is tall.
+  // it off-screen when the chain is tall. One-shot: the placeholder→real data
+  // swap changes `data` identity, and re-scrolling then would yank the viewport
+  // out from under the user.
   const focusedRef = useRef<HTMLDivElement>(null)
+  const didFocusScroll = useRef(false)
   useEffect(() => {
-    if (data) focusedRef.current?.scrollIntoView({ block: 'start' })
+    if (data && !didFocusScroll.current) {
+      didFocusScroll.current = true
+      focusedRef.current?.scrollIntoView({ block: 'start' })
+    }
   }, [data])
 
   if (isLoading) {
@@ -137,7 +143,9 @@ export default function ThreadScreen() {
         {/* Inline reply composer (or sign-in prompt). */}
         <ReplyComposer parent={node.post} />
 
-        {/* Reply sort + subtree. */}
+        {/* Reply sort + subtree. A placeholder thread is a single synthesized
+            node — its replies haven't arrived, so show a skeleton instead of
+            claiming there are none. */}
         {hasReplies(node) ? (
           <>
             <div className="thread__sort">
@@ -149,6 +157,8 @@ export default function ThreadScreen() {
             </div>
             <ReplyTree replies={replies} />
           </>
+        ) : isPlaceholderData ? (
+          <FeedSkeleton count={3} />
         ) : (
           <div className="thread-empty">No replies yet. Be the first.</div>
         )}

@@ -6,6 +6,14 @@
     <meta name="theme-color" content="#110c1d" />
     <title>Ovoid</title>
 
+    <!-- Warm the sockets the first paint depends on, in parallel with JS parse.
+         crossorigin on the AppView (XRPC goes over CORS fetch — only a CORS
+         connection is reusable for it); none on the image CDN (plain <img>). -->
+    <link rel="preconnect" href="https://public.api.bsky.app" crossorigin />
+    <link rel="preconnect" href="https://cdn.bsky.app" />
+    <link rel="dns-prefetch" href="https://video.bsky.app" />
+    <link rel="dns-prefetch" href="https://bsky.social" />
+
     <!-- PWA / add-to-home-screen -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

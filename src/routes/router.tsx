@@ -2,7 +2,6 @@ import { lazy, type ComponentType } from 'react'
 import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 import { RootLayout } from './RootLayout'
 import { RequireAuth } from './RequireAuth'
-import NotFound from './NotFound'
 
 /**
  * Wrap a React.lazy component as a route element. Suspense is provided by
@@ -98,7 +97,7 @@ const shellRoutes: RouteObject[] = [
     element: protectedEl(() => import('@/features/settings/SettingsScreen')),
   },
 
-  { path: '*', element: <NotFound /> },
+  { path: '*', element: lazyEl(() => import('./NotFound')) },
 ]
 
 export const router = createBrowserRouter([

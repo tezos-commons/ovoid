@@ -4,9 +4,13 @@ import type { AppBskyActorDefs } from '@atproto/api'
 import { Avatar, Button, Dialog, Spinner, PeopleSkeleton, ErrorState, EmptyState } from '@/components'
 import { RichText } from '@/lib/rich-text'
 import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
 import { useCloseOnBack } from '@/lib/use-close-on-back'
 import { useFollows, useFollowers } from './use-follow-list'
 import { useFollow } from './use-follow'
+import { profileOptions } from './use-profile'
 
 export interface FollowListModalProps {
   actor: string
@@ -59,24 +63,7 @@ export function FollowListModal({ actor, mode, open, onClose }: FollowListModalP
         )}
 
         {people.map((p) => (
-          <Link
-            key={p.did}
-            to={`/profile/${p.handle || p.did}`}
-            className="followlist__row"
-            onClick={onClose}
-          >
-            <Avatar src={p.avatar} alt={p.displayName || p.handle} size="md" />
-            <div className="followlist__meta">
-              <span className="followlist__name">{p.displayName || p.handle}</span>
-              <span className="followlist__handle">@{p.handle}</span>
-              {p.description && (
-                <span className="followlist__bio">
-                  <RichText text={p.description} />
-                </span>
-              )}
-            </div>
-            <FollowButton person={p} />
-          </Link>
+          <FollowListRow key={p.did} person={p} onNavigate={onClose} />
         ))}
 
         <div ref={sentinel} className="followlist__sentinel">
@@ -84,6 +71,41 @@ export function FollowListModal({ actor, mode, open, onClose }: FollowListModalP
         </div>
       </div>
     </Dialog>
+  )
+}
+
+/** One person row; warms their profile once the row dwells in the scroll view. */
+function FollowListRow({
+  person: p,
+  onNavigate,
+}: {
+  person: AppBskyActorDefs.ProfileView
+  onNavigate: () => void
+}) {
+  const { agent } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    const opts = profileOptions(agent, p.handle || p.did)
+    schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
+  })
+  return (
+    <Link
+      ref={prefetchRef}
+      to={`/profile/${p.handle || p.did}`}
+      className="followlist__row"
+      onClick={onNavigate}
+    >
+      <Avatar src={p.avatar} alt={p.displayName || p.handle} size="md" />
+      <div className="followlist__meta">
+        <span className="followlist__name">{p.displayName || p.handle}</span>
+        <span className="followlist__handle">@{p.handle}</span>
+        {p.description && (
+          <span className="followlist__bio">
+            <RichText text={p.description} />
+          </span>
+        )}
+      </div>
+      <FollowButton person={p} />
+    </Link>
   )
 }
 

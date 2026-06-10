@@ -15,6 +15,8 @@ import { myFeedsOptions } from '@/features/feeds/use-my-feeds'
 import { listsByActorOptions } from '@/features/lists/use-lists'
 import { profileOptions } from '@/features/profile/use-profile'
 import { authorFeedOptions } from '@/features/profile/use-author-feed'
+import { prefetchBookmarks } from '@/features/saved/use-bookmarks'
+import { savedFeedsOptions } from '@/features/saved/use-saved-feeds'
 
 type PrefetchQuery = Parameters<typeof queryClient.prefetchQuery>[0]
 type PrefetchInfinite = Parameters<typeof queryClient.prefetchInfiniteQuery>[0]
@@ -36,9 +38,7 @@ function warmInfinite(opts: { queryKey: readonly unknown[] }) {
  * is concurrency-bounded; `staleTime` makes each warm a no-op when already
  * fresh, so it self-limits across navigations.
  *
- * Not warmed: /saved (its bookmarks + saved-feeds reads derive from preferences
- * and a capability branch that don't reduce to a single shared query) and the
- * search typeahead (type-gated). Those still load via skeletons on first open.
+ * Not warmed: the search typeahead (type-gated) — it still loads on first use.
  */
 export function useWarmNavDestinations() {
   const { agent, chatAgent, did, isAuthed } = useAgent()
@@ -55,6 +55,8 @@ export function useWarmNavDestinations() {
       warmInfinite(listsByActorOptions(agent, did)) // Lists
       warmQuery(profileOptions(agent, did)) // Profile (own)
       warmInfinite(authorFeedOptions(agent, did, did, 'posts_no_replies'))
+      prefetchBookmarks(agent, did) // Saved (landing: bookmarks tab)
+      warmQuery(savedFeedsOptions(agent, did)) // Saved (sibling feeds tab)
     })
   }, [agent, chatAgent, did, isAuthed])
 }

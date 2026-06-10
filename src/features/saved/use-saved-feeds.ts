@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, queryOptions } from '@tanstack/react-query'
 import type {
   Agent,
   AppBskyActorDefs,
@@ -47,18 +47,21 @@ function tid(): string {
 /* ------------------------------------------------------------------ *
  * Read: the saved-feeds list, hydrated for display.
  * ------------------------------------------------------------------ */
-export function useSavedFeeds() {
-  const { agent, did, isAuthed } = useAgent()
-
-  return useQuery({
+/** Shared query config for the hydrated saved-feeds list (hook + nav prefetch). */
+export function savedFeedsOptions(agent: Agent, did: string | undefined) {
+  return queryOptions({
     queryKey: [...qk.preferences(did), 'savedFeeds'] as const,
-    enabled: isAuthed,
     queryFn: async (): Promise<HydratedSavedFeed[]> => {
       const prefs = await getPrefs(agent)
       const items = collectSavedFeeds(prefs)
       return hydrateSavedFeeds(agent, items)
     },
   })
+}
+
+export function useSavedFeeds() {
+  const { agent, did, isAuthed } = useAgent()
+  return useQuery({ ...savedFeedsOptions(agent, did), enabled: isAuthed })
 }
 
 /** Merge V2 items with any legacy V1 entries not already present in V2. */

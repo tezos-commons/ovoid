@@ -4,10 +4,14 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  infiniteQueryOptions,
+  queryOptions,
   type InfiniteData,
 } from '@tanstack/react-query'
 import type { Agent, AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
 import { qk } from '@/lib/query-keys'
 import {
   addLocalBookmark,
@@ -82,13 +86,11 @@ function extractPost(raw: unknown): AppBskyFeedDefs.PostView | null {
  *   hydrates them with getPosts (batched, 25 max per call). Returned in the
  *   same InfiniteData shape so the consumer code is uniform.
  * ================================================================== */
-export function useBookmarks() {
-  const { agent, did, isAuthed } = useAgent()
-  const native = hasNativeBookmarks(agent)
 
-  const nativeQuery = useInfiniteQuery({
+/** Shared infinite-query config for native bookmarks (hook + nav prefetch). */
+export function nativeBookmarksOptions(agent: Agent, did: string | undefined) {
+  return infiniteQueryOptions({
     queryKey: [...qk.bookmarks(did), 'native'] as const,
-    enabled: isAuthed && native,
     queryFn: async ({ pageParam }): Promise<BookmarkPage> => {
       const ns = bookmarkNs(agent)!
       const res = await ns.getBookmarks!({ limit: PAGE_LIMIT, cursor: pageParam })
@@ -103,10 +105,12 @@ export function useBookmarks() {
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.cursor || undefined,
   })
+}
 
-  const fallbackQuery = useQuery({
+/** Shared query config for localStorage-fallback bookmarks (hook + nav prefetch). */
+export function localBookmarksOptions(agent: Agent, did: string | undefined) {
+  return queryOptions({
     queryKey: [...qk.bookmarks(did), 'local'] as const,
-    enabled: isAuthed && !native,
     queryFn: async (): Promise<BookmarkPage> => {
       const refs = listLocalBookmarks(did)
       const posts = await hydratePosts(agent, refs)
@@ -118,6 +122,36 @@ export function useBookmarks() {
         .map((post) => ({ post }))
       return { bookmarks, cursor: undefined }
     },
+  })
+}
+
+/**
+ * Warm whichever bookmarks read /saved's landing tab will perform. The
+ * native-vs-local branch is synchronous on the agent, so the prefetcher can
+ * take exactly the path the hook will.
+ */
+export function prefetchBookmarks(agent: Agent, did: string | undefined): void {
+  if (hasNativeBookmarks(agent)) {
+    const opts = nativeBookmarksOptions(agent, did)
+    schedulePrefetch(opts.queryKey, () => queryClient.prefetchInfiniteQuery(opts))
+  } else {
+    const opts = localBookmarksOptions(agent, did)
+    schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
+  }
+}
+
+export function useBookmarks() {
+  const { agent, did, isAuthed } = useAgent()
+  const native = hasNativeBookmarks(agent)
+
+  const nativeQuery = useInfiniteQuery({
+    ...nativeBookmarksOptions(agent, did),
+    enabled: isAuthed && native,
+  })
+
+  const fallbackQuery = useQuery({
+    ...localBookmarksOptions(agent, did),
+    enabled: isAuthed && !native,
   })
 
   // Normalize both into the same { pages, hasNextPage, ... } surface.

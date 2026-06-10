@@ -1,14 +1,26 @@
 /**
- * Minimal service worker — just enough to make Ovoid installable (Chrome's
- * install prompt needs a SW with a fetch handler) and to open offline as an app
- * shell. Deliberately does NOT cache hashed assets or API responses:
- *   - asset requests pass straight through, so Vite HMR in dev is untouched and
- *     deploys are never served stale;
- *   - cross-origin requests (Bluesky / objkt / tzbsky / OAuth) are never
- *     intercepted;
- *   - only the app shell ("/") is cached, as the offline navigation fallback.
+ * Service worker: installability (Chrome's install prompt needs a fetch
+ * handler), offline app shell, and repeat-visit caching for immutable content.
+ *
+ *   - "/" (the shell) is cached as the offline navigation fallback;
+ *     navigations themselves are network-first so deploys are never stale.
+ *   - Same-origin "/assets/*" is cache-first: Vite content-hashes every file
+ *     there, so a cached entry can never be wrong — repeat visits and the
+ *     offline shell get their JS/CSS without the network. Dev is untouched
+ *     (the dev server serves /src/*, not /assets/*).
+ *   - cdn.bsky.app images (avatars, thumbs) are cache-first with a size cap:
+ *     blob URLs are content-addressed, so they're immutable too.
+ *   - Everything else (XRPC, OAuth, objkt, video) passes straight through.
  */
 const SHELL_CACHE = 'ovoid-shell-v1'
+const ASSET_CACHE = 'ovoid-assets-v1'
+const IMG_CACHE = 'ovoid-img-v1'
+const KNOWN_CACHES = [SHELL_CACHE, ASSET_CACHE, IMG_CACHE]
+
+/** Image entries kept; oldest-inserted evicted beyond this. */
+const IMG_CACHE_MAX = 300
+/** Asset entries kept — bounds pile-up of pre-deploy hashed chunks. */
+const ASSET_CACHE_MAX = 80
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
@@ -25,18 +37,49 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((k) => k !== SHELL_CACHE).map((k) => caches.delete(k))),
+        Promise.all(keys.filter((k) => !KNOWN_CACHES.includes(k)).map((k) => caches.delete(k))),
       )
       .then(() => self.clients.claim()),
   )
 })
 
+/** Cache-first with insertion-order trim. Only successful responses are kept. */
+async function cacheFirst(req, cacheName, maxEntries) {
+  const cache = await caches.open(cacheName)
+  const hit = await cache.match(req)
+  if (hit) return hit
+  const res = await fetch(req)
+  if (res.ok) {
+    await cache.put(req, res.clone())
+    const keys = await cache.keys()
+    if (keys.length > maxEntries) {
+      await Promise.all(keys.slice(0, keys.length - maxEntries).map((k) => cache.delete(k)))
+    }
+  }
+  return res
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request
-  // Only the document navigation is handled: network-first (always fresh),
-  // falling back to the cached shell when offline. Everything else (assets,
-  // APIs, cross-origin) is left to the browser's default handling.
+  if (req.method !== 'GET') return
+
+  // Document navigations: network-first (always fresh), offline shell fallback.
   if (req.mode === 'navigate') {
     event.respondWith(fetch(req).catch(() => caches.match('/')))
+    return
+  }
+
+  const url = new URL(req.url)
+
+  // Hashed build assets — immutable by construction.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
+    event.respondWith(cacheFirst(req, ASSET_CACHE, ASSET_CACHE_MAX))
+    return
+  }
+
+  // Bluesky image CDN — content-addressed blobs.
+  if (url.hostname === 'cdn.bsky.app') {
+    event.respondWith(cacheFirst(req, IMG_CACHE, IMG_CACHE_MAX))
+    return
   }
 })
