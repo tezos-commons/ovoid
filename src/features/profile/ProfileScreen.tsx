@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { PageAside } from '@/components/layout'
-import { ProfileCardSkeleton, FeedSkeleton, ErrorState, EmptyState } from '@/components'
+import { ProfileCardSkeleton, FeedSkeleton, NftGridSkeleton, ErrorState, EmptyState } from '@/components'
 import type { TabItem } from '@/components'
 import { useAgent } from '@/lib/api/agent'
 import { useIsMobile } from '@/lib/use-is-mobile'
@@ -17,6 +17,7 @@ import { LabelerCard } from './LabelerCard'
 import { ProfileFeed } from './ProfileFeed'
 import { ProfileFeedsTab, ProfileListsTab } from './ProfileFeedsTab'
 import { NftTab } from './NftTab'
+import { LinkTezosSection } from './LinkTezosSection'
 import { useTezosAddress, objktCollectionsOptions } from './use-nfts'
 import './profile.css'
 
@@ -54,8 +55,11 @@ export default function ProfileScreen() {
   const hasFeeds = (profile?.associated?.feedgens ?? 0) > 0
   const hasLists = (profile?.associated?.lists ?? 0) > 0
 
-  // Verified Tezos wallet (tzbsky). Present => this account can show NFT tabs.
-  const tezosAddr = useTezosAddress(profile?.did).data ?? undefined
+  // Verified Tezos wallet (tzbsky). Created/Owned show for any account with a
+  // linked address — and on your own profile even without one, where they
+  // render the link-a-wallet prompt instead of NFTs.
+  const tezosQ = useTezosAddress(profile?.did)
+  const tezosAddr = tezosQ.data ?? undefined
 
   const tabs: TabItem[] = useMemo(() => {
     const t: TabItem[] = [
@@ -66,7 +70,7 @@ export default function ProfileScreen() {
     if (isSelf) t.push({ key: 'likes', label: 'Likes' })
     if (hasFeeds) t.push({ key: 'feeds', label: 'Feeds' })
     if (hasLists) t.push({ key: 'lists', label: 'Lists' })
-    if (tezosAddr) {
+    if (tezosAddr || isSelf) {
       t.push({ key: 'nfts-created', label: 'Created' })
       t.push({ key: 'nfts-owned', label: 'Owned' })
     }
@@ -178,6 +182,7 @@ export default function ProfileScreen() {
             media={media}
             likes={likes}
             tezosAddr={tezosAddr}
+            tezosPending={tezosQ.isPending}
           />
         )}
       </div>
@@ -193,6 +198,7 @@ function ProfileTabContent({
   media,
   likes,
   tezosAddr,
+  tezosPending,
 }: {
   activeKey: TabKey
   actor: string
@@ -201,18 +207,30 @@ function ProfileTabContent({
   media: ReturnType<typeof useAuthorFeed>
   likes: ReturnType<typeof useActorLikes>
   tezosAddr: string | undefined
+  tezosPending: boolean
 }) {
   // Per profile + tab, so each tab restores its own scroll on back-navigation.
   const scrollKey = `profile:${actor}:${activeKey}`
+
+  // Created/Owned render NFTs when a public address is linked. Without one
+  // these tabs are only reachable on the viewer's own profile, where they
+  // show the link-a-wallet prompt; a skeleton covers the lookup so the
+  // prompt doesn't flash at accounts that do have an address.
+  const nftTab = (kind: 'created' | 'owned') => {
+    if (tezosAddr) return <NftTab address={tezosAddr} kind={kind} />
+    if (tezosPending) return <NftGridSkeleton />
+    return <LinkTezosSection />
+  }
+
   switch (activeKey) {
     case 'replies':
       return <ProfileFeed query={replies} emptyTitle="No replies yet" scrollKey={scrollKey} />
     case 'media':
       return <ProfileFeed query={media} emptyTitle="No media yet" scrollKey={scrollKey} />
     case 'nfts-created':
-      return <NftTab address={tezosAddr} kind="created" />
+      return nftTab('created')
     case 'nfts-owned':
-      return <NftTab address={tezosAddr} kind="owned" />
+      return nftTab('owned')
     case 'likes':
       return (
         <ProfileFeed

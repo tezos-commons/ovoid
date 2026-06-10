@@ -6,6 +6,7 @@ import {
   BellIcon,
   HashIcon,
   ListIcon,
+  WalletIcon,
 } from '@/components/Icon'
 import { useAuth } from '@/lib/api/agent'
 import { Section, Row } from './components'
@@ -96,6 +97,7 @@ export function SettingsNav() {
       </Section>
 
       <Section title="Advanced">
+        <Row to="/settings/wallet" icon={<WalletIcon />} label="Linked Wallet" sub="Tezos address shown on your profile" />
         <Row to="/settings/app-passwords" icon={<KeyIcon />} label="App Passwords" sub="Session & legacy access" />
         <Row to="/settings/lists" icon={<ListIcon />} label="Threads & feed preferences" />
         <Row to="/settings/about" icon={<InfoIcon />} label="About" />

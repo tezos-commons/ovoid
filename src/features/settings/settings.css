@@ -11,6 +11,9 @@
   border-radius: var(--radius-panel);
   background: var(--bg-contrast-25);
   overflow: hidden;
+  /* Breathing room below the snug top bar, matching the profile aside. Inside
+     the sticky aside, so it holds equally at rest and when pinned (no jump). */
+  margin-top: var(--space-3);
 }
 
 .settings-section {
@@ -266,11 +269,23 @@
   min-width: 0;
 }
 
+/* Button row inside a settings-pad (e.g. wallet connect / copy / remove). */
+.settings-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .settings-note {
   padding: var(--space-3) var(--space-4);
   color: var(--text-muted);
   font-size: var(--fs-sm);
   line-height: 1.5;
+}
+/* Inline variant sits next to a control (no block padding). */
+.settings-note--inline {
+  padding: 0;
 }
 .settings-note code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

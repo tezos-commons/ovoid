@@ -64,7 +64,9 @@ const COLLECTION_COUNT_CAP = 500
 /**
  * Resolve a DID to its verified Tezos address, or null when the account has not
  * linked a Tezos wallet. tzbsky returns `200 []` for unlinked DIDs, so the
- * empty case is not an error.
+ * empty case is not an error. tzbsky also picks up com.tzbsky.cryptoAddress
+ * records published by other apps (including Ovoid's own linking flow), so its
+ * index is the single lookup surface.
  */
 export async function lookupTezosAddress(did: string): Promise<string | null> {
   // The DID goes in the path verbatim — its colons are the delimiters tzbsky

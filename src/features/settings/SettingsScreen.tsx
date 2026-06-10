@@ -9,6 +9,7 @@ import AppearanceSettings from './AppearanceSettings'
 import ModerationSettings from './ModerationSettings'
 import ModerationListScreen from './ModerationListScreen'
 import AppPasswordsSettings from './AppPasswordsSettings'
+import WalletSettings from './WalletSettings'
 import {
   PrivacySettings,
   AccessibilitySettings,
@@ -40,6 +41,7 @@ export default function SettingsScreen() {
       <Route path="accessibility" element={<AccessibilitySettings />} />
       <Route path="languages" element={<LanguageSettings />} />
       <Route path="app-passwords" element={<AppPasswordsSettings />} />
+      <Route path="wallet" element={<WalletSettings />} />
       <Route path="about" element={<AboutSettings />} />
       {/* Unknown sub-path → settings root */}
       <Route path="*" element={<Navigate to="/settings" replace />} />

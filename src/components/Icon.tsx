@@ -175,3 +175,11 @@ export const BotIcon: IconFC = ({ size, ...rest }) => (
     <path d="M9 13.5h.01M15 13.5h.01M2 12.5v2.5M22 12.5v2.5" />
   </svg>
 )
+
+export const WalletIcon: IconFC = ({ size, ...rest }) => (
+  <svg {...svg(size, rest)}>
+    <path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2" />
+    <rect x="3" y="7" width="18" height="13" rx="2.5" />
+    <path d="M16 12.5h.01" />
+  </svg>
+)
