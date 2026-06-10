@@ -16,7 +16,7 @@ export interface TopBarProps {
  * mobile breakpoint it hides in favor of the BottomTabBar (see layout.css).
  */
 export function TopBar({ onNewPost }: TopBarProps) {
-  const { did } = useAuth()
+  const { did, isAuthed } = useAuth()
 
   return (
     <header className="topbar">
@@ -24,8 +24,15 @@ export function TopBar({ onNewPost }: TopBarProps) {
 
       <nav className="topbar__nav" aria-label="Primary">
         {NAV_ITEMS.map((item) => {
-          // Profile resolves to the viewer's own DID when signed in.
-          const to = item.key === 'profile' && did ? `/profile/${did}` : item.to
+          // Signed out: authed-only items go to login (profile's "me" would
+          // otherwise resolve to an invalid getProfile). Signed in: profile
+          // resolves to the viewer's own DID.
+          const to =
+            item.authed && !isAuthed
+              ? '/login'
+              : item.key === 'profile' && did
+                ? `/profile/${did}`
+                : item.to
           return (
             <NavLink
               key={item.key}
