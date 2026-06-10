@@ -15,6 +15,7 @@ import { VideoPlayer } from './VideoPlayer'
 import { GenericExternalCard } from './embeds/GenericExternalCard'
 import { matchExternal } from './embeds/external-registry'
 import { RichText } from '@/lib/rich-text'
+import { useDragScroll } from '@/lib/use-drag-scroll'
 import { useUiStore } from '@/store/ui-store'
 
 type Embed = AppBskyFeedDefs.PostView['embed']
@@ -23,6 +24,36 @@ type MediaView =
   | AppBskyEmbedExternal.View
   | AppBskyEmbedVideo.View
   | { $type: string }
+
+/** A single displayable image, normalized across the images/gallery embeds. */
+interface EmbedImage {
+  thumb: string
+  fullsize: string
+  alt: string
+  aspectRatio?: { width: number; height: number }
+}
+
+/**
+ * `app.bsky.embed.gallery` is the newer multi-image embed (it supersedes
+ * `images` and lifts the 4-image cap). @atproto/api 0.20.7 ships no types for
+ * it, so we match by `$type` and normalize its items — note the field renames
+ * (`items`/`thumbnail` vs `images`/`thumb`) — into the same EmbedImage shape
+ * the images grid already renders.
+ */
+interface GalleryView {
+  $type: string
+  items: Array<{
+    thumbnail: string
+    fullsize: string
+    alt?: string
+    aspectRatio?: { width: number; height: number }
+  }>
+}
+function isGalleryView(media: { $type?: string }): media is GalleryView {
+  return (
+    media.$type === 'app.bsky.embed.gallery#view' && Array.isArray((media as GalleryView).items)
+  )
+}
 
 /**
  * Renders the `embed` view attached to a post. Handles the four AppView embed
@@ -53,6 +84,15 @@ function MediaEmbed({ media }: { media: MediaView }) {
   if (AppBskyEmbedExternal.isView(media)) return <ExternalEmbed external={media.external} />
   if (AppBskyEmbedImages.isView(media)) return <ImagesEmbed images={media.images} />
   if (AppBskyEmbedVideo.isView(media)) return <VideoPlayer video={media} />
+  if (isGalleryView(media)) {
+    const images: EmbedImage[] = media.items.map((it) => ({
+      thumb: it.thumbnail,
+      fullsize: it.fullsize,
+      alt: it.alt ?? '',
+      aspectRatio: it.aspectRatio,
+    }))
+    return <GalleryEmbed images={images} />
+  }
   return null
 }
 
@@ -69,7 +109,7 @@ function ExternalEmbed({ external }: { external: AppBskyEmbedExternal.ViewExtern
   return <GenericExternalCard external={external} />
 }
 
-function ImagesEmbed({ images }: { images: AppBskyEmbedImages.ViewImage[] }) {
+function ImagesEmbed({ images }: { images: EmbedImage[] }) {
   const openLightbox = useUiStore((s) => s.openLightbox)
   const n = Math.min(images.length, 4)
   const single = images.length === 1
@@ -98,6 +138,49 @@ function ImagesEmbed({ images }: { images: AppBskyEmbedImages.ViewImage[] }) {
           <Img src={img.thumb} alt={img.alt} />
         </button>
       ))}
+    </div>
+  )
+}
+
+/**
+ * Gallery embed: a single-row horizontal carousel, one picture tall, the strip
+ * clipped at both edges and scrolled sideways — by the wheel (mapped onto the
+ * horizontal axis) or by click-and-drag, both via useDragScroll. No scroll-snap,
+ * so motion stays fluid. Each item keeps its own aspect ratio at a uniform
+ * height, so widths vary like a filmstrip; a drag is suppressed from becoming a
+ * click, so dragging the strip never opens the lightbox. Clicking does.
+ */
+function GalleryEmbed({ images }: { images: EmbedImage[] }) {
+  const openLightbox = useUiStore((s) => s.openLightbox)
+  const scroller = useDragScroll<HTMLDivElement>({ wheel: true })
+
+  const open = (index: number) =>
+    openLightbox({ images: images.map((im) => ({ src: im.fullsize, alt: im.alt })), index })
+
+  return (
+    <div ref={scroller} className="embed embed--gallery" onClick={(e) => e.stopPropagation()}>
+      {images.map((img, i) => {
+        const ar = img.aspectRatio
+        return (
+          <button
+            key={i}
+            type="button"
+            className="gallery-img"
+            aria-label={img.alt || 'View image'}
+            onClick={(e) => {
+              e.stopPropagation()
+              open(i)
+            }}
+            // Reserve each cell's width pre-load (height is fixed in CSS) so the
+            // strip doesn't reflow as images decode.
+            style={ar ? { aspectRatio: `${ar.width} / ${ar.height}` } : undefined}
+          >
+            {/* draggable=false: otherwise pressing an image starts the browser's
+                native image drag, which hijacks the click-drag scroll. */}
+            <Img src={img.thumb} alt={img.alt} draggable={false} />
+          </button>
+        )
+      })}
     </div>
   )
 }

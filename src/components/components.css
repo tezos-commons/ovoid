@@ -1156,6 +1156,41 @@
 .embed--images-1 .embed-img { max-height: 480px; }
 .embed-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/* Gallery: single-row carousel, one picture tall, free-scrolled sideways by the
+   wheel/trackpad. No scroll-snap — motion stays fluid; edges are clipped. */
+.embed--gallery {
+  display: flex;
+  gap: var(--space-2);
+  height: 360px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  /* A click-drag scrolls the strip; don't let it select or ghost-drag images. */
+  user-select: none;
+}
+.gallery-img img { -webkit-user-drag: none; user-select: none; }
+.embed--gallery::-webkit-scrollbar { display: none; } /* WebKit */
+.embed--gallery.is-dragging { cursor: grabbing; }
+.gallery-img {
+  flex: 0 0 auto;
+  height: 100%;
+  /* Unknown aspect ratio: let the image's natural width drive the cell. */
+  width: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-embed);
+  overflow: hidden;
+  background: var(--bg-contrast-25);
+  cursor: zoom-in;
+}
+/* While dragging the strip, every cell shows the grab cursor (not zoom-in). */
+.embed--gallery.is-dragging .gallery-img { cursor: grabbing; }
+/* width:auto + height:100% sizes each image to its own aspect ratio (the cell's
+   reserved aspect-ratio matches), so the filmstrip shows whole images uncropped
+   and works even when the embed omits aspectRatio. */
+.gallery-img img { height: 100%; width: auto; display: block; }
+
 /* Video: poster button -> inline HLS player */
 .embed--video {
   position: relative;
