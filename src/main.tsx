@@ -1,5 +1,9 @@
+// Must run before anything else so Sentry instruments errors from the first tick.
+import './instrument'
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import * as Sentry from '@sentry/react'
 import '@/styles'
 import '@/components/components.css'
 import '@/components/layout/layout.css'
@@ -29,7 +33,9 @@ else {
 
   createRoot(rootEl).render(
     <StrictMode>
-      <App />
+      <Sentry.ErrorBoundary fallback={<AppCrash />} showDialog>
+        <App />
+      </Sentry.ErrorBoundary>
     </StrictMode>,
   )
 
@@ -41,4 +47,22 @@ else {
       void navigator.serviceWorker.register('/sw.js').catch(() => {})
     })
   }
+}
+
+/** Last-resort fallback shown by the Sentry error boundary on an uncaught render error. */
+function AppCrash() {
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh', padding: 24, textAlign: 'center', gap: 12 }}>
+      <div>
+        <h1 style={{ fontSize: 18, marginBottom: 8 }}>Something went wrong</h1>
+        <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>The error was reported. Try reloading.</p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ padding: '8px 16px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-contrast-25)', color: 'inherit', cursor: 'pointer' }}
+        >
+          Reload
+        </button>
+      </div>
+    </div>
+  )
 }

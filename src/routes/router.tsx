@@ -1,7 +1,12 @@
 import { lazy, type ComponentType } from 'react'
 import { createBrowserRouter, type RouteObject } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 import { RootLayout } from './RootLayout'
 import { RequireAuth } from './RequireAuth'
+
+// Instruments data-router navigations as Sentry transactions (pageload + route
+// changes), pairing with browserTracingIntegration in instrument.ts.
+const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(createBrowserRouter)
 
 /**
  * Wrap a React.lazy component as a route element. Suspense is provided by
@@ -109,7 +114,7 @@ const shellRoutes: RouteObject[] = [
   { path: '*', element: lazyEl(() => import('./NotFound')) },
 ]
 
-export const router = createBrowserRouter([
+export const router = sentryCreateBrowserRouter([
   ...publicRoutes,
   {
     path: '/',

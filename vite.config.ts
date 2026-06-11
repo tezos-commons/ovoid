@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import { fileURLToPath, URL } from 'node:url'
 
 /**
@@ -40,13 +41,33 @@ function oauthClientMetadata(): Plugin {
 // Dev server is bound to 127.0.0.1:5173 so the atproto OAuth loopback
 // client_id (http://localhost) resolves against a stable origin.
 export default defineConfig({
-  plugins: [react(), tsconfigPaths(), oauthClientMetadata()],
+  plugins: [
+    react(),
+    tsconfigPaths(),
+    oauthClientMetadata(),
+    // Upload source maps to Sentry only when a token is configured (e.g. CI).
+    // Without SENTRY_AUTH_TOKEN this is omitted, so local/normal builds are
+    // unaffected. Must come after other plugins.
+    ...(process.env.SENTRY_AUTH_TOKEN
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+          }),
+        ]
+      : []),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   build: {
+    // 'hidden' emits source maps (for Sentry upload) without referencing them in
+    // the shipped bundles, so stack traces de-minify in Sentry but maps aren't
+    // exposed to users.
+    sourcemap: 'hidden',
     rollupOptions: {
       output: {
         // Split heavy, rarely-changing deps out of the app chunk so the critical
