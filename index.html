@@ -2,7 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- interactive-widget=resizes-content: the on-screen keyboard shrinks the
+         layout viewport (and 100dvh) instead of overlaying it, so full-height
+         flex screens (chat) keep their composer above the keyboard and the page
+         no longer scrolls up on input focus. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="theme-color" content="#110c1d" />
     <title>Ovoid</title>
 

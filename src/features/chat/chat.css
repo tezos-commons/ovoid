@@ -36,6 +36,8 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .convo-list__state {
@@ -159,6 +161,10 @@
   flex-direction: column;
   padding: var(--space-3) var(--space-4) var(--space-2);
   gap: 2px;
+  /* Keep touch scrolling inside the thread — no rubber-band chaining to the
+     document, and momentum scrolling on iOS. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .msg-thread__center {
