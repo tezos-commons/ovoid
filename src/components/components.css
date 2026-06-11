@@ -224,6 +224,23 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* Desktop: a quick pop-in. Mobile sheets override with a slide-up below. */
+  animation: dialog-pop 150ms ease-out;
+}
+.dialog__scrim {
+  animation: dialog-fade 150ms ease-out;
+}
+@keyframes dialog-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialog-pop {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes dialog-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 .dialog__header {
   display: flex;
@@ -239,10 +256,44 @@
   .dialog__scrim--sheet { align-items: flex-end; padding: 0; }
   .dialog--sheet {
     max-width: none;
-    max-height: 100vh;
-    height: 100vh;
+    /* dvh, not vh: vh includes the area behind the mobile URL bar, so footer
+       buttons in a full-screen sheet got clipped off the bottom. */
+    max-height: 100dvh;
+    height: 100dvh;
     border-radius: 0;
     border: none;
+    /* Slide up from the bottom (replaces the desktop pop). */
+    animation: dialog-sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  /* Let the body — and a composer inside it — fill the full sheet height, so the
+     reply textarea gets the whole screen and the toolbar pins to the bottom. */
+  .dialog--sheet .dialog__body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .dialog--sheet .composer {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+  }
+  .dialog--sheet .composer__row {
+    flex: 1;
+    min-height: 0;
+  }
+  .dialog--sheet .composer__main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .dialog--sheet .composer__editor {
+    flex: 1;
+    min-height: 0;
+  }
+  .dialog--sheet .composer__textarea {
+    height: 100%;
+    resize: none;
   }
 }
 
@@ -335,6 +386,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
+  .dialog,
+  .dialog--sheet,
+  .dialog__scrim { animation: none; }
 }
 
 /* ---------- Img (fade-in on decode) ---------- */

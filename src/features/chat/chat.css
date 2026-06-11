@@ -259,6 +259,131 @@
   padding: 0 var(--space-1);
 }
 
+/* ---------- Reactions ---------- */
+/* Wrapper anchors the picker popover above the bubble. */
+.msg-bubble-wrap {
+  position: relative;
+  min-width: 0;
+}
+.msg-row__inner {
+  position: relative;
+}
+
+/* Hover-only affordance (touch uses long-press), absolutely placed just outside
+   the bubble so it never reserves layout space. */
+.msg-react-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.msg-row--theirs .msg-react-btn {
+  left: 100%;
+  margin-left: 2px;
+}
+.msg-row--mine .msg-react-btn {
+  right: 100%;
+  margin-right: 2px;
+}
+.msg-row:hover .msg-react-btn {
+  opacity: 1;
+}
+.msg-react-btn:hover {
+  background: var(--bg-contrast-25);
+  color: var(--text-muted);
+}
+@media (hover: none) {
+  /* No hover on touch — long-press opens the picker; hide the button and stop
+     the long-press from selecting text / firing the native callout. */
+  .msg-react-btn {
+    display: none;
+  }
+  .msg-bubble {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+}
+
+/* Reaction pills under a bubble (align to the bubble's side via the row). */
+.msg-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: -4px;
+  padding: 0 var(--space-1);
+}
+.msg-reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  cursor: pointer;
+}
+.msg-reaction--mine {
+  border-color: var(--color-primary);
+  background: var(--blue-25, var(--bg-contrast-25));
+}
+.msg-reaction__emoji {
+  font-size: var(--fs-sm);
+}
+.msg-reaction__count {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Quick-reaction picker popover. */
+.reaction-picker {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 6px;
+  z-index: var(--z-sticky);
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-overlay);
+  box-shadow: var(--shadow-menu);
+}
+.reaction-picker--start {
+  left: 0;
+}
+.reaction-picker--end {
+  right: 0;
+}
+.reaction-picker__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+.reaction-picker__btn:hover {
+  background: var(--bg-contrast-25);
+}
+
 /* ---------- Group message attribution ---------- */
 /* A non-self group message lays out as: name (above) + [avatar gutter | bubble].
    The gutter reserves the avatar's width on every bubble of a cluster so the

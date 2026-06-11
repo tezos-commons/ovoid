@@ -26,6 +26,10 @@ export function convoMembersOptions(
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last: Page) => last.cursor || undefined,
     staleTime: 30_000,
+    // Always re-fetch the roster when the settings screen mounts: it may have
+    // been warmed (ThreadHeader idle-prefetch) before someone joined, and a
+    // stale cache would omit the new member even though memberCount includes them.
+    refetchOnMount: 'always',
   })
 }
 

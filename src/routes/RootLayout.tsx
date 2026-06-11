@@ -1,5 +1,5 @@
-import { Suspense, lazy } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Suspense, lazy, useEffect } from 'react'
+import { Outlet, useLocation, useNavigationType } from 'react-router-dom'
 import { AppShell } from '@/components/layout'
 import { Spinner, Lightbox } from '@/components'
 import { useComposer, useComposerStore } from '@/store/compose-store'
@@ -39,7 +39,19 @@ const FULL_WIDTH_PREFIXES = ['/messages']
 export function RootLayout() {
   const { openCompose } = useComposer()
   const { pathname } = useLocation()
+  const navigationType = useNavigationType()
   const fullWidth = FULL_WIDTH_PREFIXES.some((p) => pathname.startsWith(p))
+
+  // Reset document scroll to the top on forward (PUSH/REPLACE) navigation, so a
+  // newly opened screen — a profile tapped from a scrolled feed, a thread — does
+  // not inherit the previous route's scroll offset. POP (back/forward) is left
+  // alone so per-screen scroll restoration (useWindowScrollRestoration,
+  // InfiniteList) can restore the remembered position. The whole app scrolls the
+  // window (useWindowVirtualizer), so window is the right target. /messages owns
+  // its own internal scroll and starts at the list, so excluding it is moot.
+  useEffect(() => {
+    if (navigationType !== 'POP') window.scrollTo(0, 0)
+  }, [pathname, navigationType])
 
   const composeOpen = useComposerStore((s) => s.open)
   const newChatOpen = useChatStore((s) => s.newChatOpen)

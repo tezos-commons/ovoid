@@ -18,6 +18,53 @@
 .composer__context-name {
   color: var(--color-primary);
 }
+
+/* ---------- Replied-to post preview ---------- */
+.composer__replyto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.composer__replyto-post {
+  display: flex;
+  gap: var(--space-3);
+}
+.composer__replyto-body {
+  min-width: 0;
+  flex: 1;
+}
+.composer__replyto-author {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+  font-size: var(--fs-sm);
+  min-width: 0;
+}
+.composer__replyto-name {
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.composer__replyto-handle {
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.composer__replyto-text {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  margin-top: 2px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* Clamp a long parent so it doesn't dominate the sheet. */
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .composer__row {
   display: grid;
   grid-template-columns: 42px 1fr;

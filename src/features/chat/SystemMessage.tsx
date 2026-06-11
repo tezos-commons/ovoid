@@ -5,6 +5,20 @@ import type { ChatBskyConvoDefs } from '@atproto/api'
 export type NameFor = (did: string) => string
 
 /**
+ * DIDs a system message refers to (so the thread can resolve their names even
+ * when they aren't in the partial convo.members set — e.g. a fresh joiner).
+ */
+export function referredDids(msg: ChatBskyConvoDefs.SystemMessageView): string[] {
+  const data = msg.data as Record<string, unknown>
+  const out: string[] = []
+  for (const key of ['member', 'addedBy', 'removedBy', 'lockedBy', 'approvedBy']) {
+    const did = (data[key] as { did?: string } | undefined)?.did
+    if (did) out.push(did)
+  }
+  return out
+}
+
+/**
  * Human description of a system message from its structured `data` union. The
  * lexicon carries only DIDs (SystemMessageReferredUser), so names are resolved
  * via `nameFor`, falling back to a shortened DID for members not in the partial

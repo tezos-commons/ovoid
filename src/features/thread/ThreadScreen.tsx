@@ -15,7 +15,7 @@ import {
 import { ThreadAuthors } from './ThreadAuthors'
 import { useThreadHover } from './thread-hover-store'
 import { ReplyTree } from './ReplyTree'
-import { ReplyComposer } from './ReplyComposer'
+import { ReplyBar } from './ReplyBar'
 import './thread.css'
 
 type SortKey = 'top' | 'newest' | 'oldest'
@@ -140,8 +140,8 @@ export default function ThreadScreen() {
           <PostCard post={node.post} variant="focused" />
         </div>
 
-        {/* Inline reply composer (or sign-in prompt). */}
-        <ReplyComposer parent={node.post} />
+        {/* Tappable reply bar → opens the compose sheet (or sign-in prompt). */}
+        <ReplyBar parent={node.post} />
 
         {/* Reply sort + subtree. A placeholder thread is a single synthesized
             node — its replies haven't arrived, so show a skeleton instead of

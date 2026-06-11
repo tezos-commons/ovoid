@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { AppBskyFeedDefs, AppBskyRichtextFacet } from '@atproto/api'
 import { Avatar, Button, CounterRing, Icons, RichText } from '@/components'
 import { useAgent } from '@/lib/api/agent'
 import { useComposerText, onComposerKeyDown } from '@/lib/compose'
@@ -88,14 +89,7 @@ export function Composer({ target, onPosted }: ComposerProps) {
 
   return (
     <div className="composer">
-      {target.replyTo && (
-        <div className="composer__context">
-          Replying to{' '}
-          <span className="composer__context-name">
-            {target.replyTo.author.displayName || `@${target.replyTo.author.handle}`}
-          </span>
-        </div>
-      )}
+      {target.replyTo && <ReplyToPreview post={target.replyTo} />}
 
       <div className="composer__row">
         <Avatar size="md" src={avatar} fallback={handle?.charAt(0)} alt={handle} />
@@ -194,6 +188,37 @@ export function Composer({ target, onPosted }: ComposerProps) {
             {target.replyTo ? 'Reply' : 'Post'}
           </Button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The post being replied to, shown above the reply input (avatar + author + the
+ * post text, clamped), then a "Replying to @handle" line — mirroring the native
+ * Bluesky reply sheet so the context is visible while composing.
+ */
+function ReplyToPreview({ post }: { post: AppBskyFeedDefs.PostView }) {
+  const rec = post.record as { text?: string; facets?: AppBskyRichtextFacet.Main[] } | undefined
+  const a = post.author
+  return (
+    <div className="composer__replyto">
+      <div className="composer__replyto-post">
+        <Avatar size="sm" src={a.avatar} fallback={a.handle?.charAt(0)} alt={a.handle} />
+        <div className="composer__replyto-body">
+          <div className="composer__replyto-author">
+            <span className="composer__replyto-name">{a.displayName || a.handle}</span>
+            <span className="composer__replyto-handle">@{a.handle}</span>
+          </div>
+          {rec?.text && (
+            <div className="composer__replyto-text">
+              <RichText text={rec.text} facets={rec.facets} />
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="composer__context">
+        Replying to <span className="composer__context-name">@{a.handle}</span>
       </div>
     </div>
   )

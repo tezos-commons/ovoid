@@ -243,6 +243,13 @@
   }
   .bottombar { display: flex; }
   .compose-fab { display: flex; }
+  /* The tab bar is fixed over the bottom of the window-scrolled content, so the
+     last feed/profile/notification items would hide behind it. Reserve its
+     height (plus the home-indicator safe area) as bottom padding on the main
+     column. Chat (.page--full) owns its own full-height layout and opts out. */
+  .page:not(.page--full) .page__main {
+    padding-bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom, 0px));
+  }
   /* Phone: drop the main-content title bar (the sticky tab strips that some
      screens render below it are separate elements and stay). */
   .screen-header { display: none; }

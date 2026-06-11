@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   AppBskyFeedPost,
+  type AppBskyActorDefs,
   type AppBskyFeedDefs,
   type BlobRef,
 } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
-import { bumpReplyCount, patchPostInAllFeeds } from '@/lib/optimistic'
+import { bumpReplyCount, insertReplyInThreads, patchPostInAllFeeds } from '@/lib/optimistic'
 import { buildPost } from '@/lib/rich-text'
 import { uploadImage } from '@/lib/blob'
 import type { ComposeTarget } from '@/store/compose-store'
@@ -70,8 +71,16 @@ function resolveReply(parent: AppBskyFeedDefs.PostView): {
  * jitter the active tab).
  */
 export function useCreatePost() {
-  const { agent, did, handle } = useAgent()
+  const { agent, did, handle, avatar } = useAgent()
   const qc = useQueryClient()
+
+  const viewerDisplayName = (): string | undefined => {
+    for (const k of [qk.profile(did ?? ''), qk.profile(handle ?? '')]) {
+      const p = qc.getQueryData<AppBskyActorDefs.ProfileViewDetailed>(k)
+      if (p?.displayName) return p.displayName
+    }
+    return undefined
+  }
 
   return useMutation({
     mutationFn: async ({ text: rawText, images, target }: CreatePostArgs) => {
@@ -111,12 +120,13 @@ export function useCreatePost() {
       }
 
       const reply = target.replyTo ? resolveReply(target.replyTo) : undefined
+      const createdAt = new Date().toISOString()
 
       const record: Partial<AppBskyFeedPost.Record> & { $type: string } = {
         $type: 'app.bsky.feed.post',
         text,
         facets,
-        createdAt: new Date().toISOString(),
+        createdAt,
         langs: ['en'],
         ...(reply ? { reply } : {}),
         ...(embed ? { embed: embed as AppBskyFeedPost.Record['embed'] } : {}),
@@ -127,9 +137,33 @@ export function useCreatePost() {
         collection: 'app.bsky.feed.post',
         record,
       })
-      return res.data
+
+      // For a reply, synthesize the PostView so it can be spliced into the open
+      // thread immediately (the AppView hasn't indexed it yet). Text/facets only.
+      const replyPost: AppBskyFeedDefs.PostView | undefined = reply
+        ? {
+            $type: 'app.bsky.feed.defs#postView',
+            uri: res.data.uri,
+            cid: res.data.cid,
+            author: {
+              did: did ?? '',
+              handle: handle ?? 'handle.invalid',
+              displayName: viewerDisplayName(),
+              avatar,
+            },
+            record: { ...record, text, facets, createdAt } as AppBskyFeedPost.Record,
+            replyCount: 0,
+            repostCount: 0,
+            likeCount: 0,
+            quoteCount: 0,
+            indexedAt: createdAt,
+            viewer: {},
+          }
+        : undefined
+
+      return { ...res.data, replyPost }
     },
-    onSuccess: (_data, { target }) => {
+    onSuccess: (data, { target }) => {
       // Trim the timeline before invalidating, but only when nobody is looking
       // at it — an active observer keeps its pages (background refetch preserves
       // the scroll position); an inactive cache would refetch every page on next
@@ -148,10 +182,12 @@ export function useCreatePost() {
       }
 
       if (target.replyTo) {
-        // Same reconciliation as use-reply: bump the parent's count wherever it
-        // is cached and refetch the thread tree it belongs to.
+        // Bump the parent's reply count wherever cached, and
+        // splice the new reply into the open thread so it shows immediately. We
+        // do NOT invalidate the thread — the write isn't indexed yet, so a
+        // refetch would drop it; the next natural thread fetch reconciles.
         patchPostInAllFeeds(qc, did, target.replyTo.uri, bumpReplyCount)
-        void qc.invalidateQueries({ queryKey: qk.threads })
+        if (data.replyPost) insertReplyInThreads(qc, target.replyTo.uri, data.replyPost)
       }
     },
   })

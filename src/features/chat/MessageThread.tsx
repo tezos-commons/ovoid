@@ -4,8 +4,10 @@ import type { ChatBskyConvoDefs } from '@atproto/api'
 import { Avatar, Button, EmptyState, ErrorState, MessageThreadSkeleton, Spinner } from '@/components'
 import { MessageBubble } from './MessageBubble'
 import { MessageComposer } from './MessageComposer'
-import { SystemMessage } from './SystemMessage'
+import { SystemMessage, referredDids } from './SystemMessage'
 import { useMessages, useMarkRead, type MessageItem } from './use-messages'
+import { useToggleReaction } from './use-react-message'
+import { useChatProfiles } from './use-chat-profiles'
 import { buildThreadItems } from './thread-items'
 import { groupKind, memberName, otherMember, type ConvoMember } from './group'
 import { isChatPermissionError } from './chat-errors'
@@ -85,19 +87,48 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
   const other = convo ? otherMember(convo, viewerDid) : undefined
 
   // Resolve message sender DIDs to names/avatars for group attribution. The map
-  // is built from the partial convo roster; unknown senders fall back to a short
-  // DID so a message never renders nameless.
+  // is built from the partial convo roster (the "important members").
   const memberByDid = useMemo(() => {
     const m = new Map<string, ConvoMember>()
     for (const member of convo?.members ?? []) m.set(member.did, member)
     return m
   }, [convo?.members])
-  const nameFor = (did: string): string => {
-    const member = memberByDid.get(did)
-    return member ? memberName(member) : `${did.slice(0, 12)}…`
-  }
 
   const items = useMemo(() => buildThreadItems(messages), [messages])
+
+  // DIDs referenced by the thread (senders + system-message subjects) that the
+  // partial roster doesn't cover — e.g. someone who just joined via an invite
+  // link. Resolve them via getProfiles so they render as a name, not a raw DID.
+  const unresolvedDids = useMemo(() => {
+    const set = new Set<string>()
+    for (const it of items) {
+      if (it.kind === 'system') {
+        for (const m of it.msgs) for (const d of referredDids(m)) set.add(d)
+      } else {
+        const sd = 'sender' in it.msg ? it.msg.sender?.did : undefined
+        if (sd) set.add(sd)
+      }
+    }
+    return [...set].filter((d) => !memberByDid.has(d))
+  }, [items, memberByDid])
+  const profiles = useChatProfiles(unresolvedDids)
+
+  const nameFor = (did: string): string => {
+    const member = memberByDid.get(did)
+    if (member) return memberName(member)
+    const p = profiles.get(did)
+    if (p) return p.displayName?.trim() || (p.handle ? `@${p.handle}` : `${did.slice(0, 12)}…`)
+    return `${did.slice(0, 12)}…`
+  }
+  const avatarFor = (did: string): string | undefined =>
+    memberByDid.get(did)?.avatar ?? profiles.get(did)?.avatar
+
+  // One reaction mutation for the whole thread; bubbles call it via onReact.
+  const reaction = useToggleReaction(convoId)
+  const onReact = viewerDid
+    ? (messageId: string, value: string, add: boolean) =>
+        reaction.mutate({ messageId, value, add })
+    : undefined
 
   // A locked group accepts no new messages; lock the composer to match.
   const replyDisabled = group ? group.lockStatus !== 'unlocked' : false
@@ -149,7 +180,6 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
                 )
               }
               const sd = 'sender' in item.msg ? item.msg.sender?.did : undefined
-              const sender = sd ? memberByDid.get(sd) : undefined
               return (
                 <div key={item.key} className={clsx('msg-line', item.sameAuthorPrev && 'msg-grouped')}>
                   <MessageBubble
@@ -160,7 +190,8 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
                     showAvatar={item.lastInCluster}
                     showName={item.firstInCluster}
                     senderName={sd ? nameFor(sd) : undefined}
-                    senderAvatar={sender?.avatar}
+                    senderAvatar={sd ? avatarFor(sd) : undefined}
+                    onReact={onReact}
                   />
                 </div>
               )

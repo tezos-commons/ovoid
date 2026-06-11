@@ -1,10 +1,13 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
 import type { ChatBskyConvoDefs, ChatBskyGroupDefs } from '@atproto/api'
 import { Avatar } from '@/components'
 import { RichText } from '@/lib/rich-text'
 import { absoluteTime, clockTime } from '@/lib/time'
+import { useLongPress } from '@/lib/use-long-press'
+import { MessageReactions } from './MessageReactions'
+import { ReactionPicker } from './ReactionPicker'
 import type { MessageItem } from './use-messages'
 
 const JOIN_LINK_EMBED = 'chat.bsky.embed.joinLink#view'
@@ -49,6 +52,9 @@ export interface MessageBubbleProps {
   showName?: boolean
   senderName?: string
   senderAvatar?: string
+  /** Toggle a reaction on this message; absent when reactions are unavailable
+   *  (signed out). add=true to add the viewer's reaction, false to remove. */
+  onReact?: (messageId: string, value: string, add: boolean) => void
 }
 
 /**
@@ -67,11 +73,14 @@ export const MessageBubble = memo(function MessageBubble({
   showName = false,
   senderName,
   senderAvatar,
+  onReact,
 }: MessageBubbleProps) {
+  const [pickerOpen, setPickerOpen] = useState(false)
   const senderDid = 'sender' in message ? message.sender?.did : undefined
   const mine = senderDid === viewerDid
   // A group message from someone else gets the avatar gutter + name treatment.
   const attributed = isGroup && !mine
+  const longPress = useLongPress(() => onReact && setPickerOpen(true))
 
   if (isDeleted(message)) {
     return (
@@ -84,7 +93,18 @@ export const MessageBubble = memo(function MessageBubble({
 
   if (!isMessageView(message)) return null
 
-  const bubble = (
+  const react = (value: string, add: boolean) => {
+    onReact?.(message.id, value, add)
+    setPickerOpen(false)
+  }
+  const pickFromPicker = (value: string) => {
+    const already = (message.reactions ?? []).some(
+      (r) => r.value === value && r.sender.did === viewerDid,
+    )
+    react(value, !already)
+  }
+
+  return (
     <div
       className={clsx('msg-row', mine ? 'msg-row--mine' : 'msg-row--theirs', attributed && 'msg-row--group')}
       title={absoluteTime(message.sentAt, { year: 'numeric' })}
@@ -96,17 +116,50 @@ export const MessageBubble = memo(function MessageBubble({
             {showAvatar && <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="xs" />}
           </span>
         )}
-        <div className={clsx('msg-bubble', mine ? 'msg-bubble--mine' : 'msg-bubble--theirs')}>
-          {message.text && (
-            <RichText text={message.text} facets={message.facets} className="msg-bubble__text" />
+        <div className="msg-bubble-wrap">
+          <div
+            className={clsx('msg-bubble', mine ? 'msg-bubble--mine' : 'msg-bubble--theirs')}
+            {...(onReact ? longPress.handlers : {})}
+          >
+            {message.text && (
+              <RichText text={message.text} facets={message.facets} className="msg-bubble__text" />
+            )}
+            {message.embed && <JoinLinkEmbed embed={message.embed} />}
+          </div>
+          {pickerOpen && (
+            <ReactionPicker
+              align={mine ? 'end' : 'start'}
+              onPick={pickFromPicker}
+              onClose={() => setPickerOpen(false)}
+            />
           )}
-          {message.embed && <JoinLinkEmbed embed={message.embed} />}
         </div>
+        {onReact && (
+          <button
+            type="button"
+            className="msg-react-btn"
+            aria-label="Add reaction"
+            onClick={() => setPickerOpen((v) => !v)}
+          >
+            <ReactIcon />
+          </button>
+        )}
       </div>
+      <MessageReactions reactions={message.reactions} viewerDid={viewerDid} onToggle={react} />
       {showTime && <span className="msg-row__time">{clockTime(message.sentAt)}</span>}
     </div>
   )
-  return bubble
 })
+
+function ReactIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="9" cy="10" r="1.1" fill="currentColor" />
+      <circle cx="15" cy="10" r="1.1" fill="currentColor" />
+      <path d="M8.5 14.5a4 4 0 0 0 7 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 export { isMessageView, isDeleted }
