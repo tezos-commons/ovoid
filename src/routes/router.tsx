@@ -35,6 +35,11 @@ const publicRoutes: RouteObject[] = [
     path: '/oauth/callback',
     element: lazyEl(() => import('@/features/auth/Callback')),
   },
+  {
+    // Group invite landing — public so it resolves the preview before sign-in.
+    path: '/group/join/:code',
+    element: lazyEl(() => import('@/features/chat/GroupInviteLanding')),
+  },
 ]
 
 // ---- Shell routes (inside RootLayout / AppShell) ----
@@ -74,6 +79,10 @@ const shellRoutes: RouteObject[] = [
   {
     path: 'messages/:convoId',
     element: protectedEl(() => import('@/features/chat/ChatScreen')),
+  },
+  {
+    path: 'messages/:convoId/settings',
+    element: protectedEl(() => import('@/features/chat/GroupSettingsScreen')),
   },
 
   {

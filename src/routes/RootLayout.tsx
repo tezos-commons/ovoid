@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { AppShell } from '@/components/layout'
 import { Spinner, Lightbox } from '@/components'
 import { useComposer, useComposerStore } from '@/store/compose-store'
+import { useChatStore } from '@/store/chat-store'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
 import { useArtifactStore } from '@/store/artifact-store'
 import { PostActionsBridge } from '@/features/post/PostActionsBridge'
@@ -14,6 +15,9 @@ import { useEscapeBack } from '@/lib/use-escape-back'
 // This keeps the composer and the NFT/objkt graph out of the entry bundle.
 const ComposeModal = lazy(() =>
   import('@/features/home/compose/ComposeModal').then((m) => ({ default: m.ComposeModal })),
+)
+const CreateGroupDialog = lazy(() =>
+  import('@/features/chat/CreateGroupDialog').then((m) => ({ default: m.CreateGroupDialog })),
 )
 const NftBrowser = lazy(() =>
   import('@/components/embeds/NftBrowser').then((m) => ({ default: m.NftBrowser })),
@@ -38,6 +42,7 @@ export function RootLayout() {
   const fullWidth = FULL_WIDTH_PREFIXES.some((p) => pathname.startsWith(p))
 
   const composeOpen = useComposerStore((s) => s.open)
+  const createGroupOpen = useChatStore((s) => s.createGroupOpen)
   const nftOpen = useNftBrowserStore((s) => s.open)
   // The player stays mounted through mini ⇄ full so audio survives; it only
   // unmounts (stopping playback) when explicitly closed.
@@ -61,6 +66,7 @@ export function RootLayout() {
       </AppShell>
       <Suspense fallback={null}>
         {composeOpen && <ComposeModal />}
+        {createGroupOpen && <CreateGroupDialog />}
         {nftOpen && <NftBrowser />}
         {artifactMode !== 'closed' && <ArtifactPlayer />}
       </Suspense>

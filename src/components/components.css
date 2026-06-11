@@ -31,6 +31,50 @@
 .av--lg { width: 80px; height: 80px; font-size: 30px; }
 .av--xl { width: 96px; height: 96px; font-size: 36px; }
 
+/* ---------- Avatar group (overlapping stack for group convos) ---------- */
+.avatar-group {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+/* Each item overlaps the previous by ~40% and gets a ring in the surface colour
+   so the stacked avatars read as distinct discs. */
+.avatar-group__item:not(:first-child) {
+  margin-left: -14px;
+}
+.avatar-group--sm .avatar-group__item:not(:first-child) {
+  margin-left: -11px;
+}
+.avatar-group--lg .avatar-group__item:not(:first-child) {
+  margin-left: -28px;
+}
+.avatar-group__item .av {
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.avatar-group__more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-50);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.avatar-group--sm .avatar-group__more {
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+}
+.avatar-group--lg .avatar-group__more {
+  width: 80px;
+  height: 80px;
+  font-size: var(--fs-sm);
+}
+
 /* ---------- Button ---------- */
 .btn {
   display: inline-flex;

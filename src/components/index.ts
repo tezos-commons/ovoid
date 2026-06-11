@@ -1,6 +1,7 @@
 import './components.css'
 
 export { Avatar, type AvatarProps } from './Avatar'
+export { AvatarGroup, type AvatarGroupProps, type AvatarGroupMember } from './AvatarGroup'
 export { Img } from './Img'
 export { Button, type ButtonProps } from './Button'
 export { IconButton, type IconButtonProps } from './IconButton'

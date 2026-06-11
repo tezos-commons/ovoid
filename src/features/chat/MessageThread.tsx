@@ -1,10 +1,13 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import clsx from 'clsx'
 import type { ChatBskyConvoDefs } from '@atproto/api'
 import { Avatar, Button, EmptyState, ErrorState, MessageThreadSkeleton, Spinner } from '@/components'
 import { MessageBubble } from './MessageBubble'
 import { MessageComposer } from './MessageComposer'
+import { SystemMessage } from './SystemMessage'
 import { useMessages, useMarkRead, type MessageItem } from './use-messages'
+import { buildThreadItems } from './thread-items'
+import { groupKind, memberName, otherMember, type ConvoMember } from './group'
 import { isChatPermissionError } from './chat-errors'
 
 export interface MessageThreadProps {
@@ -13,8 +16,6 @@ export interface MessageThreadProps {
   viewerDid: string | undefined
   /** Mobile master/detail: show a back affordance handled by the header instead. */
 }
-
-const SAME_AUTHOR_GAP_MS = 5 * 60 * 1000
 
 function newestMessageId(messages: MessageItem[]): string | undefined {
   // messages are oldest-first; newest is last and must be a real message.
@@ -79,8 +80,27 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
     return () => el.removeEventListener('scroll', onScroll)
   }, [q.hasNextPage, q.isFetchingNextPage, q])
 
-  const other = convo?.members?.find((m) => m.did !== viewerDid)
-  const replyDisabled = false // convoView exposes no per-viewer reply lock in this lexicon
+  const group = convo ? groupKind(convo) : undefined
+  const isGroup = !!group
+  const other = convo ? otherMember(convo, viewerDid) : undefined
+
+  // Resolve message sender DIDs to names/avatars for group attribution. The map
+  // is built from the partial convo roster; unknown senders fall back to a short
+  // DID so a message never renders nameless.
+  const memberByDid = useMemo(() => {
+    const m = new Map<string, ConvoMember>()
+    for (const member of convo?.members ?? []) m.set(member.did, member)
+    return m
+  }, [convo?.members])
+  const nameFor = (did: string): string => {
+    const member = memberByDid.get(did)
+    return member ? memberName(member) : `${did.slice(0, 12)}…`
+  }
+
+  const items = useMemo(() => buildThreadItems(messages), [messages])
+
+  // A locked group accepts no new messages; lock the composer to match.
+  const replyDisabled = group ? group.lockStatus !== 'unlocked' : false
 
   if (q.isError) {
     if (isChatPermissionError(q.error)) {
@@ -120,22 +140,28 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
             {!q.hasNextPage && (
               <div className="msg-thread__start">Beginning of conversation</div>
             )}
-            {messages.map((m, i) => {
-              const prev = messages[i - 1]
-              const sameAuthor =
-                prev &&
-                'sender' in prev &&
-                'sender' in m &&
-                prev.sender?.did === m.sender?.did
-              const next = messages[i + 1]
-              const showTime =
-                !next ||
-                !('sender' in next) ||
-                next.sender?.did !== (m as { sender?: { did?: string } }).sender?.did ||
-                gap(m, next) > SAME_AUTHOR_GAP_MS
+            {items.map((item) => {
+              if (item.kind === 'system') {
+                return (
+                  <div key={item.key} className="msg-line msg-line--system">
+                    <SystemMessage msgs={item.msgs} collapsed={item.collapsed} nameFor={nameFor} />
+                  </div>
+                )
+              }
+              const sd = 'sender' in item.msg ? item.msg.sender?.did : undefined
+              const sender = sd ? memberByDid.get(sd) : undefined
               return (
-                <div key={msgKey(m, i)} className={clsx('msg-line', sameAuthor && 'msg-grouped')}>
-                  <MessageBubble message={m} viewerDid={viewerDid} showTime={showTime} />
+                <div key={item.key} className={clsx('msg-line', item.sameAuthorPrev && 'msg-grouped')}>
+                  <MessageBubble
+                    message={item.msg}
+                    viewerDid={viewerDid}
+                    showTime={item.showTime}
+                    isGroup={isGroup}
+                    showAvatar={item.lastInCluster}
+                    showName={item.firstInCluster}
+                    senderName={sd ? nameFor(sd) : undefined}
+                    senderAvatar={sender?.avatar}
+                  />
                 </div>
               )
             })}
@@ -146,16 +172,6 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
       <MessageComposer convoId={convoId} disabled={replyDisabled} />
     </div>
   )
-}
-
-function gap(a: MessageItem, b: MessageItem): number {
-  const ta = 'sentAt' in a ? new Date(a.sentAt).getTime() : 0
-  const tb = 'sentAt' in b ? new Date(b.sentAt).getTime() : 0
-  return Math.abs(tb - ta)
-}
-
-function msgKey(m: MessageItem, i: number): string {
-  return 'id' in m && m.id ? m.id : `msg-${i}`
 }
 
 export function ChatScopeMissing() {

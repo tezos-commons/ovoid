@@ -75,6 +75,26 @@ export const qk = {
 
   messages: (convoId: string) => ['bsky', 'chat', 'messages', { convoId }] as const,
 
+  // A single convo view (group header + settings). Viewer-dependent (roles,
+  // unread join-request counts are per-owner) so it carries `did`.
+  convo: (did: string | undefined, convoId: string) =>
+    ['bsky', did, 'chat', 'convo', { convoId }] as const,
+
+  // Full group roster via getConvoMembers (convo.members is only a partial set).
+  convoMembers: (did: string | undefined, convoId: string) =>
+    ['bsky', did, 'chat', 'convoMembers', { convoId }] as const,
+
+  // Pending join requests for a group (owner-only read).
+  joinRequests: (did: string | undefined, convoId: string) =>
+    ['bsky', did, 'chat', 'joinRequests', { convoId }] as const,
+
+  // Join-link preview by code. Public read (works logged-out) — omits `did`.
+  joinLinkPreview: (code: string) =>
+    ['bsky', 'chat', 'joinLinkPreview', { code }] as const,
+
+  // Viewer's chat actor status (canCreateGroups / chatDisabled / groupMemberLimit).
+  chatStatus: (did?: string) => ['bsky', did, 'chat', 'status'] as const,
+
   // Actor/rkey -> AT-URI resolution caches (immutable for a given route).
   feedGeneratorUri: (actor: string, rkey: string) =>
     ['bsky', 'feedGenerator', 'uri', { actor, rkey }] as const,

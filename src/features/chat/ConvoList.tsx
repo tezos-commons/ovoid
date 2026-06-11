@@ -2,14 +2,16 @@ import { memo, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
 import type { ChatBskyConvoDefs } from '@atproto/api'
-import { Avatar, ConvoListSkeleton, EmptyState, ErrorState, Spinner } from '@/components'
+import { Avatar, AvatarGroup, ConvoListSkeleton, EmptyState, ErrorState, Spinner } from '@/components'
 import { relativeTime } from '@/lib/time'
 import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
+import { qk } from '@/lib/query-keys'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
 import { useConvos } from './use-convos'
 import { messagesOptions } from './use-messages'
+import { convoTitle, groupKind, otherMember } from './group'
 import { isChatPermissionError } from './chat-errors'
 import { ChatScopeMissing } from './MessageThread'
 
@@ -17,14 +19,6 @@ export interface ConvoListProps {
   viewerDid: string | undefined
   /** Currently open convo, highlighted in the list. */
   activeConvoId?: string
-}
-
-function otherMember(
-  convo: ChatBskyConvoDefs.ConvoView,
-  viewerDid: string | undefined,
-): ChatBskyConvoDefs.ConvoView['members'][number] | undefined {
-  const others = convo.members.filter((m) => m.did !== viewerDid)
-  return others[0] ?? convo.members[0]
 }
 
 function previewOf(convo: ChatBskyConvoDefs.ConvoView): string {
@@ -117,15 +111,20 @@ const ConvoRow = memo(function ConvoRow({
   viewerDid: string | undefined
   activeConvoId?: string
 }) {
-  const { chatAgent } = useAgent()
+  const { chatAgent, did } = useAgent()
+  const group = groupKind(convo)
   const other = otherMember(convo, viewerDid)
-  const name = other?.displayName?.trim() || (other?.handle ? `@${other.handle}` : 'Unknown')
+  const name = convoTitle(convo, viewerDid)
   const unread = convo.unreadCount > 0
 
   const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
     if (!chatAgent) return
+    // Warm the message head page, and seed the single-convo cache from the list
+    // entry we already hold so the thread header / settings render without a
+    // getConvo round-trip on open. setQueryData here matches qk.convo exactly.
     const opts = messagesOptions(chatAgent, convo.id)
     schedulePrefetch(opts.queryKey, () => queryClient.prefetchInfiniteQuery(opts))
+    queryClient.setQueryData(qk.convo(did, convo.id), convo)
   })
 
   return (
@@ -138,14 +137,21 @@ const ConvoRow = memo(function ConvoRow({
       })}
       role="listitem"
     >
-      <Avatar src={other?.avatar} alt={name} fallback={other?.displayName ?? other?.handle} size="md" />
+      {group ? (
+        <AvatarGroup members={convo.members} size="md" />
+      ) : (
+        <Avatar src={other?.avatar} alt={name} fallback={other?.displayName ?? other?.handle} size="md" />
+      )}
       <div className="convo-row__body">
         <div className="convo-row__top">
           <span className="convo-row__name">{name}</span>
           <span className="convo-row__time">{lastTime(convo)}</span>
         </div>
         <div className="convo-row__bottom">
-          <span className="convo-row__preview">{previewOf(convo)}</span>
+          <span className="convo-row__preview">
+            {group ? `${group.memberCount} members · ` : ''}
+            {previewOf(convo)}
+          </span>
           {unread && <span className="convo-row__dot" aria-label={`${convo.unreadCount} unread`} />}
         </div>
       </div>

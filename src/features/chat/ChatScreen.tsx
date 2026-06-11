@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Avatar, IconButton } from '@/components'
+import { useParams } from 'react-router-dom'
 import { ScreenHeader } from '@/components/layout'
-import { BackIcon } from '@/components/Icon'
 import { useAgent } from '@/lib/api/agent'
 import { ConvoList } from './ConvoList'
 import { MessageThread } from './MessageThread'
+import { ThreadHeader } from './ThreadHeader'
+import { ChatListHeaderActions } from './ChatListHeaderActions'
 import { useConvos } from './use-convos'
 import './chat.css'
 
@@ -19,54 +19,26 @@ import './chat.css'
  *   /messages/:convoId   -> message thread (detail)
  * On desktop both render; the param just selects the highlighted/open convo.
  *
- * All chat traffic goes through bundle.chatAgent (the proxied agent). When
- * signed out chatAgent is null; the route is protected so that path is only
- * hit transiently — ConvoList/MessageThread render their own disabled states.
+ * Both 1:1 and group convos flow through here — ThreadHeader / ConvoList /
+ * MessageThread branch on convo kind internally.
  */
 export default function ChatScreen() {
-  // The full-width page area (no reserved aside) is decided by route in
-  // RootLayout (FULL_WIDTH_PREFIXES), so it's already applied before this lazy
-  // screen mounts — no width jump while the chunk loads.
   const { convoId } = useParams<{ convoId?: string }>()
-  const navigate = useNavigate()
   const { did } = useAgent()
 
   // Resolve the open convo from the cached list for the detail header (avatar +
-  // name) without an extra getConvo round-trip on the common case.
+  // name / group metadata) without an extra getConvo round-trip on the common case.
   const convosQ = useConvos()
   const activeConvo = useMemo(
     () => convosQ.convos.find((c) => c.id === convoId),
     [convosQ.convos, convoId],
   )
-  const other = activeConvo?.members?.find((m) => m.did !== did)
-
-  const detailTitle = convoId
-    ? other
-      ? (
-          <Link
-            to={`/profile/${other.handle}`}
-            className="chat-detail-title"
-            title={`View @${other.handle}`}
-          >
-            <Avatar
-              src={other.avatar}
-              alt={other.displayName ?? other.handle}
-              fallback={other.displayName ?? other.handle}
-              size="sm"
-            />
-            <span className="chat-detail-title__name">
-              {other.displayName?.trim() || `@${other.handle}`}
-            </span>
-          </Link>
-        )
-      : 'Conversation'
-    : 'Messages'
 
   return (
     <div className="chat-screen" data-detail={convoId ? 'open' : 'closed'}>
       {/* Master pane: conversation list */}
       <section className="chat-pane chat-pane--list" aria-label="Conversations">
-        <ScreenHeader title="Messages" />
+        <ScreenHeader title="Messages" actions={<ChatListHeaderActions />} />
         <ConvoList viewerDid={did} activeConvoId={convoId} />
       </section>
 
@@ -74,17 +46,7 @@ export default function ChatScreen() {
       <section className="chat-pane chat-pane--detail" aria-label="Conversation">
         {convoId ? (
           <>
-            <ScreenHeader
-              title={detailTitle}
-              // back returns to the list on mobile; harmless on desktop.
-              actions={
-                <span className="chat-detail-back">
-                  <IconButton label="Back to messages" onClick={() => navigate('/messages')}>
-                    <BackIcon size={20} />
-                  </IconButton>
-                </span>
-              }
-            />
+            <ThreadHeader convo={activeConvo} convoId={convoId} viewerDid={did} />
             <MessageThread convoId={convoId} convo={activeConvo} viewerDid={did} />
           </>
         ) : (
