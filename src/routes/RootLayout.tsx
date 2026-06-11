@@ -16,8 +16,8 @@ import { useEscapeBack } from '@/lib/use-escape-back'
 const ComposeModal = lazy(() =>
   import('@/features/home/compose/ComposeModal').then((m) => ({ default: m.ComposeModal })),
 )
-const CreateGroupDialog = lazy(() =>
-  import('@/features/chat/CreateGroupDialog').then((m) => ({ default: m.CreateGroupDialog })),
+const NewChatDialog = lazy(() =>
+  import('@/features/chat/NewChatDialog').then((m) => ({ default: m.NewChatDialog })),
 )
 const NftBrowser = lazy(() =>
   import('@/components/embeds/NftBrowser').then((m) => ({ default: m.NftBrowser })),
@@ -42,7 +42,7 @@ export function RootLayout() {
   const fullWidth = FULL_WIDTH_PREFIXES.some((p) => pathname.startsWith(p))
 
   const composeOpen = useComposerStore((s) => s.open)
-  const createGroupOpen = useChatStore((s) => s.createGroupOpen)
+  const newChatOpen = useChatStore((s) => s.newChatOpen)
   const nftOpen = useNftBrowserStore((s) => s.open)
   // The player stays mounted through mini ⇄ full so audio survives; it only
   // unmounts (stopping playback) when explicitly closed.
@@ -66,7 +66,7 @@ export function RootLayout() {
       </AppShell>
       <Suspense fallback={null}>
         {composeOpen && <ComposeModal />}
-        {createGroupOpen && <CreateGroupDialog />}
+        {newChatOpen && <NewChatDialog />}
         {nftOpen && <NftBrowser />}
         {artifactMode !== 'closed' && <ArtifactPlayer />}
       </Suspense>

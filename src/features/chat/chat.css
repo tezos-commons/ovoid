@@ -382,6 +382,11 @@
    messages. */
 .chat-screen .screen-header {
   top: 0;
+  /* The global mobile rule hides .screen-header on phones, but chat needs its
+     header on both panes: the list pane for the title + new-chat button, the
+     detail pane for the back affordance + conversation name. Higher specificity
+     (.chat-screen .screen-header) re-shows it across the mobile range. */
+  display: flex;
 }
 
 /* ---------- Detail header (avatar + name) ---------- */
@@ -510,6 +515,13 @@
 
 .group-create__chip:hover {
   background: var(--bg-contrast-50);
+}
+
+/* A picked person who can't be added to a group — flagged so the named warning
+   below has an on-chip counterpart the user can click to remove. */
+.group-create__chip--blocked {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .group-create__results {

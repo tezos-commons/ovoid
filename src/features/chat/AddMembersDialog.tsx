@@ -4,8 +4,10 @@ import { Avatar, Button, Dialog } from '@/components'
 import { normalizeXrpcError } from '@/lib/api/errors'
 import { useTypeahead } from '@/features/search/use-typeahead'
 import { useAddGroupMembers } from './use-group-members'
+import { groupEligibility, profileLabel } from './chat-eligibility'
 
-type Picked = Pick<AppBskyActorDefs.ProfileViewBasic, 'did' | 'handle' | 'displayName' | 'avatar'>
+// Full profile (associated.chat + viewer) so group eligibility checks locally.
+type Picked = AppBskyActorDefs.ProfileViewBasic
 
 export interface AddMembersDialogProps {
   open: boolean
@@ -32,13 +34,17 @@ export function AddMembersDialog({ open, onClose, convoId, existingDids, remaini
   const results = actors.filter((a) => !pickedDids.has(a.did) && !existingDids.has(a.did))
   const atLimit = remaining > 0 && picked.length >= remaining
 
+  // Members whose chat declaration forbids group invites — named here so the add
+  // doesn't fail opaquely without saying who.
+  const ineligible = useMemo(() => picked.filter((p) => groupEligibility(p) === 'no'), [picked])
+
   const close = () => {
     setQuery('')
     setPicked([])
     onClose()
   }
   const submit = () => {
-    if (picked.length === 0 || add.isPending) return
+    if (picked.length === 0 || add.isPending || ineligible.length > 0) return
     add.mutate(
       picked.map((p) => p.did),
       { onSuccess: close },
@@ -50,19 +56,22 @@ export function AddMembersDialog({ open, onClose, convoId, existingDids, remaini
       <div className="group-create">
         {picked.length > 0 && (
           <div className="group-create__chips">
-            {picked.map((p) => (
-              <button
-                key={p.did}
-                type="button"
-                className="group-create__chip"
-                onClick={() => setPicked((x) => x.filter((m) => m.did !== p.did))}
-                title="Remove"
-              >
-                <Avatar src={p.avatar} alt={p.displayName ?? p.handle} fallback={p.displayName ?? p.handle} size="xs" />
-                <span>{p.displayName?.trim() || `@${p.handle}`}</span>
-                <span aria-hidden="true">×</span>
-              </button>
-            ))}
+            {picked.map((p) => {
+              const blocked = groupEligibility(p) === 'no'
+              return (
+                <button
+                  key={p.did}
+                  type="button"
+                  className={`group-create__chip${blocked ? ' group-create__chip--blocked' : ''}`}
+                  onClick={() => setPicked((x) => x.filter((m) => m.did !== p.did))}
+                  title={blocked ? 'Can’t be added to group chats — click to remove' : 'Remove'}
+                >
+                  <Avatar src={p.avatar} alt={p.displayName ?? p.handle} fallback={p.displayName ?? p.handle} size="xs" />
+                  <span>{p.displayName?.trim() || `@${p.handle}`}</span>
+                  <span aria-hidden="true">×</span>
+                </button>
+              )
+            })}
           </div>
         )}
 
@@ -100,6 +109,14 @@ export function AddMembersDialog({ open, onClose, convoId, existingDids, remaini
           </div>
         )}
 
+        {ineligible.length > 0 && (
+          <div className="group-create__error" role="alert">
+            {ineligible.length === 1
+              ? `${profileLabel(ineligible[0])} hasn’t enabled group invites and can’t be added. Remove them to continue.`
+              : `These people haven’t enabled group invites: ${ineligible.map(profileLabel).join(', ')}. Remove them to continue.`}
+          </div>
+        )}
+
         {add.isError && (
           <div className="group-create__error" role="alert">
             {normalizeXrpcError(add.error).message}
@@ -110,7 +127,12 @@ export function AddMembersDialog({ open, onClose, convoId, existingDids, remaini
           <Button variant="secondary" onClick={close}>
             Cancel
           </Button>
-          <Button variant="primary" loading={add.isPending} disabled={picked.length === 0} onClick={submit}>
+          <Button
+            variant="primary"
+            loading={add.isPending}
+            disabled={picked.length === 0 || ineligible.length > 0}
+            onClick={submit}
+          >
             Add {picked.length > 0 ? `(${picked.length})` : ''}
           </Button>
         </div>

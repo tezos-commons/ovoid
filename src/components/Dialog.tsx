@@ -20,6 +20,14 @@ export interface DialogProps {
 export function Dialog({ open, onClose, title, children, sheetOnMobile = true }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
+  // Keep onClose current without making it an effect dependency: callers pass an
+  // inline onClose that changes identity on every render, and a dialog that owns
+  // a text input re-renders on every keystroke. If the focus effect depended on
+  // onClose it would re-run per keystroke and yank focus back to the first
+  // element — so the effect runs only on `open`, and reads onClose via this ref.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     if (!open) return
 
@@ -28,16 +36,17 @@ export function Dialog({ open, onClose, title, children, sheetOnMobile = true }:
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
         return
       }
       if (e.key === 'Tab') trapFocus(e, panelRef.current)
     }
     document.addEventListener('keydown', onKey)
 
-    // Move focus into the dialog.
+    // Move focus into the dialog once, on open. Prefer a field over the close
+    // button so text dialogs land focus in their first input.
     const toFocus = panelRef.current?.querySelector<HTMLElement>(
-      'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
+      'input:not([type="hidden"]), textarea, select, button, [href], [tabindex]:not([tabindex="-1"])',
     )
     toFocus?.focus()
 
@@ -45,7 +54,7 @@ export function Dialog({ open, onClose, title, children, sheetOnMobile = true }:
       document.body.style.overflow = prevOverflow
       document.removeEventListener('keydown', onKey)
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
