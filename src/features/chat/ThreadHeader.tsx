@@ -8,6 +8,8 @@ import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { runWhenIdle } from '@/lib/idle'
+import { notifyConfigured } from '@/lib/notify/client'
+import { useNotifyConvoMutes, usePutConvoMute } from '@/lib/notify/use-notify'
 import { convoTitle, groupKind, otherMember, viewerOwnsGroup } from './group'
 import { convoMembersOptions } from './use-convo-members'
 import { joinRequestsOptions } from './use-join-requests'
@@ -58,6 +60,21 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
     </span>
   )
 
+  // Per-convo push mute (Ovoid's notify backend — not chat.bsky.convo.muteConvo,
+  // which would also mute the convo in the official app).
+  const { data: convoMutes } = useNotifyConvoMutes(notifyConfigured())
+  const putConvoMute = usePutConvoMute()
+  const convoMuted = !!convoMutes?.includes(convoId)
+  const muteItem = notifyConfigured()
+    ? [
+        {
+          key: 'notify-mute',
+          label: convoMuted ? 'Unmute notifications' : 'Mute notifications',
+          onSelect: () => putConvoMute.mutate({ convoId, muted: !convoMuted }),
+        },
+      ]
+    : []
+
   if (group) {
     const title = (
       <Link to={`/messages/${convoId}/settings`} className="chat-detail-title" title="Group settings">
@@ -71,6 +88,7 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
     }
     const items = [
       { key: 'settings', label: 'Group settings', onSelect: () => navigate(`/messages/${convoId}/settings`) },
+      ...muteItem,
       { key: 'leave', label: 'Leave group', danger: true, onSelect: onLeave },
     ]
     return (
@@ -102,5 +120,26 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
     'Conversation'
   )
 
-  return <ScreenHeader title={title} actions={back} />
+  return (
+    <ScreenHeader
+      title={title}
+      actions={
+        muteItem.length ? (
+          <span className="chat-detail-actions">
+            <Menu
+              trigger={
+                <IconButton label="Conversation options">
+                  <MoreIcon size={20} />
+                </IconButton>
+              }
+              items={muteItem}
+            />
+            {back}
+          </span>
+        ) : (
+          back
+        )
+      }
+    />
+  )
 }

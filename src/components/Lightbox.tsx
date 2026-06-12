@@ -23,6 +23,17 @@ export function Lightbox() {
     if (lightbox) setIndex(lightbox.index)
   }, [lightbox])
 
+  // Lock document scroll while open (same as Dialog/NftBrowser) — otherwise the
+  // page's scrollbar paints on top of the fixed overlay at the right edge.
+  useEffect(() => {
+    if (!lightbox) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [lightbox])
+
   const count = lightbox?.images.length ?? 0
 
   useEffect(() => {

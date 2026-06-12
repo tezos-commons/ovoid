@@ -1,6 +1,15 @@
 // Must run before anything else so Sentry instruments errors from the first tick.
 import './instrument'
 
+// beforeinstallprompt fires once, early — the capture must live in the entry
+// chunk, not a lazy route (see lib/install.ts).
+import '@/lib/install'
+
+// Applies the persisted font scale/family at module load. Must be in the entry
+// chunk: its only other importer is the lazy appearance-settings route, so
+// without this the saved appearance wouldn't apply until that screen is opened.
+import '@/features/settings/theme-store'
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'

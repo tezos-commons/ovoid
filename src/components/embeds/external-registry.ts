@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import type { ExternalEmbedProps } from './GenericExternalCard'
+import { bskyChatMatcher } from './providers/bsky-chat'
 import { objktMatcher } from './providers/objkt'
 import { teiaMatcher } from './providers/teia'
 
@@ -17,7 +18,7 @@ export interface ExternalEmbedMatcher {
   Component: ComponentType<ExternalEmbedProps>
 }
 
-const EXTERNAL_MATCHERS: ExternalEmbedMatcher[] = [objktMatcher, teiaMatcher]
+const EXTERNAL_MATCHERS: ExternalEmbedMatcher[] = [objktMatcher, teiaMatcher, bskyChatMatcher]
 
 /** Resolve the special renderer for an external link URL, if any. */
 export function matchExternal(uri: string): ExternalEmbedMatcher | undefined {

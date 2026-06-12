@@ -2,8 +2,15 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { AppBskyActorDefs } from '@atproto/api'
 import { Avatar, Button, Img, Menu, IconButton, LabelChips, hasBotLabel } from '@/components'
-import { MoreIcon, BotIcon, ChatIcon } from '@/components/Icon'
+import { MoreIcon, BotIcon, ChatIcon, BellIcon, GearIcon } from '@/components/Icon'
 import { RichText } from '@/lib/rich-text'
+import { notifyConfigured } from '@/lib/notify/client'
+import {
+  useNotifyMutes,
+  useNotifyWatches,
+  usePutNotifyMute,
+  usePutWatch,
+} from '@/lib/notify/use-notify'
 import { useStartConvo } from '@/features/chat/use-start-convo'
 import { isChatPermissionError } from '@/features/chat/chat-errors'
 import { useFollow } from './use-follow'
@@ -83,6 +90,18 @@ export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardPro
         ),
     })
 
+  // Ovoid push-notification state for this account (our notify backend, not
+  // bsky): the bell watches their posts, the menu entry mutes them. Queries
+  // are list-shaped and shared app-wide; only enabled when the controls show.
+  const showNotifyControls = isAuthed && !isSelf && notifyConfigured()
+  const { data: watches } = useNotifyWatches(showNotifyControls)
+  const { data: notifyMutes } = useNotifyMutes(showNotifyControls)
+  const putWatch = usePutWatch()
+  const putNotifyMute = usePutNotifyMute()
+  const watch = watches?.find((w) => w.subject === profile.did)
+  const watching = !!watch?.posts
+  const notifyMuted = !!notifyMutes?.includes(profile.did)
+
   const menuItems = [
     {
       key: 'copy',
@@ -99,6 +118,16 @@ export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardPro
             onSelect: () => {
               void navigator.clipboard?.writeText(tezosAddr)
             },
+          },
+        ]
+      : []),
+    ...(showNotifyControls
+      ? [
+          {
+            key: 'notify-mute',
+            label: notifyMuted ? 'Unmute notifications' : 'Mute notifications',
+            onSelect: () =>
+              putNotifyMute.mutate({ subject: profile.did, muted: !notifyMuted }),
           },
         ]
       : []),
@@ -135,6 +164,32 @@ export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardPro
         </Link>
 
         <div className="profhead__actions">
+          {/* Mobile has no TopBar/UserFab, so the own profile is the only
+              surface that can carry the settings entry point. */}
+          {isSelf && (
+            <IconButton label="Settings" type="button" onClick={() => navigate('/settings')}>
+              <GearIcon size={20} />
+            </IconButton>
+          )}
+
+          {showNotifyControls && (
+            <IconButton
+              label={watching ? 'Stop notifying about new posts' : 'Notify about new posts'}
+              type="button"
+              aria-pressed={watching}
+              onClick={() =>
+                putWatch.mutate({
+                  subject: profile.did,
+                  posts: !watching,
+                  replies: watch?.replies ?? false,
+                })
+              }
+              disabled={putWatch.isPending}
+            >
+              <BellIcon size={20} filled={watching} />
+            </IconButton>
+          )}
+
           {canMessage && (
             <IconButton
               label="Message"

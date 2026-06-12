@@ -42,13 +42,16 @@
   --radius-square-avatar: 8px;
   --radius-panel: 16px;
 
-  /* Type scale */
-  --fs-xs: 12px;
-  --fs-sm: 14px;
-  --fs-base: 15px;
-  --fs-md: 16px;
-  --fs-lg: 20px;
-  --fs-xl: 24px;
+  /* Type scale. Every step multiplies by --font-scale (set on <html> by the
+     appearance store; theme-store.ts) so the font-size setting re-flows the
+     whole app through these tokens. Default 1 = 15px body. */
+  --font-scale: 1;
+  --fs-xs: calc(12px * var(--font-scale));
+  --fs-sm: calc(14px * var(--font-scale));
+  --fs-base: calc(15px * var(--font-scale));
+  --fs-md: calc(16px * var(--font-scale));
+  --fs-lg: calc(20px * var(--font-scale));
+  --fs-xl: calc(24px * var(--font-scale));
   --fw-regular: 400;
   --fw-medium: 500;
   --fw-semibold: 600;

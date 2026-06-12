@@ -13,6 +13,8 @@ import {
   isModel,
   isAudio,
   isInteractive,
+  isVideo,
+  isImageArtifact,
   proxyImage,
   ipfsToSubdomain,
   formatPrice,
@@ -69,6 +71,18 @@ export function NftBrowser() {
   // Back button / back-swipe closes the viewer instead of navigating the route.
   useCloseOnBack(open, close)
 
+  // Lock document scroll while open (same as Dialog). Without this the page
+  // behind stays scrollable and the browser paints its scrollbar ON TOP of the
+  // fixed overlay — a light strip down the right edge of the fullscreen view.
+  useEffect(() => {
+    if (!open) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [open])
+
   // Reset to the details pane whenever the viewed token changes.
   useEffect(() => {
     setPane('details')
@@ -82,13 +96,29 @@ export function NftBrowser() {
     // Clicking anywhere on the backdrop closes; the image and the panel stop
     // propagation so only the surrounding background dismisses the view.
     <div className="nftb" role="dialog" aria-modal="true" onClick={close}>
-      {/* Blurred, darkened artwork wash behind everything for depth/colour. */}
-      {t?.image && (
-        <div
+      {/* Blurred, darkened artwork wash behind everything for depth/colour.
+          For video tokens the wash is the video itself (muted twin of the
+          foreground player) — the display still is often thumbnail-sized and
+          reads as a blocky smear even under heavy blur. The two players drift
+          slightly out of sync, which a 64px blur makes imperceptible. */}
+      {t && isVideo(t) && t.artifact ? (
+        <video
           className="nftb__backdrop"
-          style={{ backgroundImage: `url(${t.image})` }}
+          src={t.artifact}
+          autoPlay
+          muted
+          loop
+          playsInline
           aria-hidden
         />
+      ) : (
+        t?.image && (
+          <div
+            className="nftb__backdrop"
+            style={{ backgroundImage: `url(${t.image})` }}
+            aria-hidden
+          />
+        )
       )}
 
       <button className="nftb__close" onClick={close} aria-label="Close">
@@ -159,12 +189,28 @@ export function NftBrowser() {
             audio={t.artifact}
             alt={t.name ?? ''}
           />
-        ) : t.image ? (
-          <img
+        ) : isVideo(t) && t.artifact ? (
+          // The artifact IS the video; display_uri is just a still of it.
+          // muted is load-bearing: browsers block unmuted autoplay, and a video
+          // that never starts keeps showing its (low-res) poster forever — the
+          // first real frames only replace the poster once playback begins.
+          // Sound is one tap away on the controls.
+          <video
             className="nftb__img"
-            src={proxyImage(t.displayUri, 'hero') ?? t.image}
-            alt={t.name ?? ''}
+            src={t.artifact}
+            poster={proxyImage(t.displayUri, 'hero') ?? t.image}
+            controls
+            autoPlay
+            muted
+            loop
+            playsInline
             onClick={(e) => e.stopPropagation()}
+          />
+        ) : t.image || (isImageArtifact(t) && t.artifact) ? (
+          <FullResImage
+            preview={proxyImage(t.displayUri, 'hero') ?? t.image}
+            full={isImageArtifact(t) ? t.artifact : undefined}
+            alt={t.name ?? ''}
           />
         ) : (
           <Spinner size="lg" />
@@ -217,6 +263,46 @@ export function NftBrowser() {
 /* ----------------------------------------------------------- interactive / audio */
 
 const stopClick = (e: React.MouseEvent) => e.stopPropagation()
+
+/**
+ * Fullscreen image with progressive quality: paints the hero transcode (1600px
+ * webp of the downscaled display_uri) immediately, then swaps to the original
+ * artifact — the actual mint, often multi-MB off an IPFS gateway — once it has
+ * decoded off-screen. The swap is src-only on an identically-laid-out <img>,
+ * so it's a repaint, not a reflow.
+ */
+function FullResImage({
+  preview,
+  full,
+  alt,
+}: {
+  preview?: string
+  full?: string
+  alt: string
+}) {
+  const [src, setSrc] = useState(preview ?? full)
+  useEffect(() => {
+    setSrc(preview ?? full)
+    if (!full || full === preview) return
+    let alive = true
+    const img = new Image()
+    img.src = full
+    img
+      .decode()
+      .then(() => {
+        if (alive) setSrc(full)
+      })
+      .catch(() => {
+        /* gateway error or undecodable — keep the hero transcode */
+      })
+    return () => {
+      alive = false
+    }
+  }, [preview, full])
+
+  if (!src) return null
+  return <img className="nftb__img" src={src} alt={alt} onClick={stopClick} />
+}
 
 /**
  * Interactive HTML artifact (objkt application/x-directory etc.) — shown as the

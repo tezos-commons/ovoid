@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { Fragment, useEffect, useMemo } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { PageAside } from '@/components/layout'
 import { ProfileCardSkeleton, FeedSkeleton, NftGridSkeleton, ErrorState, EmptyState } from '@/components'
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
     // Mirror the loaded two-column shape: header card in the aside, feed in the
     // main column — so the real data fills these boxes rather than reflowing.
     return (
-      <>
+      <Fragment key={actor}>
         <PageAside>
           <div className="profaside">
             <ProfileCardSkeleton />
@@ -131,7 +131,7 @@ export default function ProfileScreen() {
         <div className="proftab">
           <FeedSkeleton />
         </div>
-      </>
+      </Fragment>
     )
   }
 
@@ -147,7 +147,15 @@ export default function ProfileScreen() {
   const blockingViewer = !!profile.viewer?.blockedBy
 
   return (
-    <>
+    // Keyed by actor: profile→profile navigation re-renders this SAME route
+    // component, so without a key every instance below survives — including
+    // ProfileFeed's window virtualizer, whose measurement cache and tracked
+    // scroll offset still belong to the previous profile. Its re-measurement
+    // scroll-anchoring then drags the window back toward the old offset,
+    // defeating the navigation scroll reset. Remounting per actor gives a
+    // fresh virtualizer (and clears per-profile UI state like the expanded
+    // bio) so cross-profile nav behaves exactly like any other navigation.
+    <Fragment key={actor}>
       <PageAside>
         <div className="profaside">
           <ProfileCard profile={profile} actor={actor!} isSelf={isSelf} isAuthed={isAuthed} />
@@ -186,7 +194,7 @@ export default function ProfileScreen() {
           />
         )}
       </div>
-    </>
+    </Fragment>
   )
 }
 
@@ -210,6 +218,10 @@ function ProfileTabContent({
   tezosPending: boolean
 }) {
   // Per profile + tab, so each tab restores its own scroll on back-navigation.
+  // Doubles as the ProfileFeed element key: tab switches render ProfileFeed at
+  // the same tree position, and the virtualizer's initialOffset /
+  // initialMeasurementsCache only apply at construction — a surviving instance
+  // would carry the previous tab's offset into its scroll-anchoring.
   const scrollKey = `profile:${actor}:${activeKey}`
 
   // Created/Owned render NFTs when a public address is linked. Without one
@@ -224,9 +236,13 @@ function ProfileTabContent({
 
   switch (activeKey) {
     case 'replies':
-      return <ProfileFeed query={replies} emptyTitle="No replies yet" scrollKey={scrollKey} />
+      return (
+        <ProfileFeed key={scrollKey} query={replies} emptyTitle="No replies yet" scrollKey={scrollKey} />
+      )
     case 'media':
-      return <ProfileFeed query={media} emptyTitle="No media yet" scrollKey={scrollKey} />
+      return (
+        <ProfileFeed key={scrollKey} query={media} emptyTitle="No media yet" scrollKey={scrollKey} />
+      )
     case 'nfts-created':
       return nftTab('created')
     case 'nfts-owned':
@@ -234,6 +250,7 @@ function ProfileTabContent({
     case 'likes':
       return (
         <ProfileFeed
+          key={scrollKey}
           query={likes}
           emptyTitle="No likes yet"
           emptyMessage="Posts you like will appear here."
@@ -248,6 +265,7 @@ function ProfileTabContent({
     default:
       return (
         <ProfileFeed
+          key={scrollKey}
           query={posts}
           emptyTitle="No posts yet"
           emptyMessage="When they post, it will show up here."

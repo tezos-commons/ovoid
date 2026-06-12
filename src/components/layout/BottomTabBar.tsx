@@ -2,9 +2,12 @@ import clsx from 'clsx'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from './navItems'
 import { useAuth } from '@/lib/api/agent'
+import { useNavBadges } from '@/features/notifications/use-nav-badges'
+import { NavBadge } from './NavBadge'
 
 export function BottomTabBar() {
   const { did, isAuthed } = useAuth()
+  const badges = useNavBadges()
   const items = NAV_ITEMS.filter((i) => i.mobile)
 
   return (
@@ -26,7 +29,13 @@ export function BottomTabBar() {
             className={({ isActive }) => clsx('bottombar__item', isActive && 'bottombar__item--active')}
             aria-label={item.label}
           >
-            {({ isActive }) => item.icon(isActive)}
+            {({ isActive }) => (
+              <>
+                {item.icon(isActive)}
+                {item.key === 'notifications' && <NavBadge count={badges.notifications} />}
+                {item.key === 'chat' && <NavBadge count={badges.chat} />}
+              </>
+            )}
           </NavLink>
         )
       })}

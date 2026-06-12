@@ -40,6 +40,13 @@ function oauthClientMetadata(): Plugin {
 
 // Dev server is bound to 127.0.0.1:5173 so the atproto OAuth loopback
 // client_id (http://localhost) resolves against a stable origin.
+//
+// OVOID_DEV_HOST: set to a domain that reverse-proxies to the dev server
+// (e.g. testing.ovoid.at → 127.0.0.1:4999) to allow that Host header and to
+// point the HMR websocket at the proxy's TLS port. While set, HMR only works
+// through the proxied origin (the socket targets wss://<host>:443).
+const proxyHost = process.env.OVOID_DEV_HOST
+
 export default defineConfig({
   plugins: [
     react(),
@@ -92,7 +99,8 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     // Allow Cloudflare quick-tunnel hosts to reach the dev server.
-    allowedHosts: ['.trycloudflare.com'],
+    allowedHosts: ['.trycloudflare.com', ...(proxyHost ? [proxyHost] : [])],
+    ...(proxyHost ? { hmr: { protocol: 'wss', host: proxyHost, clientPort: 443 } } : {}),
   },
   preview: {
     host: '127.0.0.1',

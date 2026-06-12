@@ -120,6 +120,27 @@ export const qk = {
 
   searchTypeahead: (q: string) => ['bsky', 'search', 'typeahead', { q }] as const,
 
+  // Ovoid notify service (our own push backend, not bsky). Separate `notify`
+  // root so bsky prefix-invalidation never touches it. All reads are
+  // viewer-scoped — the backend resolves state by the authed DID.
+  notifyPrefs: (did?: string) => ['notify', did, 'prefs'] as const,
+
+  notifyDevices: (did?: string) => ['notify', did, 'devices'] as const,
+
+  notifyWatches: (did?: string) => ['notify', did, 'watches'] as const,
+
+  notifyMutes: (did?: string) => ['notify', did, 'mutes'] as const,
+
+  notifyThreadMutes: (did?: string) => ['notify', did, 'threadMutes'] as const,
+
+  notifyChatStatus: (did?: string) => ['notify', did, 'chatStatus'] as const,
+
+  notifyConvoMutes: (did?: string) => ['notify', did, 'convoMutes'] as const,
+
+  // External-link unfurl metadata (cardyb extractor). Public and viewer-
+  // independent; separate root so bsky prefix-invalidation never touches it.
+  linkMeta: (url: string) => ['external', 'linkMeta', { url }] as const,
+
   // Tezos / objkt integration (external services, not bsky). Keyed under a
   // separate `tezos` root so the bsky prefix-invalidation never touches them.
   tezosAddress: (did: string) => ['tezos', 'address', { did }] as const,

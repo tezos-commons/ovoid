@@ -1,5 +1,5 @@
 import { ScreenHeader } from '@/components/layout/ScreenHeader'
-import { Section, Row, Switch, Segment } from './components'
+import { Section, Row, Switch } from './components'
 import { useAccessibilityStore } from './accessibility-store'
 import { useLanguageStore, LANGUAGES } from './language-store'
 
@@ -96,8 +96,6 @@ export function AccessibilitySettings() {
 /* ---------------- Languages ---------------- */
 
 export function LanguageSettings() {
-  const primary = useLanguageStore((s) => s.primary)
-  const setPrimary = useLanguageStore((s) => s.setPrimary)
   const content = useLanguageStore((s) => s.content)
   const toggleContent = useLanguageStore((s) => s.toggleContent)
 
@@ -105,19 +103,6 @@ export function LanguageSettings() {
     <>
       <ScreenHeader title="Languages" showBack />
       <div className="settings">
-        <Section
-          title="App language"
-          desc="The language used for the interface and as the default post language."
-        >
-          <div className="settings-pad">
-            <Segment
-              ariaLabel="App language"
-              value={primary}
-              onChange={setPrimary}
-              options={LANGUAGES.slice(0, 4).map((l) => ({ value: l.code, label: l.label }))}
-            />
-          </div>
-        </Section>
         <Section
           title="Content languages"
           desc="Show posts in these languages in your feeds. None selected shows everything."

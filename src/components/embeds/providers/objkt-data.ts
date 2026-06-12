@@ -96,6 +96,20 @@ export function isAudio(t: TokenPreview | null | undefined): boolean {
   return t?.mime?.startsWith('audio/') ?? false
 }
 
+/** True when the artifact is a video (render the original, not a still). */
+export function isVideo(t: TokenPreview | null | undefined): boolean {
+  return t?.mime?.startsWith('video/') ?? false
+}
+
+/**
+ * True when the original artifact is itself a browser-renderable image
+ * (raster, animated gif, svg) — i.e. the best-quality source for a fullscreen
+ * view. display_uri is a downscaled derivative; the artifact is the mint.
+ */
+export function isImageArtifact(t: TokenPreview | null | undefined): boolean {
+  return t?.mime?.startsWith('image/') ?? false
+}
+
 const INTERACTIVE_MIMES = new Set([
   'application/x-directory',
   'text/html',

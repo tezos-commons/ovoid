@@ -36,6 +36,14 @@ function KeyIcon({ size = 22 }: { size?: number }) {
     </svg>
   )
 }
+function AccessibilityIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="5" r="2" />
+      <path d="M5 9l5 1v4l-2 6M19 9l-5 1v4l2 6M10 10h4" />
+    </svg>
+  )
+}
 function InfoIcon({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -90,9 +98,10 @@ export function SettingsNav() {
       <Section title="Settings">
         <Row to="/settings/account" icon={<PersonIcon />} label="Account" sub="Handle, DID, data export" />
         <Row to="/settings/privacy" icon={<ShieldIcon />} label="Privacy & Security" />
+        <Row to="/settings/notifications" icon={<BellIcon />} label="Notifications" sub="Push notifications & per-type settings" />
         <Row to="/settings/moderation" icon={<GearIcon />} label="Moderation" sub="Muted words, content filters" />
         <Row to="/settings/appearance" icon={<HashIcon />} label="Appearance" sub="Theme & font" />
-        <Row to="/settings/accessibility" icon={<BellIcon />} label="Accessibility" />
+        <Row to="/settings/accessibility" icon={<AccessibilityIcon />} label="Accessibility" />
         <Row to="/settings/languages" icon={<GlobeIcon />} label="Languages" />
       </Section>
 

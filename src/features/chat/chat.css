@@ -315,30 +315,42 @@
   }
 }
 
-/* Reaction pills under a bubble (align to the bubble's side via the row). */
+/* Reaction pills overlap the bubble's bottom corner, messenger-style. The
+   overlap (-8px) never exceeds the bubble's bottom padding, so multi-line text
+   is never covered; the page-coloured ring separates the pill from both the
+   bubble it rides on and the page behind it. The row's align-items anchors the
+   pills to the bubble's side, so very short bubbles just have the pills extend
+   inward past the bubble edge. */
 .msg-reactions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 3px;
-  margin-top: -4px;
-  padding: 0 var(--space-1);
+  position: relative;
+  z-index: 1;
+  margin-top: -8px;
+  /* Bottom-RIGHT corner for every bubble: the row is shrink-to-fit, so its
+     right edge is the (widest) bubble's right edge — align-self: flex-end
+     anchors the pills there regardless of sender side or avatar gutter. */
+  align-self: flex-end;
+  margin-right: var(--space-2);
 }
 .msg-reaction {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 7px;
-  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border: 2px solid var(--bg);
   border-radius: var(--radius-pill);
-  background: var(--bg);
+  background: var(--bg-contrast-50);
   color: var(--text);
   font-size: var(--fs-xs);
-  line-height: 1.6;
+  line-height: 1.5;
   cursor: pointer;
 }
 .msg-reaction--mine {
-  border-color: var(--color-primary);
-  background: var(--blue-25, var(--bg-contrast-25));
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 .msg-reaction__emoji {
   font-size: var(--fs-sm);
@@ -346,6 +358,19 @@
 .msg-reaction__count {
   color: var(--text-muted);
   font-weight: 600;
+}
+.msg-reaction--mine .msg-reaction__count {
+  color: var(--color-on-primary);
+}
+
+/* ---------- Rich link/post previews under a bubble ---------- */
+/* Cards reuse the post-embed components (.embed--quote/--token/--external).
+   The min-width keeps a card readable below a tiny bubble; the upper bound is
+   the row's 78% max-width, which reaches the cards through normal flex
+   shrinking on .msg-bubble-wrap (min-width: 0). */
+.msg-embeds .embed {
+  min-width: min(300px, 70vw);
+  max-width: 100%;
 }
 
 /* Quick-reaction picker popover. */
@@ -422,6 +447,27 @@
   padding: var(--space-2) var(--space-3);
 }
 
+/* A referred member inside a system line: tiny avatar + name, linking to the
+   profile. Inline-flex keeps avatar/name on one baseline; the surrounding
+   literal parts stay plain inline text so their spaces survive. */
+.msg-system__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-decoration: none;
+  vertical-align: bottom;
+}
+.msg-system__user:hover span {
+  text-decoration: underline;
+}
+.msg-system__user .av {
+  width: 16px;
+  height: 16px;
+  font-size: 8px;
+}
+
 /* ---------- Collapsed system-message run ---------- */
 .msg-system--group {
   display: flex;
@@ -460,6 +506,54 @@
   border-top: 1px solid var(--border);
   padding: var(--space-2) var(--space-3);
   background: var(--bg);
+  /* Anchors the mention popover. */
+  position: relative;
+}
+
+/* @-mention suggestions, floated above the composer. */
+.mention-pop {
+  position: absolute;
+  bottom: 100%;
+  left: var(--space-3);
+  right: var(--space-3);
+  margin-bottom: var(--space-1);
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-overlay);
+  box-shadow: var(--shadow-menu);
+  overflow: hidden;
+}
+.mention-pop__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.mention-pop__item--active {
+  background: var(--bg-contrast-25);
+}
+.mention-pop__name {
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mention-pop__handle {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .msg-composer__error {
@@ -796,6 +890,17 @@
   color: var(--text-muted);
   font-weight: 700;
   margin-bottom: var(--space-2);
+}
+
+/* Leave button: last in the scroll column, pushed to the page bottom when the
+   content is short (margin-top: auto in the gapped flex column), full-width
+   for a comfortable destructive-action target. */
+.group-settings__leave {
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+.group-settings__leave .btn {
+  width: 100%;
 }
 
 .member-list {

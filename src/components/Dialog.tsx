@@ -11,13 +11,22 @@ export interface DialogProps {
   children: ReactNode
   /** Render as a bottom sheet on mobile widths. */
   sheetOnMobile?: boolean
+  /** Extra class on the panel (e.g. ModalSheet's fit-sheet variant). */
+  className?: string
 }
 
 /**
  * Modal with scrim, Escape-to-close, scroll lock and a focus trap.
  * Rendered through a portal at document.body so it escapes the app-shell grid.
  */
-export function Dialog({ open, onClose, title, children, sheetOnMobile = true }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  children,
+  sheetOnMobile = true,
+  className,
+}: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
   // Keep onClose current without making it an effect dependency: callers pass an
@@ -67,7 +76,7 @@ export function Dialog({ open, onClose, title, children, sheetOnMobile = true }:
     >
       <div
         ref={panelRef}
-        className={clsx('dialog', sheetOnMobile && 'dialog--sheet')}
+        className={clsx('dialog', sheetOnMobile && 'dialog--sheet', className)}
         role="dialog"
         aria-modal="true"
       >

@@ -184,8 +184,55 @@
   display: none;
 }
 @media (max-width: 1000px) {
+  /* The page is full-bleed on mobile and the card sits at the very top, so the
+     desktop panel chrome (border, rounded corners) and the below-topbar
+     breathing room don't apply — the card IS the page header. */
+  .profaside {
+    margin-top: 0;
+  }
+  .profhead {
+    border: none;
+    border-radius: 0;
+    /* The gradient below fades into this, and the page below the card is also
+       var(--bg) — one continuous surface, no seam. */
+    background: var(--bg);
+    position: relative;
+  }
+  /* Mobile banner = the card's whole background: absolutely fill the card and
+     fade into the page colour toward the bottom, with all content layered
+     above. This frees the layout from the banner-strip + pulled-up-avatar
+     construction — the card is one area. */
   .profhead__banner {
-    height: 64px;
+    position: absolute;
+    inset: 0;
+    height: auto;
+    /* Decorative background on mobile; a full-card tap target that navigates
+       would swallow every stray tap on the card's padding. */
+    pointer-events: none;
+  }
+  .profhead__banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--bg) 15%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 60%, transparent) 45%,
+      var(--bg) 90%
+    );
+  }
+  /* Content paints above the banner layer. (__bar already carries this.) */
+  .profhead__identity,
+  .profhead__bio,
+  .profhead__counts,
+  .profhead__expand {
+    position: relative;
+    z-index: 1;
+  }
+  /* Ghost icon buttons need a scrim chip to stay visible over bright banners. */
+  .profhead__actions .iconbtn {
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    backdrop-filter: blur(8px);
   }
   /* Smaller avatar (xl 96 → 72); parent selector beats the .av--xl size class. */
   .profhead__avatar .av {
@@ -196,8 +243,10 @@
   .profhead__avatar {
     border-width: 3px;
   }
+  /* No banner strip to overlap anymore — content flows from the card's top. */
   .profhead__bar {
-    margin-top: -32px;
+    margin-top: 0;
+    padding-top: var(--space-3);
   }
   .profhead__identity {
     padding-top: var(--space-2);

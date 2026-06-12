@@ -1,11 +1,12 @@
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
 import type { ChatBskyConvoDefs, ChatBskyGroupDefs } from '@atproto/api'
 import { Avatar } from '@/components'
-import { RichText } from '@/lib/rich-text'
+import { RichText, textWithoutLinkUris } from '@/lib/rich-text'
 import { absoluteTime, clockTime } from '@/lib/time'
 import { useLongPress } from '@/lib/use-long-press'
+import { MessageEmbeds, messagePreviewedLinkUris } from './MessageEmbeds'
 import { MessageReactions } from './MessageReactions'
 import { ReactionPicker } from './ReactionPicker'
 import type { MessageItem } from './use-messages'
@@ -82,6 +83,20 @@ export const MessageBubble = memo(function MessageBubble({
   const attributed = isGroup && !mine
   const longPress = useLongPress(() => onReact && setPickerOpen(true))
 
+  // Links that MessageEmbeds previews are stripped from the bubble text (the
+  // card stands in for them). When nothing remains — a bare link message, or a
+  // shared post with no comment — the bubble is dropped entirely so no empty
+  // padded bar sits above the card.
+  const omitUris = useMemo(
+    () => (isMessageView(message) ? messagePreviewedLinkUris(message) : []),
+    [message],
+  )
+  const remaining = useMemo(
+    () =>
+      isMessageView(message) ? textWithoutLinkUris(message.text, message.facets, omitUris) : '',
+    [message, omitUris],
+  )
+
   if (isDeleted(message)) {
     return (
       <div className={clsx('msg-row', mine ? 'msg-row--mine' : 'msg-row--theirs', attributed && 'msg-row--group')}>
@@ -92,6 +107,14 @@ export const MessageBubble = memo(function MessageBubble({
   }
 
   if (!isMessageView(message)) return null
+
+  // Facet-less text shows raw URLs as plain segments RichText can't omit, so
+  // render the pre-stripped remainder instead; with facets, RichText drops the
+  // omitted link segments itself (and trims the whitespace they leave).
+  const hasFacets = !!message.facets?.length
+  const displayText = hasFacets ? message.text : remaining
+  const displayFacets = hasFacets ? message.facets : undefined
+  const showBubble = remaining.length > 0 || message.embed?.$type === JOIN_LINK_EMBED
 
   const react = (value: string, add: boolean) => {
     onReact?.(message.id, value, add)
@@ -116,16 +139,29 @@ export const MessageBubble = memo(function MessageBubble({
             {showAvatar && <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="xs" />}
           </span>
         )}
-        <div className="msg-bubble-wrap">
-          <div
-            className={clsx('msg-bubble', mine ? 'msg-bubble--mine' : 'msg-bubble--theirs')}
-            {...(onReact ? longPress.handlers : {})}
-          >
-            {message.text && (
-              <RichText text={message.text} facets={message.facets} className="msg-bubble__text" />
-            )}
-            {message.embed && <JoinLinkEmbed embed={message.embed} />}
-          </div>
+        <div
+          className="msg-bubble-wrap"
+          // With no bubble, the wrap (i.e. the embed cards) is the long-press
+          // target so reactions stay reachable on touch.
+          {...(!showBubble && onReact ? longPress.handlers : {})}
+        >
+          {showBubble && (
+            <div
+              className={clsx('msg-bubble', mine ? 'msg-bubble--mine' : 'msg-bubble--theirs')}
+              {...(onReact ? longPress.handlers : {})}
+            >
+              {displayText && (
+                <RichText
+                  text={displayText}
+                  facets={displayFacets}
+                  omitLinkUris={omitUris}
+                  className="msg-bubble__text"
+                />
+              )}
+              {message.embed && <JoinLinkEmbed embed={message.embed} />}
+            </div>
+          )}
+          <MessageEmbeds message={message} />
           {pickerOpen && (
             <ReactionPicker
               align={mine ? 'end' : 'start'}

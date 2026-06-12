@@ -1,27 +1,71 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { IconButton } from '@/components'
+import clsx from 'clsx'
+import { Avatar, IconButton } from '@/components'
 import { normalizeXrpcError } from '@/lib/api/errors'
+import { useAgent } from '@/lib/api/agent'
 import { useSendMessage } from './use-send-message'
+import {
+  findMentionToken,
+  useMentionCandidates,
+  type MentionCandidate,
+  type MentionToken,
+} from './MentionSuggest'
+import type { ConvoMember } from './group'
 
 export interface MessageComposerProps {
   convoId: string
   disabled?: boolean
+  /** Convo roster — first-choice mention suggestions (group members / the DM peer). */
+  members?: ConvoMember[]
 }
 
 /**
  * Bottom composer: auto-growing textarea, Enter-to-send (Shift+Enter newline),
  * inline error on send failure. Send is disabled while in flight or empty.
+ *
+ * Typing `@…` opens a mention popover (convo members first, then actor
+ * typeahead). While it's open, Enter/Tab accept the highlighted suggestion and
+ * arrows move it — Enter only sends when no suggestion list is showing. The
+ * inserted @handle becomes a real mention facet in useSendMessage's buildPost.
  */
-export function MessageComposer({ convoId, disabled }: MessageComposerProps) {
+export function MessageComposer({ convoId, disabled, members = [] }: MessageComposerProps) {
   const [text, setText] = useState('')
+  const [token, setToken] = useState<MentionToken | null>(null)
+  const [highlight, setHighlight] = useState(0)
   const send = useSendMessage(convoId)
+  const { did } = useAgent()
   const taRef = useRef<HTMLTextAreaElement>(null)
+
+  const candidates = useMentionCandidates(token, members, did)
+  const open = token !== null && candidates.length > 0
 
   const grow = () => {
     const el = taRef.current
     if (!el) return
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+  }
+
+  const syncToken = (value: string, caret: number) => {
+    const next = findMentionToken(value, caret)
+    // New token or changed partial → reset the highlight to the top.
+    if (next?.start !== token?.start || next?.query !== token?.query) setHighlight(0)
+    setToken(next)
+  }
+
+  const accept = (candidate: MentionCandidate) => {
+    if (!token) return
+    const el = taRef.current
+    const caret = el?.selectionStart ?? text.length
+    const inserted = `@${candidate.handle} `
+    setText(text.slice(0, token.start) + inserted + text.slice(caret))
+    setToken(null)
+    requestAnimationFrame(() => {
+      const pos = token.start + inserted.length
+      el?.focus()
+      el?.setSelectionRange(pos, pos)
+      grow()
+    })
   }
 
   const submit = (e?: FormEvent) => {
@@ -31,12 +75,34 @@ export function MessageComposer({ convoId, disabled }: MessageComposerProps) {
     send.mutate(value, {
       onSuccess: () => {
         setText('')
+        setToken(null)
         requestAnimationFrame(grow)
       },
     })
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (open) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setHighlight((h) => (h + 1) % candidates.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setHighlight((h) => (h - 1 + candidates.length) % candidates.length)
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        accept(candidates[Math.min(highlight, candidates.length - 1)])
+        return
+      }
+      if (e.key === 'Escape') {
+        setToken(null)
+        return
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       submit()
@@ -45,6 +111,29 @@ export function MessageComposer({ convoId, disabled }: MessageComposerProps) {
 
   return (
     <form className="msg-composer" onSubmit={submit}>
+      {open && (
+        <div className="mention-pop" role="listbox" aria-label="Mention suggestions">
+          {candidates.map((a, i) => (
+            <button
+              key={a.did}
+              type="button"
+              role="option"
+              aria-selected={i === highlight}
+              className={clsx('mention-pop__item', i === highlight && 'mention-pop__item--active')}
+              onMouseEnter={() => setHighlight(i)}
+              // mousedown, not click: keeps the textarea from blurring first.
+              onMouseDown={(e) => {
+                e.preventDefault()
+                accept(a)
+              }}
+            >
+              <Avatar src={a.avatar} alt="" fallback={a.displayName || a.handle} size="xs" />
+              <span className="mention-pop__name">{a.displayName || a.handle}</span>
+              <span className="mention-pop__handle">@{a.handle}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {send.isError && (
         <div className="msg-composer__error" role="alert">
           {normalizeXrpcError(send.error).message}
@@ -60,7 +149,12 @@ export function MessageComposer({ convoId, disabled }: MessageComposerProps) {
           rows={1}
           onChange={(e) => {
             setText(e.target.value)
+            syncToken(e.target.value, e.target.selectionStart ?? e.target.value.length)
             grow()
+          }}
+          onClick={(e) => {
+            const el = e.currentTarget
+            syncToken(el.value, el.selectionStart ?? el.value.length)
           }}
           onKeyDown={onKeyDown}
         />

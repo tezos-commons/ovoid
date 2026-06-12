@@ -109,6 +109,34 @@ function renderSegs(segs: Seg[]): ReactNode[] {
 }
 
 /**
+ * The text that remains once the given link uris are removed — facet-aware
+ * (drops whole link segments, byte-safe via RichText.segments) with a plain
+ * substring fallback for facet-less text, where extracted raw URLs appear
+ * verbatim. Used to decide whether a chat bubble still has content after its
+ * previewed links are stripped.
+ */
+export function textWithoutLinkUris(
+  text: string,
+  facets: AppBskyFeedPost.Record['facets'],
+  omit: string[],
+): string {
+  if (omit.length === 0) return text.trim()
+  if (!facets?.length) {
+    let out = text
+    for (const uri of omit) out = out.split(uri).join('')
+    return out.trim()
+  }
+  const omitSet = new Set(omit)
+  const rt = new AtpRichText({ text, facets })
+  let out = ''
+  for (const s of rt.segments()) {
+    if (s.isLink() && s.link && omitSet.has(s.link.uri)) continue
+    out += s.text
+  }
+  return out.trim()
+}
+
+/**
  * Detect facets (mentions/links/tags) for outgoing posts. Resolves handles to
  * DIDs via the authed agent. Use before createRecord in the composer.
  */

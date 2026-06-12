@@ -1,6 +1,8 @@
 import clsx from 'clsx'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { AppBskyLabelerDefs, ComAtprotoLabelDefs } from '@atproto/api'
+import { LabelInfoDialog } from './LabelInfoDialog'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 
@@ -44,6 +46,8 @@ export function useLabelerDirectory() {
  * Renders content labels as chips, each badged with the logo of the labeler
  * that emitted it. System behaviour labels (`!hide`, …) and negations are
  * dropped; the rest are deduped by (src, val). Renders nothing when empty.
+ * Tapping a chip opens LabelInfoDialog — the label's definition and source
+ * labeler (modal on desktop, bottom sheet on mobile).
  */
 export function LabelChips({
   labels,
@@ -53,6 +57,7 @@ export function LabelChips({
   className?: string
 }) {
   const dir = useLabelerDirectory()
+  const [selected, setSelected] = useState<Label | null>(null)
   if (!labels || labels.length === 0) return null
 
   const seen = new Set<string>()
@@ -72,18 +77,27 @@ export function LabelChips({
         const info = dir.data?.get(l.src)
         const text = l.val.replace(/-/g, ' ')
         return (
-          <span
+          <button
             key={`${l.src}:${l.val}`}
+            type="button"
             className="label-chip"
             title={info?.name ? `${text} — ${info.name}` : text}
+            onClick={(e) => {
+              // Chips render inside PostCard rows whose click opens the thread.
+              e.stopPropagation()
+              setSelected(l)
+            }}
           >
             {info?.avatar && (
               <img className="label-chip__logo" src={info.avatar} alt="" loading="lazy" />
             )}
             {text}
-          </span>
+          </button>
         )
       })}
+      {selected && (
+        <LabelInfoDialog label={selected} open onClose={() => setSelected(null)} />
+      )}
     </div>
   )
 }

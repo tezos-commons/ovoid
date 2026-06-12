@@ -252,6 +252,12 @@
 .dialog__title { font-size: var(--fs-md); font-weight: var(--fw-bold); flex: 1; }
 .dialog__body { padding: var(--space-4); overflow-y: auto; }
 
+/* Fit-sheet variant (ModalSheet): on desktop a normal, narrower modal; on
+   mobile a content-height bottom sheet instead of the full-screen one. */
+.dialog--fit {
+  max-width: 440px;
+}
+
 @media (max-width: 800px) {
   .dialog__scrim--sheet { align-items: flex-end; padding: 0; }
   .dialog--sheet {
@@ -272,6 +278,28 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+  }
+  /* Fit sheet: content-height with rounded top + grab handle, scrolling
+     internally past 85dvh. Undoes the full-screen rules above. */
+  .dialog--sheet.dialog--fit {
+    height: auto;
+    max-height: 85dvh;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .dialog--sheet.dialog--fit::before {
+    content: '';
+    align-self: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 4px;
+    margin-top: var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--border);
+  }
+  .dialog--sheet.dialog--fit .dialog__body {
+    flex: 0 1 auto;
+    display: block;
   }
   .dialog--sheet .composer {
     flex: 1;
@@ -488,6 +516,76 @@
   font-weight: var(--fw-semibold);
   text-transform: capitalize;
   line-height: 1.5;
+  /* Chips are buttons (tap → label info); inherit the chip look, not the UA's. */
+  font-family: inherit;
+  cursor: pointer;
+}
+.label-chip:hover {
+  background: var(--bg-contrast-50);
+  color: var(--text);
+}
+
+/* ---------- Label info dialog (LabelInfoDialog) ---------- */
+.labelinfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.labelinfo__name {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  text-transform: capitalize;
+}
+.labelinfo__desc {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.labelinfo__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+.labelinfo__flag {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 1px var(--space-2);
+}
+.labelinfo__loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3);
+}
+.labelinfo__labeler {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  color: var(--text);
+  text-decoration: none;
+}
+.labelinfo__labeler:hover {
+  background: var(--bg-contrast-25);
+  text-decoration: none;
+}
+.labelinfo__labeler-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.labelinfo__labeler-name {
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+}
+.labelinfo__labeler-sub {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
 }
 /* Self-labels with no labeler logo keep symmetric padding. */
 .label-chip:not(:has(.label-chip__logo)) { padding-left: var(--space-2); }
@@ -579,6 +677,36 @@
 }
 .embed-ext__title { font-weight: var(--fw-semibold); font-size: var(--fs-sm); }
 .embed-ext__desc { color: var(--text-muted); font-size: var(--fs-sm); }
+
+/* Group-chat invite card (bsky.app/chat/<code>): avatar + name/members + action */
+.embed--groupchat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  max-width: var(--embed-media-max);
+}
+.embed-groupchat__body {
+  flex: 1;
+  min-width: 0;
+}
+.embed-groupchat__name {
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.embed-groupchat__meta {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+.embed-groupchat__error {
+  color: var(--color-danger);
+  font-size: var(--fs-xs);
+}
 
 /* Token preview (objkt / teia): full-size artwork with a hover detail overlay */
 .embed--token {
@@ -806,6 +934,11 @@
   background-position: center;
   filter: blur(64px) brightness(0.4) saturate(1.25);
   transform: scale(1.1);
+}
+
+/* Video variant of the wash (the backdrop element is a muted <video> twin). */
+video.nftb__backdrop {
+  object-fit: cover;
 }
 
 .nftb__close {
@@ -1463,3 +1596,13 @@
 .action--active.action--like { color: var(--color-like); }
 .action--active.action--repost { color: var(--color-repost); }
 .action--share:hover { color: var(--color-primary); }
+
+/* Post overflow ("…") — hosts the Menu inside the action row. The span eats
+   clicks so the card's navigate doesn't fire; the inner .action button keeps
+   the row's icon styling. */
+.action--more {
+  padding: 0;
+}
+.action--more .menu__wrap {
+  display: inline-flex;
+}

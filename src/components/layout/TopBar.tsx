@@ -4,6 +4,8 @@ import { NAV_ITEMS } from './navItems'
 import { Button } from '../Button'
 import { PencilIcon } from '../Icon'
 import { useAuth } from '@/lib/api/agent'
+import { useNavBadges } from '@/features/notifications/use-nav-badges'
+import { NavBadge } from './NavBadge'
 
 export interface TopBarProps {
   /** Open the global compose modal. */
@@ -17,6 +19,7 @@ export interface TopBarProps {
  */
 export function TopBar({ onNewPost }: TopBarProps) {
   const { did, isAuthed } = useAuth()
+  const badges = useNavBadges()
 
   return (
     <header className="topbar">
@@ -42,7 +45,13 @@ export function TopBar({ onNewPost }: TopBarProps) {
               title={item.label}
               aria-label={item.label}
             >
-              {({ isActive }) => item.icon(isActive)}
+              {({ isActive }) => (
+                <>
+                  {item.icon(isActive)}
+                  {item.key === 'notifications' && <NavBadge count={badges.notifications} />}
+                  {item.key === 'chat' && <NavBadge count={badges.chat} />}
+                </>
+              )}
             </NavLink>
           )
         })}

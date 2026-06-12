@@ -254,3 +254,43 @@
      screens render below it are separate elements and stay). */
   .screen-header { display: none; }
 }
+
+/* ---------------- Nav badges (unread counts on bell / chat) ---------------- */
+
+.topbar__item,
+.bottombar__item {
+  position: relative;
+}
+.navbadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent, #e0245e);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Bottom tab bar: the cell spans a fifth of the screen, so corner-anchoring
+   strands the badge far from the centered icon. Anchor to the cell's center
+   instead — the icon is 23px, so center +4px / center −17px rides its top-right
+   corner — and size it up for the denser surface. The bg-colored ring separates
+   it from the glyph it overlaps. */
+.bottombar__item .navbadge {
+  top: calc(50% - 17px);
+  right: auto;
+  left: 50%;
+  margin-left: 4px;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  font-size: 11px;
+  box-shadow: 0 0 0 2px var(--bg);
+}

@@ -139,10 +139,6 @@ export default function GroupSettingsScreen() {
           </div>
         )}
 
-        <Button variant="danger" onClick={onLeave} loading={leave.isPending}>
-          {owner ? 'Leave & lock group' : 'Leave group'}
-        </Button>
-
         {/* Member roster */}
         <div className="group-settings__section">
           <div className="group-settings__section-title">Members</div>
@@ -173,6 +169,14 @@ export default function GroupSettingsScreen() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Pinned to the bottom of the page (margin-top: auto in the scroll
+            column) — destructive exit lives last, away from the routine actions. */}
+        <div className="group-settings__leave">
+          <Button variant="danger" size="lg" onClick={onLeave} loading={leave.isPending}>
+            {owner ? 'Leave & lock group' : 'Leave group'}
+          </Button>
         </div>
       </div>
 

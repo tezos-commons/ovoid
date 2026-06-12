@@ -175,7 +175,12 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
               if (item.kind === 'system') {
                 return (
                   <div key={item.key} className="msg-line msg-line--system">
-                    <SystemMessage msgs={item.msgs} collapsed={item.collapsed} nameFor={nameFor} />
+                    <SystemMessage
+                      msgs={item.msgs}
+                      collapsed={item.collapsed}
+                      nameFor={nameFor}
+                      avatarFor={avatarFor}
+                    />
                   </div>
                 )
               }
@@ -200,7 +205,7 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
           </>
         )}
       </div>
-      <MessageComposer convoId={convoId} disabled={replyDisabled} />
+      <MessageComposer convoId={convoId} disabled={replyDisabled} members={convo?.members ?? []} />
     </div>
   )
 }

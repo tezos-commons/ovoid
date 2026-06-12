@@ -338,3 +338,58 @@
 .modlist-row__labels {
   margin-top: var(--space-1);
 }
+
+/* ------------------------------------------------------------------ */
+/* Mobile: native-style settings pager (see MobileSettings)            */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 1000px) {
+  .settings-mobile {
+    /* clip (not hidden): contains the horizontal slide without becoming a
+       scroll container, so the sticky page headers keep tracking the window */
+    overflow-x: clip;
+    background: var(--bg);
+  }
+
+  /* Keyed remount per navigation replays the slide; deeper paths enter from
+     the right, shallower from the left (native settings-stack feel). */
+  .settings-mobile__page--fwd {
+    animation: settings-page-fwd 0.22s ease-out both;
+  }
+  .settings-mobile__page--back {
+    animation: settings-page-back 0.22s ease-out both;
+  }
+  @keyframes settings-page-fwd {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes settings-page-back {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
+  /* The page headers ARE the back affordance here — restore them (the app
+     hides .screen-header globally at phone widths). */
+  .settings-mobile .screen-header {
+    display: flex;
+  }
+
+  /* Flat full-bleed lists: drop the desktop panel chrome on the menu. */
+  .settings-mobile .settings-nav {
+    border: none;
+    border-radius: 0;
+    margin-top: 0;
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-mobile__page--fwd,
+  .settings-mobile__page--back {
+    animation: none;
+  }
+}
+[data-reduce-motion] .settings-mobile__page--fwd,
+[data-reduce-motion] .settings-mobile__page--back {
+  animation: none;
+}

@@ -7,6 +7,7 @@ import { useChatStore } from '@/store/chat-store'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
 import { useArtifactStore } from '@/store/artifact-store'
 import { PostActionsBridge } from '@/features/post/PostActionsBridge'
+import { usePushBoot } from '@/features/notifications/use-push-boot'
 import { useEscapeBack } from '@/lib/use-escape-back'
 
 // Interaction-gated overlays. Code-split AND conditionally mounted: a lazy
@@ -62,6 +63,9 @@ export function RootLayout() {
 
   // Desktop: ESC steps back through overlay layers (mirrors back-swipe).
   useEscapeBack()
+
+  // Push glue: notificationclick → in-app navigation, icon badge, sub re-sync.
+  usePushBoot()
 
   return (
     <PostActionsBridge>

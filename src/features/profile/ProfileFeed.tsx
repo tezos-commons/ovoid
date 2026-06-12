@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
+import { useNavigationType } from 'react-router-dom'
 import { useWindowVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { PostCard, Spinner, FeedSkeleton, ErrorState, EmptyState } from '@/components'
-import { useWindowScrollRestoration } from '@/lib/scroll-restoration'
+import { getSavedWindowScroll, useWindowScrollRestoration } from '@/lib/scroll-restoration'
 
 interface FeedPage {
   feed: AppBskyFeedDefs.FeedViewPost[]
@@ -61,6 +62,7 @@ function rowKey(item: AppBskyFeedDefs.FeedViewPost, i: number): string {
 export function ProfileFeed({ query, emptyTitle, emptyMessage, scrollKey }: ProfileFeedProps) {
   const sentinel = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const isPop = useNavigationType() === 'POP'
   useWindowScrollRestoration(scrollKey)
 
   const items: AppBskyFeedDefs.FeedViewPost[] =
@@ -74,7 +76,19 @@ export function ProfileFeed({ query, emptyTitle, emptyMessage, scrollKey }: Prof
     // re-render reads the real offset, and overscan covers the gap meanwhile.
     scrollMargin: listRef.current?.offsetTop ?? 0,
     getItemKey: (i) => rowKey(items[i], i),
-    initialMeasurementsCache: scrollKey ? measurementsMemory.get(scrollKey) : undefined,
+    // Seed the SAME offset useWindowScrollRestoration is about to apply: 0 on
+    // forward navigation, the saved offset on POP. The library's default
+    // initialOffset is the CURRENT window.scrollY — at construction that is
+    // still the PREVIOUS screen's depth, so its scroll-anchoring
+    // (resizeItem → applyScrollAdjustment) would "preserve" that stale offset
+    // by scrolling the window back down after our reset (the bug seen live:
+    // scrollTo(~10980) from applyScrollAdjustment after profile→profile nav).
+    initialOffset: isPop ? getSavedWindowScroll(scrollKey) ?? 0 : 0,
+    // Measurements are positions from a previous visit — only valid alongside
+    // the restored offset. Seeding them on a forward nav (fresh entry at top)
+    // feeds resizeItem deltas for rows that aren't even rendered yet.
+    initialMeasurementsCache:
+      isPop && scrollKey ? measurementsMemory.get(scrollKey) : undefined,
   })
 
   // Persist measured heights at unmount so back-navigation restores exactly.

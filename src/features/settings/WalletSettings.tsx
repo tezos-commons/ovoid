@@ -77,7 +77,10 @@ export default function WalletSettings() {
             <div className="settings-pad">
               <div className="settings-kv">
                 <span className="settings-kv__k">Linked address</span>
-                <span className="settings-kv__v">{address}</span>
+                {/* Short form for display; Copy still copies the full address. */}
+                <span className="settings-kv__v" title={address}>
+                  {`${address.slice(0, 6)}…${address.slice(-5)}`}
+                </span>
               </div>
               <div className="settings-actions">
                 <Button

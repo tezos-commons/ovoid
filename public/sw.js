@@ -11,6 +11,13 @@
  *   - cdn.bsky.app images (avatars, thumbs) are cache-first with a size cap:
  *     blob URLs are content-addressed, so they're immutable too.
  *   - Everything else (XRPC, OAuth, objkt, video) passes straight through.
+ *
+ * Push: payloads arrive in the Declarative Web Push shape
+ * ({"web_push": 8030, "notification": {title, body, navigate, tag}}) from the
+ * notify service. Safari 18.4+ renders them natively without waking us; on
+ * every other browser the `push` handler below parses the same JSON. Apple
+ * revokes subscriptions that don't show a visible notification, so the
+ * handler always calls showNotification.
  */
 const SHELL_CACHE = 'ovoid-shell-v1'
 const ASSET_CACHE = 'ovoid-assets-v1'
@@ -58,6 +65,43 @@ async function cacheFirst(req, cacheName, maxEntries) {
   }
   return res
 }
+
+self.addEventListener('push', (event) => {
+  let payload = {}
+  try {
+    payload = event.data ? event.data.json() : {}
+  } catch {
+    /* non-JSON push — show the fallback below */
+  }
+  const n = payload.notification || {}
+  event.waitUntil(
+    self.registration.showNotification(n.title || 'Ovoid', {
+      body: n.body || '',
+      tag: n.tag || undefined,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { navigate: n.navigate || '/' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = (event.notification.data && event.notification.data.navigate) || '/'
+  event.waitUntil(
+    (async () => {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      const win = wins.find((c) => c.url.startsWith(self.location.origin))
+      if (win) {
+        await win.focus()
+        // In-app navigation (no reload): RootLayout listens for this message.
+        win.postMessage({ type: 'navigate', url })
+        return
+      }
+      await self.clients.openWindow(url)
+    })(),
+  )
+})
 
 self.addEventListener('fetch', (event) => {
   const req = event.request
