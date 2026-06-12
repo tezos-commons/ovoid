@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { qk } from '@/lib/query-keys'
 
 const OBJKT_GQL = 'https://data.objkt.com/v3/graphql'
 
@@ -63,6 +64,31 @@ export function proxyImage(
     return `${IMG_PROXY}/${preset}.${format}/ipns/${uri.slice('ipns://'.length)}`
   }
   return uri
+}
+
+/* ------------------------------------------------------- collection slug → contract */
+
+const FA_BY_PATH_QUERY = 'query($p:String!){fa(where:{path:{_eq:$p}}){contract}}'
+
+/**
+ * objkt token URLs come in two shapes: /tokens/<KT1…>/<id> and
+ * /tokens/<collection-slug>/<id> (e.g. "hicetnunc"). The slug is the fa
+ * table's `path`; this resolves it to the contract address TokenEmbed needs.
+ * The mapping is immutable, so it's cached long and persists.
+ */
+export function objktCollectionContractOptions(path: string) {
+  return queryOptions({
+    queryKey: qk.objktCollectionContract(path),
+    staleTime: 24 * 60 * 60_000,
+    queryFn: async (): Promise<string | null> => {
+      const data = await objktGql<{ fa?: { contract: string }[] }>(FA_BY_PATH_QUERY, { p: path })
+      return data.fa?.[0]?.contract ?? null
+    },
+  })
+}
+
+export function useObjktCollectionContract(path: string | undefined) {
+  return useQuery({ ...objktCollectionContractOptions(path ?? ''), enabled: !!path })
 }
 
 /* --------------------------------------------------------------- basic preview */

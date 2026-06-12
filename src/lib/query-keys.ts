@@ -151,6 +151,10 @@ export const qk = {
   objktCollectionName: (contract: string) =>
     ['tezos', 'objkt', 'collection-name', { contract }] as const,
 
+  // URL collection slug (fa.path) -> contract address. Immutable mapping.
+  objktCollectionContract: (path: string) =>
+    ['tezos', 'objkt', 'collection-contract', { path }] as const,
+
   objktTokens: (addr: string, kind: string, contract: string) =>
     ['tezos', 'objkt', 'tokens', kind, { addr, contract }] as const,
 
