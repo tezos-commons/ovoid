@@ -1,6 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
+import clsx from 'clsx'
 import { Spinner } from './Spinner'
+import { isOverlayOpen, isTypingTarget } from '@/lib/keyboard'
 
 export interface InfiniteListProps<T> {
   items: T[]
@@ -21,6 +23,13 @@ export interface InfiniteListProps<T> {
    * Omit for lists where restoration isn't wanted.
    */
   scrollKey?: string
+  /**
+   * Enable the desktop keyboard cursor: j/k move a highlighted row, o/Enter open
+   * it, l likes, r replies. Actions dispatch to the focused row's existing
+   * controls (`.postcard` click, `.action--like`/`.action--reply`), so they
+   * degrade to no-ops on non-post rows. Default on.
+   */
+  cursorNav?: boolean
 }
 
 /**
@@ -53,6 +62,7 @@ export function InfiniteList<T>({
   onNewItems,
   emptyState,
   scrollKey,
+  cursorNav = true,
 }: InfiniteListProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null)
   const restore = scrollKey ? scrollMemory.get(scrollKey) : undefined
@@ -96,6 +106,84 @@ export function InfiniteList<T>({
 
   const virtualItems = virtualizer.getVirtualItems()
 
+  // Desktop keyboard cursor. Lives here, next to the virtualizer, so moving the
+  // cursor can scroll an off-screen target into view (rendering it) before acting
+  // on it. The highlight is a class on the row whose index matches; actions are
+  // dispatched to that row's existing controls so they no-op on non-post rows.
+  const [cursor, setCursor] = useState<number | null>(null)
+  useEffect(() => {
+    if (!cursorNav) return
+    const max = items.length - 1
+
+    const act = (kind: 'open' | 'like' | 'reply') => {
+      if (cursor == null || cursor > max) return
+      const run = (row: Element | null | undefined) => {
+        if (!row) return
+        if (kind === 'open') {
+          const cards = row.querySelectorAll<HTMLElement>('.postcard')
+          ;(cards[cards.length - 1] ?? row.querySelector<HTMLElement>('a'))?.click()
+        } else {
+          row
+            .querySelector<HTMLElement>(kind === 'like' ? '.action--like' : '.action--reply')
+            ?.click()
+        }
+      }
+      const row = parentRef.current?.querySelector('.inflist__row--cursor')
+      if (row) return run(row)
+      // Cursor scrolled out of the rendered window: bring it back, then act.
+      virtualizer.scrollToIndex(cursor, { align: 'center' })
+      requestAnimationFrame(() => run(parentRef.current?.querySelector('.inflist__row--cursor')))
+    }
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTypingTarget(document.activeElement) || isOverlayOpen()) return
+      if (max < 0) return
+      const ae = document.activeElement
+      const onControl =
+        ae instanceof HTMLElement && (ae.tagName === 'BUTTON' || ae.tagName === 'A')
+      switch (e.key) {
+        case 'j':
+          e.preventDefault()
+          setCursor((c) => {
+            const n = c == null ? 0 : Math.min(c + 1, max)
+            virtualizer.scrollToIndex(n, { align: 'auto' })
+            return n
+          })
+          break
+        case 'k':
+          e.preventDefault()
+          setCursor((c) => {
+            const n = c == null ? 0 : Math.max(c - 1, 0)
+            virtualizer.scrollToIndex(n, { align: 'auto' })
+            return n
+          })
+          break
+        case 'o':
+          e.preventDefault()
+          act('open')
+          break
+        case 'Enter':
+          // Leave Enter to a focused button/link if the user tabbed to one.
+          if (!onControl) {
+            e.preventDefault()
+            act('open')
+          }
+          break
+        case 'l':
+          e.preventDefault()
+          act('like')
+          break
+        case 'r':
+          e.preventDefault()
+          act('reply')
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [cursorNav, items.length, virtualizer, cursor])
+
   // Tapping the "new posts" pill refetches (prepending the fresh items) and
   // scrolls the feed back to the very top so they're in view.
   const handleNewItems = () => {
@@ -130,7 +218,7 @@ export function InfiniteList<T>({
             key={vi.key}
             data-index={vi.index}
             ref={virtualizer.measureElement}
-            className="inflist__row"
+            className={clsx('inflist__row', cursorNav && cursor === vi.index && 'inflist__row--cursor')}
             style={{ transform: `translateY(${vi.start}px)` }}
           >
             {renderItem(items[vi.index], vi.index)}

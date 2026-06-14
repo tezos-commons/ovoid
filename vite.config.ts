@@ -98,8 +98,10 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     strictPort: true,
-    // Allow Cloudflare quick-tunnel hosts to reach the dev server.
-    allowedHosts: ['.trycloudflare.com', ...(proxyHost ? [proxyHost] : [])],
+    // Allow Cloudflare quick-tunnel hosts and the testing proxy to reach the dev
+    // server. testing.ovoid.at is allowed unconditionally so the mobile testing
+    // proxy (→ 4999) works even when OVOID_DEV_HOST isn't set.
+    allowedHosts: ['.trycloudflare.com', 'testing.ovoid.at', ...(proxyHost ? [proxyHost] : [])],
     ...(proxyHost ? { hmr: { protocol: 'wss', host: proxyHost, clientPort: 443 } } : {}),
   },
   preview: {

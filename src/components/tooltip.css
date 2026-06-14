@@ -1,0 +1,41 @@
+/* Hover/focus tooltip. The anchor is an inline-flex wrapper so it hugs its
+   trigger and slots cleanly into flex toolbars (e.g. the top bar nav). */
+.tooltip-anchor {
+  display: inline-flex;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: var(--z-toast);
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-embed);
+  background: var(--bg-overlay);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-menu);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  pointer-events: none;
+  /* A quick fade so it doesn't pop. */
+  animation: tooltip-in 100ms ease-out;
+}
+/* Placed above: shift up by its own height so `top` reads as the bubble's bottom. */
+.tooltip--top {
+  transform: translate(-50%, -100%);
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    animation: none;
+  }
+}

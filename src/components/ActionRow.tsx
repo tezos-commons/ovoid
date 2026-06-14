@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import type { AppBskyFeedDefs, AppBskyFeedPost } from '@atproto/api'
 import { HeartIcon, MoreIcon, RepostIcon, ReplyIcon, ShareIcon } from './Icon'
 import { Menu } from './Menu'
+import { haptic } from '@/lib/haptics'
 import { useAgent } from '@/lib/api/agent'
 import { notifyConfigured } from '@/lib/notify/client'
 import {
@@ -40,6 +41,14 @@ export function ActionRow({ post, onReply, onRepost, onLike, onShare }: ActionRo
     e.stopPropagation()
     fn?.()
   }
+  // Like/repost get a tactile tick; reply/share navigate or open chrome, so they
+  // don't.
+  const tap = (fn?: () => void) => (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    haptic('light')
+    fn?.()
+  }
 
   return (
     <div className="actionrow">
@@ -49,7 +58,7 @@ export function ActionRow({ post, onReply, onRepost, onLike, onShare }: ActionRo
       </button>
       <button
         className={clsx('action action--repost', reposted && 'action--active')}
-        onClick={stop(onRepost)}
+        onClick={tap(onRepost)}
         aria-label="Repost"
         aria-pressed={reposted}
       >
@@ -58,7 +67,7 @@ export function ActionRow({ post, onReply, onRepost, onLike, onShare }: ActionRo
       </button>
       <button
         className={clsx('action action--like', liked && 'action--active')}
-        onClick={stop(onLike)}
+        onClick={tap(onLike)}
         aria-label="Like"
         aria-pressed={liked}
       >

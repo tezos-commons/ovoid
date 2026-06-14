@@ -12,8 +12,21 @@ function readTheme(): Theme {
 }
 
 function applyTheme(theme: Theme) {
-  if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('data-theme', theme)
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  root.setAttribute('data-theme', theme)
+  // Keep <meta name="theme-color"> in sync with the theme's background. Android
+  // colors the PWA system bars (status + navigation) from this, so matching it to
+  // --bg makes those bars blend with the app instead of showing a fixed/black bar.
+  const bg = getComputedStyle(root).getPropertyValue('--bg').trim()
+  if (bg) {
+    let meta = document.querySelector('meta[name="theme-color"]')
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.setAttribute('name', 'theme-color')
+      document.head.appendChild(meta)
+    }
+    meta.setAttribute('content', bg)
   }
 }
 

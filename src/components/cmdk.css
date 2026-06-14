@@ -1,0 +1,135 @@
+/* ============================================================
+   Command palette (⌘K) + keyboard-shortcuts cheat sheet. Both ride inside Dialog;
+   these rules style the dialog body content.
+   ============================================================ */
+
+/* The palette wants to sit high and wide-ish, unlike a centered confirm dialog.
+   Dialog's panel is .dialog; .cmdk is our extra class on it. */
+.dialog.cmdk {
+  width: min(560px, 92vw);
+  align-self: start;
+  margin-top: 12vh;
+  padding: 0;
+  overflow: hidden;
+}
+.dialog.cmdk .dialog__body {
+  padding: 0;
+}
+
+.cmdk__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-faint);
+}
+.cmdk__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font-size: var(--fs-md);
+}
+.cmdk__input::placeholder {
+  color: var(--text-faint);
+}
+
+.cmdk__list {
+  max-height: min(50vh, 420px);
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+.cmdk__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  color: var(--text);
+  font-size: var(--fs-base);
+  text-align: left;
+}
+.cmdk__item[data-sel='true'] {
+  background: var(--bg-contrast-50);
+}
+.cmdk__icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  color: var(--text-muted);
+}
+.cmdk__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmdk__empty {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--text-faint);
+}
+
+/* ---------------- Shortcuts cheat sheet ---------------- */
+.shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  min-width: min(440px, 80vw);
+}
+.shortcuts__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.shortcuts__title {
+  margin-bottom: var(--space-1);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.shortcuts__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+}
+.shortcuts__label {
+  font-size: var(--fs-base);
+}
+.shortcuts__keys {
+  display: flex;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+}
+.shortcuts__kbd {
+  min-width: 22px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-embed);
+  background: var(--bg-contrast-25);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-align: center;
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .shortcuts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+}

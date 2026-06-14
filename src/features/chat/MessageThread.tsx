@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import clsx from 'clsx'
 import type { ChatBskyConvoDefs } from '@atproto/api'
 import { Avatar, Button, EmptyState, ErrorState, MessageThreadSkeleton, Spinner } from '@/components'
+import { MobileBottomContent } from '@/components/layout'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { MessageBubble } from './MessageBubble'
 import { MessageComposer } from './MessageComposer'
 import { SystemMessage, referredDids } from './SystemMessage'
@@ -40,20 +42,61 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
   const bottomRef = useRef<HTMLDivElement>(null)
   const prevLatest = useRef<string | undefined>(undefined)
   const prevScrollHeight = useRef(0)
+  // Whether the view is stuck to the bottom (start true so first paint pins).
+  const stick = useRef(true)
 
   // Pin to bottom on first load and when a new newest message appears, but only
-  // if the user is already near the bottom (don't yank them up from history).
+  // while the user is stuck to the bottom (don't yank them up from history).
+  // scrollTop = scrollHeight (not scrollIntoView) reaches the true bottom past
+  // the scroll padding reserved for the floating composer.
   useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el) return
     const firstLoad = prevLatest.current === undefined && latestId !== undefined
     const grew = latestId !== prevLatest.current
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200
-    if (firstLoad || (grew && nearBottom)) {
-      bottomRef.current?.scrollIntoView({ block: 'end' })
+    if (firstLoad) stick.current = true
+    if ((firstLoad || grew) && stick.current) {
+      el.scrollTop = el.scrollHeight
     }
     prevLatest.current = latestId
   }, [latestId])
+
+  // Keep pinned to the bottom as the scroll region resizes — late-loading media
+  // on open (content grows) and the keyboard opening (container shrinks) both
+  // fire this, so the newest message stays visible without a manual scroll.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const pin = () => {
+      if (stick.current) el.scrollTop = el.scrollHeight
+    }
+    const ro = new ResizeObserver(pin)
+    ro.observe(el)
+    const inner = el.firstElementChild
+    if (inner) ro.observe(inner)
+    return () => ro.disconnect()
+  }, [])
+
+  // The on-screen keyboard opening/closing shrinks the usable height in steps
+  // (visualViewport → --kb → chat-screen height). The ResizeObserver can pin
+  // mid-transition, before the final height settles, leaving the newest message
+  // short of the bottom. Re-pin on the settle frame when the keyboard changes,
+  // but only while stuck to the bottom so we don't yank the user out of history.
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const repin = () => {
+      const el = scrollRef.current
+      if (!el || !stick.current) return
+      requestAnimationFrame(() => {
+        if (stick.current && scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        }
+      })
+    }
+    vv.addEventListener('resize', repin)
+    return () => vv.removeEventListener('resize', repin)
+  }, [])
 
   // When loading OLDER history (fetchNextPage), preserve the scroll position by
   // compensating for the height the prepended page added at the top.
@@ -74,6 +117,8 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
     const el = scrollRef.current
     if (!el) return
     const onScroll = () => {
+      // Track whether the user is parked at the bottom (drives auto-pin above).
+      stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150
       if (el.scrollTop < 80 && q.hasNextPage && !q.isFetchingNextPage) {
         q.fetchNextPage()
       }
@@ -132,6 +177,11 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
 
   // A locked group accepts no new messages; lock the composer to match.
   const replyDisabled = group ? group.lockStatus !== 'unlocked' : false
+
+  const isMobile = useIsMobile()
+  const composer = (
+    <MessageComposer convoId={convoId} disabled={replyDisabled} members={convo?.members ?? []} />
+  )
 
   if (q.isError) {
     if (isChatPermissionError(q.error)) {
@@ -205,7 +255,9 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
           </>
         )}
       </div>
-      <MessageComposer convoId={convoId} disabled={replyDisabled} members={convo?.members ?? []} />
+      {/* Mobile: the composer lives in the floating bottom bar, shown by default
+          (chat's primary action). Desktop: in-flow. */}
+      {isMobile ? <MobileBottomContent defaultShown>{composer}</MobileBottomContent> : composer}
     </div>
   )
 }

@@ -134,14 +134,22 @@ export function Segment<T extends string>({
   options,
   onChange,
   ariaLabel,
+  full,
 }: {
   value: T
   options: SegmentOption<T>[]
   onChange: (next: T) => void
   ariaLabel: string
+  /** Span the full row with equal-width buttons (for many/long labels that would
+   *  crowd a trailing slot on narrow screens). */
+  full?: boolean
 }) {
   return (
-    <div className="settings-segment" role="group" aria-label={ariaLabel}>
+    <div
+      className={clsx('settings-segment', full && 'settings-segment--full')}
+      role="group"
+      aria-label={ariaLabel}
+    >
       {options.map((opt) => (
         <button
           key={opt.value}

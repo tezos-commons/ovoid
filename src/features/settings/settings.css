@@ -70,7 +70,7 @@
   text-decoration: none;
 }
 .settings-link:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .settings-row__icon {
@@ -145,6 +145,20 @@
   background: var(--bg);
   color: var(--text);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Full-width variant: stacked under a section title rather than in a trailing
+   slot, so many/long labels never crowd. Buttons share the width equally. */
+.settings-segment--full {
+  display: flex;
+  width: 100%;
+}
+.settings-segment--full .settings-segment__btn {
+  flex: 1;
+}
+/* Indent the stacked control to line up with the rows' text. */
+.settings-stack-control {
+  padding: 0 var(--space-4) var(--space-3);
 }
 
 /* Theme swatch preview inside the appearance picker. */
@@ -326,7 +340,7 @@
   white-space: nowrap;
 }
 .modlist-row__main:hover .modlist-row__name {
-  text-decoration: underline;
+  text-decoration: none;
 }
 .modlist-row__handle {
   font-size: var(--fs-sm);
@@ -368,10 +382,10 @@
     to { transform: translateX(0); }
   }
 
-  /* The page headers ARE the back affordance here — restore them (the app
-     hides .screen-header globally at phone widths). */
+  /* The floating top bar owns the section title + back on mobile, so keep the
+     in-pane ScreenHeaders hidden (matches the global phone-width rule). */
   .settings-mobile .screen-header {
-    display: flex;
+    display: none;
   }
 
   /* Flat full-bleed lists: drop the desktop panel chrome on the menu. */

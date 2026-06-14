@@ -158,6 +158,19 @@ export const qk = {
   objktTokens: (addr: string, kind: string, contract: string) =>
     ['tezos', 'objkt', 'tokens', kind, { addr, contract }] as const,
 
+  // Wallet overview (TzKT): tez balance, fungible balances, owned-NFT preview,
+  // recent transactions. Keyed by raw tz-address under the same `tezos` root.
+  walletBalance: (addr: string) => ['tezos', 'wallet', 'balance', { addr }] as const,
+  walletTokens: (addr: string) => ['tezos', 'wallet', 'tokens', { addr }] as const,
+  walletNfts: (addr: string) => ['tezos', 'wallet', 'nfts', { addr }] as const,
+  walletActivity: (addr: string) => ['tezos', 'wallet', 'activity', { addr }] as const,
+
+  // Ovoid Polls service (poll.ovoid.at — external first-party service). Separate
+  // `poll` root so bsky prefix-invalidation never touches it; getPoll carries
+  // viewer state so it's authed, but the id alone keys it (one viewer/session).
+  poll: (id: string) => ['poll', { id }] as const,
+  pollResults: (id: string) => ['poll', 'results', { id }] as const,
+
   /**
    * True for any feed-family read (timeline / custom feed / author feed / likes).
    * Encapsulates the positional knowledge (`key[2] === 'feed'`) in one place so

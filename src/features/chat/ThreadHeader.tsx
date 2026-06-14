@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Agent, ChatBskyConvoDefs } from '@atproto/api'
 import { Avatar, AvatarGroup, IconButton, Menu } from '@/components'
-import { ScreenHeader } from '@/components/layout'
+import { ScreenHeader, MobileTopLeft, MobileTopRight } from '@/components/layout'
 import { BackIcon, MoreIcon } from '@/components/Icon'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
@@ -32,6 +33,7 @@ export interface ThreadHeaderProps {
  */
 export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const { chatAgent, did } = useAgent()
   const leave = useLeaveConvo(convoId)
   const group = convo ? groupKind(convo) : undefined
@@ -75,8 +77,14 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
       ]
     : []
 
+  // Build the title + overflow menu per convo kind, then render either the
+  // desktop ScreenHeader or the mobile top-bar slots from the same nodes.
+  let title: ReactNode
+  let menuItems: { key: string; label: string; danger?: boolean; onSelect: () => void }[] = []
+  let menuLabel = 'Conversation options'
+
   if (group) {
-    const title = (
+    title = (
       <Link to={`/messages/${convoId}/settings`} className="chat-detail-title" title="Group settings">
         <AvatarGroup members={convo!.members} size="sm" max={3} />
         <span className="chat-detail-title__name">{convoTitle(convo!, viewerDid)}</span>
@@ -86,60 +94,52 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
       if (!confirm('Leave this group chat?')) return
       leave.mutate(undefined, { onSuccess: () => navigate('/messages') })
     }
-    const items = [
+    menuLabel = 'Group options'
+    menuItems = [
       { key: 'settings', label: 'Group settings', onSelect: () => navigate(`/messages/${convoId}/settings`) },
       ...muteItem,
       { key: 'leave', label: 'Leave group', danger: true, onSelect: onLeave },
     ]
-    return (
-      <ScreenHeader
-        title={title}
-        actions={
-          <span className="chat-detail-actions">
-            <Menu trigger={<IconButton label="Group options"><MoreIcon size={20} /></IconButton>} items={items} />
-            {back}
-          </span>
-        }
-      />
+  } else {
+    const other = convo ? otherMember(convo, viewerDid) : undefined
+    title = other ? (
+      <Link to={`/profile/${other.handle}`} className="chat-detail-title" title={`View @${other.handle}`}>
+        <Avatar
+          src={other.avatar}
+          alt={other.displayName ?? other.handle}
+          fallback={other.displayName ?? other.handle}
+          size="sm"
+        />
+        <span className="chat-detail-title__name">{other.displayName?.trim() || `@${other.handle}`}</span>
+      </Link>
+    ) : (
+      'Conversation'
     )
+    menuItems = muteItem
   }
 
-  // 1:1 DM
-  const other = convo ? otherMember(convo, viewerDid) : undefined
-  const title = other ? (
-    <Link to={`/profile/${other.handle}`} className="chat-detail-title" title={`View @${other.handle}`}>
-      <Avatar
-        src={other.avatar}
-        alt={other.displayName ?? other.handle}
-        fallback={other.displayName ?? other.handle}
-        size="sm"
-      />
-      <span className="chat-detail-title__name">{other.displayName?.trim() || `@${other.handle}`}</span>
-    </Link>
-  ) : (
-    'Conversation'
-  )
+  const menu = menuItems.length ? (
+    <Menu trigger={<IconButton label={menuLabel}><MoreIcon size={20} /></IconButton>} items={menuItems} />
+  ) : null
+
+  if (isMobile) {
+    return (
+      <>
+        <MobileTopLeft>
+          <IconButton label="Back to messages" onClick={() => navigate('/messages')}>
+            <BackIcon size={20} />
+          </IconButton>
+          {title}
+        </MobileTopLeft>
+        {menu && <MobileTopRight>{menu}</MobileTopRight>}
+      </>
+    )
+  }
 
   return (
     <ScreenHeader
       title={title}
-      actions={
-        muteItem.length ? (
-          <span className="chat-detail-actions">
-            <Menu
-              trigger={
-                <IconButton label="Conversation options">
-                  <MoreIcon size={20} />
-                </IconButton>
-              }
-              items={muteItem}
-            />
-            {back}
-          </span>
-        ) : (
-          back
-        )
-      }
+      actions={<span className="chat-detail-actions">{menu}{back}</span>}
     />
   )
 }

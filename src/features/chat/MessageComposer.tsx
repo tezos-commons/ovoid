@@ -1,8 +1,11 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import clsx from 'clsx'
 import { Avatar, IconButton } from '@/components'
+import { haptic } from '@/lib/haptics'
 import { normalizeXrpcError } from '@/lib/api/errors'
 import { useAgent } from '@/lib/api/agent'
+import { pollUrl } from '@/lib/poll/client'
+import { CreatePollDialog } from '@/features/poll/CreatePollDialog'
 import { useSendMessage } from './use-send-message'
 import {
   findMentionToken,
@@ -32,6 +35,7 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
   const [text, setText] = useState('')
   const [token, setToken] = useState<MentionToken | null>(null)
   const [highlight, setHighlight] = useState(0)
+  const [pollOpen, setPollOpen] = useState(false)
   const send = useSendMessage(convoId)
   const { did } = useAgent()
   const taRef = useRef<HTMLTextAreaElement>(null)
@@ -74,11 +78,19 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
     if (!value || send.isPending || disabled) return
     send.mutate(value, {
       onSuccess: () => {
+        haptic('success')
         setText('')
         setToken(null)
         requestAnimationFrame(grow)
       },
     })
+  }
+
+  // After a poll is created, share it as a message — the link unfurls into the
+  // interactive poll card (and is stripped from the bubble text).
+  const createdPoll = (id: string) => {
+    setPollOpen(false)
+    send.mutate(pollUrl(id), { onSuccess: () => haptic('success') })
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -110,6 +122,7 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
   }
 
   return (
+    <>
     <form className="msg-composer" onSubmit={submit}>
       {open && (
         <div className="mention-pop" role="listbox" aria-label="Mention suggestions">
@@ -140,6 +153,15 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
         </div>
       )}
       <div className="msg-composer__row">
+        <IconButton
+          label="Create poll"
+          type="button"
+          disabled={disabled}
+          className="msg-composer__poll"
+          onClick={() => setPollOpen(true)}
+        >
+          <PollIcon />
+        </IconButton>
         <textarea
           ref={taRef}
           className="msg-composer__input"
@@ -168,6 +190,16 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
         </IconButton>
       </div>
     </form>
+    <CreatePollDialog open={pollOpen} onClose={() => setPollOpen(false)} onCreated={createdPoll} />
+    </>
+  )
+}
+
+function PollIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+      <path d="M6 20v-6M12 20V4M18 20v-10" />
+    </svg>
   )
 }
 

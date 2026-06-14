@@ -174,7 +174,7 @@
   font-weight: var(--fw-semibold, 600);
 }
 .profhead__count:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Phone: compact card — collapse the bio behind a Show more/less toggle and
@@ -184,30 +184,33 @@
   display: none;
 }
 @media (max-width: 1000px) {
-  /* The page is full-bleed on mobile and the card sits at the very top, so the
-     desktop panel chrome (border, rounded corners) and the below-topbar
-     breathing room don't apply — the card IS the page header. */
   .profaside {
     margin-top: 0;
+  }
+  /* The header is a distinct card, inset from the screen edges (aligned to the
+     floating bars) and resting below the top bar. The card chrome lives on this
+     wrapper; .profhead inside goes edge-to-edge (banner as its background). */
+  .profile-mobile-head {
+    margin: 0 var(--mbar-edge) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    background: var(--bg);
   }
   .profhead {
     border: none;
     border-radius: 0;
-    /* The gradient below fades into this, and the page below the card is also
-       var(--bg) — one continuous surface, no seam. */
+    /* The banner gradient fades into this; the page below is also var(--bg). */
     background: var(--bg);
     position: relative;
   }
-  /* Mobile banner = the card's whole background: absolutely fill the card and
-     fade into the page colour toward the bottom, with all content layered
-     above. This frees the layout from the banner-strip + pulled-up-avatar
-     construction — the card is one area. */
+  /* Mobile banner = the card's whole background: fill the card and fade to the
+     base bg toward the bottom, with all content layered above. */
   .profhead__banner {
     position: absolute;
     inset: 0;
     height: auto;
-    /* Decorative background on mobile; a full-card tap target that navigates
-       would swallow every stray tap on the card's padding. */
+    /* Decorative background; a full-card link would swallow taps on the padding. */
     pointer-events: none;
   }
   .profhead__banner::after {
@@ -229,7 +232,7 @@
     position: relative;
     z-index: 1;
   }
-  /* Ghost icon buttons need a scrim chip to stay visible over bright banners. */
+  /* Ghost icon buttons need a scrim chip to stay legible over bright banners. */
   .profhead__actions .iconbtn {
     background: color-mix(in srgb, var(--bg) 55%, transparent);
     backdrop-filter: blur(8px);
@@ -243,10 +246,20 @@
   .profhead__avatar {
     border-width: 3px;
   }
-  /* No banner strip to overlap anymore — content flows from the card's top. */
+  /* Banner is the full background, not a strip to overlap — content flows from
+     the card's top. */
   .profhead__bar {
     margin-top: 0;
     padding-top: var(--space-3);
+    /* Above the identity/bio/counts (also z-index:1 here, but later in the DOM),
+       so the overflow menu's popover floats over them instead of behind. */
+    z-index: 2;
+  }
+  /* The avatar is tall, so flex-end drops the action buttons too low; pin them to
+     the top-right of the card. */
+  .profhead__actions {
+    align-self: flex-start;
+    padding-bottom: 0;
   }
   .profhead__identity {
     padding-top: var(--space-2);

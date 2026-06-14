@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Tabs, Icons, type TabItem } from '@/components'
-import { PageAside } from '@/components/layout'
+import { MobileTopBarFill } from '@/components/layout'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import './search.css'
 import { TypeaheadDropdown } from './TypeaheadDropdown'
 import { DiscoverState } from './DiscoverState'
 import { PostResults, PeopleResults, FeedResults } from './SearchResults'
-import { useRecentSearches } from './recent-searches'
 import type { PostSort } from './use-search-posts'
 
 type TabKey = 'top' | 'latest' | 'people' | 'feeds'
@@ -40,7 +40,6 @@ export default function SearchScreen() {
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
-  const { recents, add: addRecent, clear: clearRecents } = useRecentSearches()
 
   // Keep the input in sync when the committed query changes externally
   // (e.g. navigating in via a trending chip / browser back-forward).
@@ -68,8 +67,6 @@ export default function SearchScreen() {
       setParams({}, { replace: false })
       return
     }
-    // Record into history (moves an existing entry back to the top).
-    addRecent(trimmed)
     setParams({ q: trimmed, tab: nextTab })
   }
 
@@ -88,84 +85,62 @@ export default function SearchScreen() {
   // Typeahead shows while the box is focused and the draft is non-empty;
   // once focus leaves or a result is picked it hides.
   const showTypeahead = focused && draft.trim().length > 0
+  const isMobile = useIsMobile()
+
+  // The search field. On mobile it becomes the whole top bar; on desktop it's the
+  // in-page header band.
+  const searchBox = (
+    <div className="search__box" ref={boxRef}>
+      <Icons.SearchIcon size={18} className="search__box-icon" />
+      <input
+        ref={inputRef}
+        className="search__input"
+        type="search"
+        placeholder="Search posts, people and feeds"
+        value={draft}
+        autoComplete="off"
+        spellCheck={false}
+        onFocus={() => setFocused(true)}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit(draft)
+          } else if (e.key === 'Escape') {
+            setFocused(false)
+            inputRef.current?.blur()
+          }
+        }}
+      />
+      {draft && (
+        <button className="search__clear" onClick={clear} aria-label="Clear search">
+          <Icons.CloseIcon size={16} />
+        </button>
+      )}
+
+      {showTypeahead && (
+        <TypeaheadDropdown
+          query={draft}
+          onSubmitSearch={() => commit(draft)}
+          onPick={() => setFocused(false)}
+        />
+      )}
+    </div>
+  )
 
   return (
     <>
-      <PageAside>
-        <nav className="recentsearch" aria-label="Recent searches">
-          <div className="recentsearch__head">
-            <span className="recentsearch__title">Recent</span>
-            {recents.length > 0 && (
-              <button type="button" className="recentsearch__clear" onClick={clearRecents}>
-                Clear
-              </button>
-            )}
-          </div>
-          {recents.length === 0 ? (
-            <p className="recentsearch__empty">
-              No recent searches yet. Searches you run will appear here.
-            </p>
-          ) : (
-            recents.map((q) => (
-              <button
-                key={q}
-                type="button"
-                className="recentsearch__item"
-                onClick={() => {
-                  setDraft(q)
-                  commit(q)
-                }}
-              >
-                {q}
-              </button>
-            ))
-          )}
-        </nav>
-      </PageAside>
+      {isMobile && <MobileTopBarFill>{searchBox}</MobileTopBarFill>}
 
       <div className="search">
-      <header className="search__header">
-        <div className="search__box" ref={boxRef}>
-          <Icons.SearchIcon size={18} className="search__box-icon" />
-          <input
-            ref={inputRef}
-            className="search__input"
-            type="search"
-            placeholder="Search posts, people and feeds"
-            value={draft}
-            autoComplete="off"
-            spellCheck={false}
-            onFocus={() => setFocused(true)}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commit(draft)
-              } else if (e.key === 'Escape') {
-                setFocused(false)
-                inputRef.current?.blur()
-              }
-            }}
-          />
-          {draft && (
-            <button className="search__clear" onClick={clear} aria-label="Clear search">
-              <Icons.CloseIcon size={16} />
-            </button>
-          )}
-
-          {showTypeahead && (
-            <TypeaheadDropdown
-              query={draft}
-              onSubmitSearch={() => commit(draft)}
-              onPick={() => setFocused(false)}
-            />
-          )}
-        </div>
-
-        {committed && (
-          <Tabs items={TABS} activeKey={tab} onChange={setTab} sticky />
-        )}
-      </header>
+      {/* Mobile: the search box is the top bar; the header keeps only the result
+          tabs (and only when there's a committed query). */}
+      {(!isMobile || committed) && (
+        <header className="search__header">
+          {!isMobile && searchBox}
+          {committed && <Tabs items={TABS} activeKey={tab} onChange={setTab} sticky />}
+        </header>
+      )}
 
       <div className="search__content">
         {!committed ? (

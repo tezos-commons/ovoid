@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   ScreenHeader,
 } from '@/components/layout/ScreenHeader'
+import { MobileTopRight, MobileSelect, useMobileTitle } from '@/components/layout'
 import {
   Tabs,
   NotificationsSkeleton,
@@ -11,6 +12,7 @@ import {
   Screen,
 } from '@/components'
 import { BellIcon } from '@/components/Icon'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { useNotifications, type Notification } from './use-notifications'
 import { useUpdateSeen } from './use-update-seen'
 import {
@@ -45,6 +47,8 @@ function filterForTab(notifs: Notification[], tab: TabKey): Notification[] {
 export default function NotificationsScreen() {
   const [tab, setTab] = useState<TabKey>('all')
   const updateSeen = useUpdateSeen()
+  const isMobile = useIsMobile()
+  useMobileTitle(isMobile ? 'Notifications' : null)
 
   const {
     data,
@@ -85,14 +89,27 @@ export default function NotificationsScreen() {
   const { data: posts } = useSubjectPosts(hydrateUris)
 
   const header = (
-    <ScreenHeader title="Notifications">
-      <Tabs
-        items={TABS}
-        activeKey={tab}
-        onChange={(k) => setTab(k as TabKey)}
-        sticky
-      />
-    </ScreenHeader>
+    <>
+      <ScreenHeader title="Notifications">
+        {/* Mobile folds the All/Mentions filter into a top-bar dropdown. */}
+        {!isMobile && (
+          <Tabs items={TABS} activeKey={tab} onChange={(k) => setTab(k as TabKey)} sticky />
+        )}
+      </ScreenHeader>
+      {isMobile && (
+        <MobileTopRight>
+          <MobileSelect
+            ariaLabel="Filter notifications"
+            label={TABS.find((t) => t.key === tab)?.label ?? 'All'}
+            items={TABS.map((t) => ({
+              key: t.key,
+              label: t.label,
+              onSelect: () => setTab(t.key as TabKey),
+            }))}
+          />
+        </MobileTopRight>
+      )}
+    </>
   )
 
   if (isLoading) {

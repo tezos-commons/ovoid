@@ -9,6 +9,7 @@ import {
   WalletIcon,
 } from '@/components/Icon'
 import { useAuth } from '@/lib/api/agent'
+import { reloadApp } from '@/lib/reload-app'
 import { Section, Row } from './components'
 import { useAccount } from './use-account'
 
@@ -57,6 +58,14 @@ function SignOutIcon({ size = 22 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <path d="M16 17l5-5-5-5M21 12H9" />
+    </svg>
+  )
+}
+function ReloadIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 3v5h-5" />
     </svg>
   )
 }
@@ -119,6 +128,15 @@ export function SettingsNav() {
           label="Sign out"
           sub={displayHandle ? `@${displayHandle}` : undefined}
           onClick={handleSignOut}
+        />
+      </Section>
+
+      <Section>
+        <Row
+          icon={<ReloadIcon />}
+          label="Reload app"
+          sub="Clear caches & fetch the latest version"
+          onClick={() => void reloadApp()}
         />
       </Section>
     </div>

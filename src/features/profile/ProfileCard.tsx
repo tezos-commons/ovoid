@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { AppBskyActorDefs } from '@atproto/api'
 import { Avatar, Button, Img, Menu, IconButton, LabelChips, hasBotLabel } from '@/components'
-import { MoreIcon, BotIcon, ChatIcon, BellIcon, GearIcon } from '@/components/Icon'
-import { RichText } from '@/lib/rich-text'
+import { MoreIcon, BotIcon, ChatIcon, BellIcon } from '@/components/Icon'
+import { BioText } from '@/lib/rich-text'
 import { notifyConfigured } from '@/lib/notify/client'
 import {
   useNotifyMutes,
@@ -164,14 +164,6 @@ export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardPro
         </Link>
 
         <div className="profhead__actions">
-          {/* Mobile has no TopBar/UserFab, so the own profile is the only
-              surface that can carry the settings entry point. */}
-          {isSelf && (
-            <IconButton label="Settings" type="button" onClick={() => navigate('/settings')}>
-              <GearIcon size={20} />
-            </IconButton>
-          )}
-
           {showNotifyControls && (
             <IconButton
               label={watching ? 'Stop notifying about new posts' : 'Notify about new posts'}
@@ -253,7 +245,7 @@ export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardPro
 
       {profile.description && (
         <div className="profhead__bio">
-          <RichText text={profile.description} />
+          <BioText text={profile.description} />
         </div>
       )}
 

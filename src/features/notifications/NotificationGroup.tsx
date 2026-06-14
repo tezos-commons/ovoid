@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { Avatar, PostCard, PostEmbed } from '@/components'
@@ -91,9 +91,12 @@ export function ClusterRow({
   group: ClusterGroup
   subject?: AppBskyFeedDefs.PostView
 }) {
+  const navigate = useNavigate()
   const { node, color } = clusterIcon(group.reason)
   const shown = group.authors.slice(0, MAX_AVATARS)
   const overflow = group.authors.length - shown.length
+  // Clusters with a subject (likes/reposts) open that post when the row is tapped.
+  const rowTo = subject ? subjectPermalink(subject) : undefined
 
   // Warm the row's tap targets: the subject post's thread (likes/reposts), or —
   // for subject-less clusters like follows — the leading actors' profiles. The
@@ -118,8 +121,9 @@ export function ClusterRow({
   return (
     <article
       ref={prefetchRef}
-      className={clsx('notif', !group.isRead && 'notif--unread')}
+      className={clsx('notif', !group.isRead && 'notif--unread', rowTo && 'notif--clickable')}
       aria-label={`${summarize(group.authors)} ${clusterVerb(group.reason)}`}
+      onClick={rowTo ? () => navigate(rowTo) : undefined}
     >
       <div className="notif__icon" style={{ color }}>
         {node}
@@ -133,6 +137,7 @@ export function ClusterRow({
               to={`/profile/${a.handle || a.did}`}
               className="notif__avatar"
               title={actorName(a)}
+              onClick={(e) => e.stopPropagation()}
             >
               <Avatar
                 src={a.avatar}
@@ -157,7 +162,11 @@ export function ClusterRow({
         {subject && (subjectText(subject) || subject.embed) && (
           <div className="notif__subject">
             {subjectText(subject) && (
-              <Link to={subjectPermalink(subject)} className="notif__subject-text">
+              <Link
+                to={subjectPermalink(subject)}
+                className="notif__subject-text"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {subjectText(subject)}
               </Link>
             )}

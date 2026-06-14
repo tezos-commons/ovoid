@@ -1,0 +1,181 @@
+/* ============================================================
+   Desktop right rail: search + trending + who-to-follow, stacked in the rail
+   column the shell reveals at --bp-rail. Panels mirror the app's card surfaces.
+   ============================================================ */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* Breathing room below the snug top bar, matching the aside profile card's
+     top inset (.threadauthors margin-top) so both columns start level. */
+  padding-top: var(--space-3);
+  padding-bottom: var(--layout-gap);
+}
+
+/* ---------------- Search field ---------------- */
+.rail-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 42px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-25);
+  color: var(--text-faint);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.rail-search:focus-within {
+  border-color: var(--color-primary);
+  background: var(--bg);
+}
+.rail-search svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+.rail-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font-size: var(--fs-base);
+}
+.rail-search__input::placeholder {
+  color: var(--text-faint);
+}
+/* Drop the native search clear affordance — the field is intentionally minimal. */
+.rail-search__input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+/* ---------------- Panels ---------------- */
+.rail-panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--bg-contrast-25);
+  overflow: hidden;
+}
+.rail-panel__title {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.rail-panel__more {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-sm);
+  color: var(--color-primary);
+  border-top: 1px solid var(--border);
+}
+.rail-panel__more:hover {
+  background: var(--bg-contrast-50);
+}
+
+/* ---------------- Trending topics ---------------- */
+.rail-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-4);
+}
+.rail-topic {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-50);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: background 120ms ease;
+}
+.rail-topic:hover {
+  background: var(--blue-25);
+  color: var(--color-primary);
+}
+
+/* ---------------- Wallet overview ----------------
+   Reuses the profile wallet tab's cards/sections (wallet.css). Wrap them in a
+   panel matching the others, and flatten the balance card's standalone chrome so
+   borders/shadows don't double up inside the panel. */
+.rail-wallet {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--bg-contrast-25);
+  overflow: hidden;
+}
+.rail-wallet .wallet-top {
+  padding: var(--space-2);
+}
+.rail-wallet .wallet-card--balance {
+  border: none;
+  box-shadow: none;
+  border-radius: var(--radius-card);
+  /* Drop the primary-glow gradient — sits flat on the panel, less "shiny". */
+  background: transparent;
+  /* Tighter than the profile tab's card — it's a compact rail summary. */
+  padding: var(--space-2);
+  gap: var(--space-1);
+}
+.rail-wallet .wallet-balance__amount {
+  font-size: var(--fs-lg);
+}
+/* Balance card doubles as the activity toggle. */
+.rail-wallet__toggle {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  transition: background 120ms ease;
+}
+.rail-wallet__toggle:hover {
+  background: var(--bg-contrast-50);
+}
+.rail-wallet__caret {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  color: var(--text-faint);
+  transition: transform 200ms ease;
+  pointer-events: none;
+}
+.rail-wallet__toggle[aria-expanded='true'] .rail-wallet__caret {
+  transform: rotate(180deg);
+}
+/* Fold: animate grid rows 0fr↔1fr so activity expands/collapses smoothly without
+   measuring height. The inner wrapper must clip + allow min-height:0 to collapse. */
+.rail-wallet__fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms ease;
+}
+.rail-wallet__fold--open {
+  grid-template-rows: 1fr;
+}
+.rail-wallet__fold-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail-wallet__fold {
+    transition: none;
+  }
+}
+
+/* ---------------- Who-to-follow ---------------- */
+.rail-people {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-2) var(--space-2);
+}
+/* The compact PersonCard already lays itself out; just give rows a hover wash
+   and rounding so they read as tappable inside the panel. */
+.rail-people .personrow {
+  border-radius: var(--radius-card);
+  padding: var(--space-2);
+}
+.rail-people .personrow:hover {
+  background: var(--bg-contrast-50);
+}

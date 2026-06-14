@@ -250,7 +250,7 @@
   border-bottom: 1px solid var(--border);
 }
 .dialog__title { font-size: var(--fs-md); font-weight: var(--fw-bold); flex: 1; }
-.dialog__body { padding: var(--space-4); overflow-y: auto; }
+.dialog__body { padding: var(--space-4); overflow-y: auto; overscroll-behavior: contain; }
 
 /* Fit-sheet variant (ModalSheet): on desktop a normal, narrower modal; on
    mobile a content-height bottom sheet instead of the full-screen one. */
@@ -268,6 +268,11 @@
     height: 100dvh;
     border-radius: 0;
     border: none;
+    /* Keep the header clear of the notch and the footer/toolbar clear of the home
+       indicator on a full-screen sheet (the fit variant resets the top below).
+       When the keyboard is open, --kb wins so the toolbar lifts above it. */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--kb, 0px));
     /* Slide up from the bottom (replaces the desktop pop). */
     animation: dialog-sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
   }
@@ -285,7 +290,11 @@
     height: auto;
     max-height: 85dvh;
     border-radius: var(--radius-panel) var(--radius-panel) 0 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Bottom sheet: handle sits at the very top edge, so drop the full-screen
+       top inset; keep the bottom inset for the home indicator (or the keyboard,
+       whichever is taller, for sheets that contain an input). */
+    padding-top: 0;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--kb, 0px));
   }
   .dialog--sheet.dialog--fit::before {
     content: '';
@@ -352,6 +361,41 @@
 }
 .menu__item:hover { background: var(--bg-contrast-25); }
 .menu__item--danger { color: var(--color-danger); }
+
+/* Grid variant: section switcher as an icon grid, 3 per row (mobile top bar). */
+.menu__pop--grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-1);
+  width: 264px;
+  max-width: calc(100vw - 2 * var(--space-4));
+  padding: var(--space-2);
+}
+.menu__griditem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-1);
+  border-radius: var(--radius-embed);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font: inherit;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.menu__griditem:hover { background: var(--bg-contrast-25); color: var(--text); }
+.menu__griditem--active { color: var(--text); background: var(--bg-contrast-25); }
+.menu__gridicon { display: flex; }
+.menu__gridlabel {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 
 /* ---------- State blocks ---------- */
 .state {
@@ -431,6 +475,9 @@
   position: relative;
   height: 100%;
   overflow-y: auto;
+  /* Stop overscroll from chaining to the document: reaching the feed's end
+     shouldn't bounce the whole page (and on mobile shouldn't drag the bars). */
+  overscroll-behavior: contain;
 }
 .inflist__inner {
   position: relative;
@@ -441,6 +488,22 @@
   top: 0;
   left: 0;
   width: 100%;
+}
+/* Keyboard feed cursor (j/k). Desktop-only — keyboard nav implies a fine pointer.
+   A primary left bar marks the active row; no border/scale so neighbours don't
+   shift. The row is already position:absolute, so ::before anchors to it. */
+@media (hover: hover) and (pointer: fine) {
+  .inflist__row--cursor::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+    background: var(--color-primary);
+    z-index: 1;
+  }
 }
 .inflist__footer {
   display: flex;
@@ -464,7 +527,39 @@
 
 /* ---------- RichText ---------- */
 .rt-link { color: var(--color-primary); }
-.rt-link:hover { text-decoration: underline; }
+.rt-link:hover { text-decoration: none; }
+
+/* Inline @-mention chip: a tiny avatar + name, riding inline with the text. */
+.mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* Sit on the text baseline without bloating line height. */
+  vertical-align: bottom;
+  max-width: 100%;
+  padding: 1px 6px 1px 2px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-25);
+  color: var(--color-primary);
+  font-weight: var(--fw-medium);
+  line-height: 1.5;
+}
+.mention-chip:hover {
+  background: var(--blue-25);
+  text-decoration: none;
+}
+.mention-chip .av {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  flex: 0 0 auto;
+}
+.mention-chip__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ---------- Screen shell (bounded-height flex column) ---------- */
 .screen {
@@ -860,7 +955,7 @@
 }
 .lightbox__close {
   position: absolute;
-  top: var(--space-4);
+  top: calc(env(safe-area-inset-top, 0px) + var(--space-4));
   right: var(--space-4);
   z-index: 2;
   display: flex;
@@ -899,7 +994,7 @@
 .lightbox__count {
   position: absolute;
   z-index: 2;
-  bottom: var(--space-4);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-4));
   left: 50%;
   transform: translateX(-50%);
   padding: 2px var(--space-3);
@@ -1331,6 +1426,16 @@ video.nftb__backdrop {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    /* The overlay itself scrolls here; hide its own scrollbar so the global 8px
+       webkit scrollbar doesn't inset the artwork/panel from the right edge on
+       this fullscreen sheet. (The document scrollbar/gutter is handled in JS by
+       locking documentElement while open.) */
+    scrollbar-width: none;
+  }
+  .nftb::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
   /* Pin the close button to the viewport so it doesn't scroll away with content. */
   .nftb__close {
@@ -1549,7 +1654,7 @@ video.nftb__backdrop {
 }
 .postcard__namerow { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
 .postcard__name { font-weight: var(--fw-semibold); color: var(--text); }
-.postcard__name:hover { text-decoration: underline; }
+.postcard__name:hover { text-decoration: none; }
 
 /* Bot badge shown before a name when the account carries a `bot` label. */
 .bot-badge {

@@ -198,7 +198,7 @@
   color: inherit;
 }
 .feedcard__main:hover .feedcard__name {
-  text-decoration: underline;
+  text-decoration: none;
 }
 .feedcard__body {
   display: flex;
@@ -259,7 +259,7 @@
   text-decoration: none;
 }
 .feedview__creator:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 .feedview__desc {
   color: var(--text);

@@ -64,6 +64,79 @@
 .page__main {
   min-width: 0;
 }
+/* Right rail column. Hidden until --bp-rail (1560px) — below that the page stays
+   two columns and this element collapses. The 3-column rule lives in the
+   min-width query so the definite track widths never overflow a narrower page. */
+.page__rail {
+  display: none;
+}
+@media (min-width: 1400px) {
+  .page:not(.page--full) {
+    grid-template-columns: var(--page-aside) minmax(0, var(--main-max)) var(--page-rail);
+    width: min(
+      100%,
+      calc(var(--page-aside) + var(--main-max) + var(--page-rail) + 2 * var(--layout-gap))
+    );
+  }
+  .page:not(.page--full) .page__rail {
+    display: block;
+    position: sticky;
+    top: var(--topbar-height);
+    align-self: start;
+    max-height: calc(var(--app-height) - var(--layout-gap));
+    overflow-y: auto;
+  }
+  /* Rail-reclaim mode (e.g. profile Tezos tabs): drop the rail column and widen
+     main into its footprint. The overall page width is unchanged (it still equals
+     aside + main + rail + gaps from the base rule), so the layout doesn't shift —
+     only the rail's space is folded into the main column. */
+  .page:not(.page--full).page--no-rail {
+    grid-template-columns: var(--page-aside) minmax(
+        0,
+        calc(var(--main-max) + var(--layout-gap) + var(--page-rail))
+      );
+  }
+  .page:not(.page--full).page--no-rail .page__rail {
+    display: none;
+  }
+}
+
+/* ---------------- Desktop route transition ----------------
+   Subtler than the phone slide: a cross-fade + small rise so navigation reads as
+   continuous, not a hard cut. `backwards` fill applies the `from` state pre-paint
+   but retains nothing after — a lingering transform would make the wrapper a
+   containing block and break position:fixed/sticky descendants. */
+.route-fade--run {
+  animation: route-fade-in 130ms ease-out backwards;
+}
+.route-fade--run.route-fade--back {
+  animation-name: route-fade-in-back;
+}
+@keyframes route-fade-in {
+  from {
+    opacity: 0.7;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes route-fade-in-back {
+  from {
+    opacity: 0.7;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-fade--run {
+    animation: none;
+  }
+}
 
 /* ---------------- Top bar (sticky primary nav) ---------------- */
 .topbar {
@@ -219,7 +292,10 @@
   /* The mobile tab bar appears here, so full-height screens must reserve room;
      the top bar hides, so it claims no vertical space. */
   :root {
-    --app-bottom-inset: var(--bottom-bar-height);
+    /* The mobile bars float and overlay the content (they don't consume layout
+       height), so full-height screens span the whole viewport and rely on inner
+       scroll padding (--mbar-*-zone) to clear the bars. */
+    --app-bottom-inset: 0px;
     --topbar-height: 0px;
   }
   .shell {
@@ -241,14 +317,30 @@
     max-height: none;
     overflow: visible;
   }
-  .bottombar { display: flex; }
-  .compose-fab { display: flex; }
-  /* The tab bar is fixed over the bottom of the window-scrolled content, so the
-     last feed/profile/notification items would hide behind it. Reserve its
-     height (plus the home-indicator safe area) as bottom padding on the main
-     column. Chat (.page--full) owns its own full-height layout and opts out. */
+  /* Document-scrolled screens scroll behind the floating top + bottom bars; pad
+     the main column so the first/last rows clear them. Chat (.page--full) owns
+     its own full-height layout and opts out. The zone vars come from mobile.css. */
   .page:not(.page--full) .page__main {
-    padding-bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom, 0px));
+    padding-top: var(--mbar-top-zone);
+    padding-bottom: var(--mbar-bottom-zone);
+  }
+  /* Internal-scroll screens (.home's own 100dvh column, or any InfiniteList — its
+     .inflist owns the scroll) must NOT get page-level padding: it would push the
+     scroller down (a solid gap behind the top bar) and overflow the fixed-height
+     column. They clear the bars via their scroller's own padding instead. The
+     selector is more specific than the rule above so it actually wins, and uses a
+     descendant match because the route-slide wrapper sits between them. */
+  .page:not(.page--full) .page__main:has(.home),
+  .page:not(.page--full) .page__main:has(.inflist) {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  /* The InfiniteList scroller clears the bars itself: content rests just below
+     the top bar (and scrolls up behind it), last row clears the bottom bar.
+     Scoped to the page area so modal lists are unaffected. */
+  .page__main .inflist {
+    padding-top: var(--mbar-top-zone);
+    padding-bottom: var(--mbar-bottom-zone);
   }
   /* Phone: drop the main-content title bar (the sticky tab strips that some
      screens render below it are separate elements and stay). */

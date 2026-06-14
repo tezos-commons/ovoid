@@ -1,7 +1,25 @@
-import { Fragment, useEffect, useMemo } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
-import { PageAside } from '@/components/layout'
+import { Fragment, useEffect, useMemo, type ReactNode } from 'react'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import {
+  PageAside,
+  MobileTopRight,
+  MobileSelect,
+  useMobileTitle,
+  useHidePageRail,
+} from '@/components/layout'
 import { ProfileCardSkeleton, FeedSkeleton, NftGridSkeleton, ErrorState, EmptyState } from '@/components'
+import {
+  GearIcon,
+  HomeIcon,
+  ReplyIcon,
+  ImageIcon,
+  HeartIcon,
+  HashIcon,
+  ListIcon,
+  WalletIcon,
+  PencilIcon,
+  BookmarkIcon,
+} from '@/components/Icon'
 import type { TabItem } from '@/components'
 import { useAgent } from '@/lib/api/agent'
 import { useIsMobile } from '@/lib/use-is-mobile'
@@ -19,6 +37,14 @@ import { ProfileFeedsTab, ProfileListsTab } from './ProfileFeedsTab'
 import { NftTab } from './NftTab'
 import { LinkTezosSection } from './LinkTezosSection'
 import { useTezosAddress, objktCollectionsOptions } from './use-nfts'
+import { WalletView } from './WalletView'
+import { WalletViewMobile } from './WalletViewMobile'
+import {
+  walletBalanceOptions,
+  walletTokensOptions,
+  walletNftsOptions,
+  walletActivityOptions,
+} from './use-wallet'
 import './profile.css'
 
 type TabKey =
@@ -28,8 +54,22 @@ type TabKey =
   | 'likes'
   | 'feeds'
   | 'lists'
+  | 'wallet'
   | 'nfts-created'
   | 'nfts-owned'
+
+/** Icons for the mobile section dropdown's grid layout. */
+const TAB_ICONS: Record<TabKey, ReactNode> = {
+  posts: <HomeIcon size={22} />,
+  replies: <ReplyIcon size={22} />,
+  media: <ImageIcon size={22} />,
+  likes: <HeartIcon size={22} />,
+  feeds: <HashIcon size={22} />,
+  lists: <ListIcon size={22} />,
+  wallet: <WalletIcon size={22} />,
+  'nfts-created': <PencilIcon size={22} />,
+  'nfts-owned': <BookmarkIcon size={22} />,
+}
 
 /**
  * Profile route. Public-capable: renders for signed-out viewers against the
@@ -47,6 +87,7 @@ export default function ProfileScreen() {
   const { agent, did, isAuthed } = useAgent()
   const profileQ = useProfile(actor)
   const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
   const isMobile = useIsMobile()
 
   const profile = profileQ.data
@@ -70,7 +111,11 @@ export default function ProfileScreen() {
     if (isSelf) t.push({ key: 'likes', label: 'Likes' })
     if (hasFeeds) t.push({ key: 'feeds', label: 'Feeds' })
     if (hasLists) t.push({ key: 'lists', label: 'Lists' })
+    // Wallet / Created / Owned show for any account with a linked address — and
+    // on your own profile even without one, where they render the link-a-wallet
+    // prompt instead of data.
     if (tezosAddr || isSelf) {
+      t.push({ key: 'wallet', label: 'Wallet' })
       t.push({ key: 'nfts-created', label: 'Created' })
       t.push({ key: 'nfts-owned', label: 'Owned' })
     }
@@ -80,6 +125,16 @@ export default function ProfileScreen() {
   const requested = (params.get('tab') as TabKey) || 'posts'
   // Guard against a stale/invalid tab from the URL (e.g. ?tab=likes on someone else).
   const activeKey: TabKey = tabs.some((t) => t.key === requested) ? requested : 'posts'
+
+  // Mobile top bar shows the account name; the section menu folds into a dropdown.
+  useMobileTitle(
+    isMobile ? profile?.displayName?.trim() || (profile?.handle ? `@${profile.handle}` : 'Profile') : null,
+  )
+
+  // The wide Tezos tabs (Wallet/Created/Owned) reclaim the right rail's space:
+  // hide it and widen the main column into its footprint.
+  const isTezosTab = activeKey === 'wallet' || activeKey === 'nfts-created' || activeKey === 'nfts-owned'
+  useHidePageRail(isTezosTab)
 
   // Warm every sibling tab's first page on idle, so switching tabs renders
   // instantly. Only the active tab's query is `enabled`, so without this each
@@ -91,6 +146,11 @@ export default function ProfileScreen() {
         schedulePrefetch(opts.queryKey, () =>
           queryClient.prefetchInfiniteQuery(opts as Parameters<typeof queryClient.prefetchInfiniteQuery>[0]),
         )
+      // Wallet sections are plain (non-infinite) queries.
+      const warmQuery = (opts: { queryKey: readonly unknown[] }) =>
+        schedulePrefetch(opts.queryKey, () =>
+          queryClient.prefetchQuery(opts as Parameters<typeof queryClient.prefetchQuery>[0]),
+        )
       warm(authorFeedOptions(agent, did, actor, 'posts_no_replies'))
       warm(authorFeedOptions(agent, did, actor, 'posts_with_replies'))
       warm(authorFeedOptions(agent, did, actor, 'posts_with_media'))
@@ -98,6 +158,10 @@ export default function ProfileScreen() {
       if (tezosAddr) {
         warm(objktCollectionsOptions(tezosAddr, 'created'))
         warm(objktCollectionsOptions(tezosAddr, 'owned'))
+        warmQuery(walletBalanceOptions(tezosAddr))
+        warmQuery(walletTokensOptions(tezosAddr))
+        warmQuery(walletNftsOptions(tezosAddr))
+        warmQuery(walletActivityOptions(tezosAddr))
       }
     })
   }, [actor, agent, did, isSelf, tezosAddr])
@@ -156,20 +220,56 @@ export default function ProfileScreen() {
     // fresh virtualizer (and clears per-profile UI state like the expanded
     // bio) so cross-profile nav behaves exactly like any other navigation.
     <Fragment key={actor}>
-      <PageAside>
-        <div className="profaside">
-          <ProfileCard profile={profile} actor={actor!} isSelf={isSelf} isAuthed={isAuthed} />
-          {/* Desktop: menu lives in the aside. On mobile it moves into the main
-              column (below) so it shares the feed's scroll container and sticks. */}
-          {!isMobile && <ProfileNav items={tabs} activeKey={activeKey} onChange={setTab} />}
-          {profile.associated?.labeler && <LabelerCard profile={profile} />}
-        </div>
-      </PageAside>
-
-      {isMobile && <ProfileNav items={tabs} activeKey={activeKey} onChange={setTab} />}
+      {isMobile ? (
+        <>
+          {/* Section menu folds into a top-bar dropdown; the header card becomes
+              the first scrollable element (scrolls up under the floating bar). On
+              your own profile the settings entry lives here too (it's gone from
+              the bottom nav), so the top-left keeps the default back button. */}
+          <MobileTopRight>
+            <MobileSelect
+              ariaLabel="Profile section"
+              grid
+              label={tabs.find((t) => t.key === activeKey)?.label ?? 'Posts'}
+              items={[
+                ...tabs.map((t) => ({
+                  key: t.key,
+                  label: t.label,
+                  icon: TAB_ICONS[t.key as TabKey],
+                  active: t.key === activeKey,
+                  onSelect: () => setTab(t.key),
+                })),
+                ...(isSelf
+                  ? [
+                      {
+                        key: 'settings',
+                        label: 'Settings',
+                        icon: <GearIcon size={22} />,
+                        active: false,
+                        onSelect: () => navigate('/settings'),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </MobileTopRight>
+          <div className="profile-mobile-head">
+            <ProfileCard profile={profile} actor={actor!} isSelf={isSelf} isAuthed={isAuthed} />
+            {profile.associated?.labeler && <LabelerCard profile={profile} />}
+          </div>
+        </>
+      ) : (
+        <PageAside>
+          <div className="profaside">
+            <ProfileCard profile={profile} actor={actor!} isSelf={isSelf} isAuthed={isAuthed} />
+            <ProfileNav items={tabs} activeKey={activeKey} onChange={setTab} />
+            {profile.associated?.labeler && <LabelerCard profile={profile} />}
+          </div>
+        </PageAside>
+      )}
 
       {/* Min-height floor (mobile) so any tab — even one with too few items to
-          fill the screen — stays scrollable enough to pin the sticky menu. */}
+          fill the screen — stays scrollable. */}
       <div className="proftab">
         {blockingViewer ? (
           <EmptyState
@@ -217,6 +317,7 @@ function ProfileTabContent({
   tezosAddr: string | undefined
   tezosPending: boolean
 }) {
+  const isMobile = useIsMobile()
   // Per profile + tab, so each tab restores its own scroll on back-navigation.
   // Doubles as the ProfileFeed element key: tab switches render ProfileFeed at
   // the same tree position, and the virtualizer's initialOffset /
@@ -243,6 +344,13 @@ function ProfileTabContent({
       return (
         <ProfileFeed key={scrollKey} query={media} emptyTitle="No media yet" scrollKey={scrollKey} />
       )
+    case 'wallet':
+      // With a linked address show the overview; on your own wallet-less profile
+      // show the link prompt (skeleton covers the address lookup so it doesn't
+      // flash) — same contract as the Created/Owned tabs.
+      if (tezosAddr) return isMobile ? <WalletViewMobile address={tezosAddr} /> : <WalletView address={tezosAddr} />
+      if (tezosPending) return <NftGridSkeleton />
+      return <LinkTezosSection />
     case 'nfts-created':
       return nftTab('created')
     case 'nfts-owned':

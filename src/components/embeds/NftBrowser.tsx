@@ -71,15 +71,20 @@ export function NftBrowser() {
   // Back button / back-swipe closes the viewer instead of navigating the route.
   useCloseOnBack(open, close)
 
-  // Lock document scroll while open (same as Dialog). Without this the page
-  // behind stays scrollable and the browser paints its scrollbar ON TOP of the
-  // fixed overlay — a light strip down the right edge of the fullscreen view.
+  // Lock document scroll while open. We lock the documentElement (the real
+  // scroller — body overflow doesn't propagate to the viewport because html has
+  // overflow-x: clip) and drop scrollbar-gutter, so no reserved gutter or live
+  // scrollbar leaves a strip down the right edge of the fullscreen overlay.
   useEffect(() => {
     if (!open) return
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const html = document.documentElement
+    const prevOverflow = html.style.overflow
+    const prevGutter = html.style.scrollbarGutter
+    html.style.overflow = 'hidden'
+    html.style.scrollbarGutter = 'auto'
     return () => {
-      document.body.style.overflow = prevOverflow
+      html.style.overflow = prevOverflow
+      html.style.scrollbarGutter = prevGutter
     }
   }, [open])
 

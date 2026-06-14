@@ -6,6 +6,12 @@ import { Avatar } from '@/components'
 import { RichText, textWithoutLinkUris } from '@/lib/rich-text'
 import { absoluteTime, clockTime } from '@/lib/time'
 import { useLongPress } from '@/lib/use-long-press'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { profileOptions } from '@/features/profile/use-profile'
+import { authorFeedOptions } from '@/features/profile/use-author-feed'
 import { MessageEmbeds, messagePreviewedLinkUris } from './MessageEmbeds'
 import { MessageReactions } from './MessageReactions'
 import { ReactionPicker } from './ReactionPicker'
@@ -83,6 +89,35 @@ export const MessageBubble = memo(function MessageBubble({
   const attributed = isGroup && !mine
   const longPress = useLongPress(() => onReact && setPickerOpen(true))
 
+  // Warm the sender's profile (+ its default Posts tab) when their avatar dwells
+  // in view, so tapping through to a group member's profile renders from cache.
+  // schedulePrefetch dedupes by key, so repeated senders warm once.
+  const { agent, did } = useAgent()
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    if (!senderDid) return
+    const opts = profileOptions(agent, senderDid)
+    schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
+    const posts = authorFeedOptions(agent, did, senderDid, 'posts_no_replies')
+    schedulePrefetch(posts.queryKey, () => queryClient.prefetchInfiniteQuery(posts))
+  })
+
+  // The attributed avatar links to the sender's profile (group chats). Computed
+  // once and reused by the deleted + normal branches.
+  const avatarNode = showAvatar ? (
+    senderDid ? (
+      <Link
+        ref={prefetchRef}
+        to={`/profile/${senderDid}`}
+        className="msg-row__avatar-link"
+        aria-label={senderName ? `View ${senderName}'s profile` : 'View profile'}
+      >
+        <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="sm" />
+      </Link>
+    ) : (
+      <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="sm" />
+    )
+  ) : null
+
   // Links that MessageEmbeds previews are stripped from the bubble text (the
   // card stands in for them). When nothing remains — a bare link message, or a
   // shared post with no comment — the bubble is dropped entirely so no empty
@@ -100,7 +135,7 @@ export const MessageBubble = memo(function MessageBubble({
   if (isDeleted(message)) {
     return (
       <div className={clsx('msg-row', mine ? 'msg-row--mine' : 'msg-row--theirs', attributed && 'msg-row--group')}>
-        {attributed && <span className="msg-row__avatar">{showAvatar && <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="xs" />}</span>}
+        {attributed && <span className="msg-row__avatar">{avatarNode}</span>}
         <div className="msg-bubble msg-bubble--deleted">Message deleted</div>
       </div>
     )
@@ -132,13 +167,17 @@ export const MessageBubble = memo(function MessageBubble({
       className={clsx('msg-row', mine ? 'msg-row--mine' : 'msg-row--theirs', attributed && 'msg-row--group')}
       title={absoluteTime(message.sentAt, { year: 'numeric' })}
     >
-      {showName && attributed && senderName && <span className="msg-row__name">{senderName}</span>}
+      {showName && attributed && senderName && (
+        senderDid ? (
+          <Link to={`/profile/${senderDid}`} className="msg-row__name">
+            {senderName}
+          </Link>
+        ) : (
+          <span className="msg-row__name">{senderName}</span>
+        )
+      )}
       <div className="msg-row__inner">
-        {attributed && (
-          <span className="msg-row__avatar">
-            {showAvatar && <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="xs" />}
-          </span>
-        )}
+        {attributed && <span className="msg-row__avatar">{avatarNode}</span>}
         <div
           className="msg-bubble-wrap"
           // With no bubble, the wrap (i.e. the embed cards) is the long-press
@@ -156,6 +195,7 @@ export const MessageBubble = memo(function MessageBubble({
                   facets={displayFacets}
                   omitLinkUris={omitUris}
                   className="msg-bubble__text"
+                  mentionChips
                 />
               )}
               {message.embed && <JoinLinkEmbed embed={message.embed} />}

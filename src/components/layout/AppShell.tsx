@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import { TopBar } from './TopBar'
-import { BottomTabBar } from './BottomTabBar'
-import { ComposeFab } from './ComposeFab'
 import { UserFab } from './UserFab'
 import { ShellLayout } from './PageLayout'
+import { RouteTransition } from './RouteTransition'
+import { MobileShell } from './mobile/MobileShell'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { useWarmNavDestinations } from '@/features/prefetch-routes'
 import './layout.css'
 
@@ -16,21 +17,32 @@ export interface AppShellProps {
 }
 
 /**
- * App shell: a sticky top bar holding the primary nav, above a two-column page
- * area (a page-specific left aside filled via <PageAside>, plus flexible main
- * content). Below the mobile breakpoint the top bar hides in favor of the
- * BottomTabBar and the columns stack (see layout.css).
+ * App shell. Two fully decoupled chromes:
+ *  - Desktop: a sticky top bar holding the primary nav, above a two-column page
+ *    area (a page-specific left aside via <PageAside> + flexible main content),
+ *    plus the account avatar FAB.
+ *  - Mobile: the MobileShell — floating liquid-glass top + bottom bars hovering
+ *    over a full-bleed content area.
+ *
+ * Both wrap the page area in ShellLayout, so screens keep the PageAside /
+ * usePageFullWidth contract regardless of which chrome is active.
  */
 export function AppShell({ children, onNewPost, fullWidth }: AppShellProps) {
   // Warm the landing data behind every nav destination once the shell mounts.
   useWarmNavDestinations()
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return <MobileShell fullWidth={fullWidth}>{children}</MobileShell>
+  }
+
   return (
     <>
       <TopBar onNewPost={onNewPost} />
-      <ShellLayout fullWidth={fullWidth}>{children}</ShellLayout>
+      <ShellLayout fullWidth={fullWidth}>
+        <RouteTransition variant="fade">{children}</RouteTransition>
+      </ShellLayout>
       <UserFab />
-      <ComposeFab onNewPost={onNewPost} />
-      <BottomTabBar />
     </>
   )
 }

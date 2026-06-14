@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
-import { ScreenHeader, PageAside } from '@/components/layout'
+import { ScreenHeader, PageAside, MobileTopRight, MobileSelect, useMobileTitle } from '@/components/layout'
 import { type TabItem } from '@/components'
 import { useAgent } from '@/lib/api/agent'
 import { useDragScroll } from '@/lib/use-drag-scroll'
@@ -33,6 +33,7 @@ export default function FeedsScreen() {
   const [tab, setTab] = useState<TabKey>(isAuthed ? 'mine' : 'discover')
   const navRef = useDragScroll<HTMLElement>()
   const isMobile = useIsMobile()
+  useMobileTitle(isMobile ? 'Feeds' : null)
 
   const feedsNav = (
     <nav ref={navRef} className="feedsnav" aria-label="Feeds">
@@ -55,13 +56,24 @@ export default function FeedsScreen() {
 
   return (
     <>
-      {/* Desktop: menu in the aside. Mobile: into the main column (sticky) so it
-          shares the feed's scroll container. */}
+      {/* Desktop: menu in the aside. Mobile: My Feeds / Discover folds into a
+          top-bar dropdown. */}
       <PageAside>{!isMobile && feedsNav}</PageAside>
+      {isMobile && (
+        <MobileTopRight>
+          <MobileSelect
+            ariaLabel="Feed section"
+            label={TABS.find((t) => t.key === tab)?.label ?? 'My Feeds'}
+            items={TABS.map((t) => ({
+              key: t.key,
+              label: t.label,
+              onSelect: () => setTab(t.key as TabKey),
+            }))}
+          />
+        </MobileTopRight>
+      )}
 
       <ScreenHeader title="Feeds" />
-
-      {isMobile && feedsNav}
 
       <div className="feeds">
         {tab === 'mine' ? <MyFeedsTab authed={isAuthed} /> : <DiscoverTab />}

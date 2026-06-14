@@ -9,6 +9,11 @@ import { useArtifactStore } from '@/store/artifact-store'
 import { PostActionsBridge } from '@/features/post/PostActionsBridge'
 import { usePushBoot } from '@/features/notifications/use-push-boot'
 import { useEscapeBack } from '@/lib/use-escape-back'
+import { useGlobalShortcuts } from '@/lib/use-global-shortcuts'
+import { CommandPalette } from '@/components/CommandPalette'
+import { ShortcutsDialog } from '@/components/ShortcutsDialog'
+import { useAgent } from '@/lib/api/agent'
+import { setLastAccount } from '@/features/auth/last-account'
 
 // Interaction-gated overlays. Code-split AND conditionally mounted: a lazy
 // component that always renders (even returning null) still loads its chunk at
@@ -35,7 +40,7 @@ const ArtifactPlayer = lazy(() =>
  */
 /** Routes that use a full-width page area (no reserved aside). Decided here so
  * the width is correct during the lazy screen's Suspense fallback (no jump). */
-const FULL_WIDTH_PREFIXES = ['/messages']
+const FULL_WIDTH_PREFIXES = ['/messages', '/search']
 
 export function RootLayout() {
   const { openCompose } = useComposer()
@@ -64,8 +69,18 @@ export function RootLayout() {
   // Desktop: ESC steps back through overlay layers (mirrors back-swipe).
   useEscapeBack()
 
+  // App-wide keyboard shortcuts (⌘K palette, ? help, n compose, g-chord nav).
+  useGlobalShortcuts()
+
   // Push glue: notificationclick → in-app navigation, icon badge, sub re-sync.
   usePushBoot()
+
+  // Remember the signed-in account (handle/avatar hydrate after sign-in) so the
+  // login screen can offer it back after sign-out. Kept across logout on purpose.
+  const { isAuthed, did, handle, avatar } = useAgent()
+  useEffect(() => {
+    if (isAuthed && did && handle) setLastAccount({ did, handle, avatar })
+  }, [isAuthed, did, handle, avatar])
 
   return (
     <PostActionsBridge>
@@ -87,6 +102,8 @@ export function RootLayout() {
         {artifactMode !== 'closed' && <ArtifactPlayer />}
       </Suspense>
       <Lightbox />
+      <CommandPalette />
+      <ShortcutsDialog />
     </PostActionsBridge>
   )
 }

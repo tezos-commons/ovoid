@@ -3,6 +3,7 @@ import type { ExternalEmbedProps } from './GenericExternalCard'
 import { bskyChatMatcher } from './providers/bsky-chat'
 import { objktMatcher } from './providers/objkt'
 import { teiaMatcher } from './providers/teia'
+import { pollMatcher } from './providers/poll'
 
 /**
  * A special renderer for external links whose URL matches `test`. This is the
@@ -18,7 +19,12 @@ export interface ExternalEmbedMatcher {
   Component: ComponentType<ExternalEmbedProps>
 }
 
-const EXTERNAL_MATCHERS: ExternalEmbedMatcher[] = [objktMatcher, teiaMatcher, bskyChatMatcher]
+const EXTERNAL_MATCHERS: ExternalEmbedMatcher[] = [
+  pollMatcher,
+  objktMatcher,
+  teiaMatcher,
+  bskyChatMatcher,
+]
 
 /** Resolve the special renderer for an external link URL, if any. */
 export function matchExternal(uri: string): ExternalEmbedMatcher | undefined {

@@ -1,7 +1,9 @@
 import { useEffect, useRef, type ReactNode, type TouchEvent } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { PageAside } from '@/components/layout'
+import { PageAside, MobileTopLeft, useMobileTitle } from '@/components/layout'
 import { ScreenHeader } from '@/components/layout/ScreenHeader'
+import { IconButton } from '@/components'
+import { BackIcon } from '@/components/Icon'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import './settings.css'
 
@@ -33,21 +35,27 @@ import {
  *    section is its own full-bleed page that slides in (see MobileSettings).
  */
 
-/** Detail routes shared by both layouts. */
-const DETAIL_ROUTES: Array<{ path: string; element: ReactNode }> = [
-  { path: 'account', element: <AccountSettings /> },
-  { path: 'privacy', element: <PrivacySettings /> },
-  { path: 'notifications', element: <NotificationSettings /> },
-  { path: 'moderation', element: <ModerationSettings /> },
-  { path: 'moderation/muted', element: <ModerationListScreen kind="muted" /> },
-  { path: 'moderation/blocked', element: <ModerationListScreen kind="blocked" /> },
-  { path: 'appearance', element: <AppearanceSettings /> },
-  { path: 'accessibility', element: <AccessibilitySettings /> },
-  { path: 'languages', element: <LanguageSettings /> },
-  { path: 'app-passwords', element: <AppPasswordsSettings /> },
-  { path: 'wallet', element: <WalletSettings /> },
-  { path: 'about', element: <AboutSettings /> },
+/** Detail routes shared by both layouts. `title` drives the mobile top bar. */
+const DETAIL_ROUTES: Array<{ path: string; title: string; element: ReactNode }> = [
+  { path: 'account', title: 'Account', element: <AccountSettings /> },
+  { path: 'privacy', title: 'Privacy & Security', element: <PrivacySettings /> },
+  { path: 'notifications', title: 'Notifications', element: <NotificationSettings /> },
+  { path: 'moderation', title: 'Moderation', element: <ModerationSettings /> },
+  { path: 'moderation/muted', title: 'Muted accounts', element: <ModerationListScreen kind="muted" /> },
+  { path: 'moderation/blocked', title: 'Blocked accounts', element: <ModerationListScreen kind="blocked" /> },
+  { path: 'appearance', title: 'Appearance', element: <AppearanceSettings /> },
+  { path: 'accessibility', title: 'Accessibility', element: <AccessibilitySettings /> },
+  { path: 'languages', title: 'Languages', element: <LanguageSettings /> },
+  { path: 'app-passwords', title: 'App Passwords', element: <AppPasswordsSettings /> },
+  { path: 'wallet', title: 'Linked Wallet', element: <WalletSettings /> },
+  { path: 'about', title: 'About', element: <AboutSettings /> },
 ]
+
+/** Title for the current settings path — feeds the mobile top bar. */
+function settingsTitle(pathname: string): string {
+  const sub = pathname.replace(/^\/settings\/?/, '')
+  return DETAIL_ROUTES.find((r) => r.path === sub)?.title ?? 'Settings'
+}
 
 function detailRoutes() {
   return (
@@ -102,9 +110,9 @@ const SWIPE_VERTICAL_BAIL = 44 // px of vertical travel that cancels the gesture
 /**
  * Each navigation remounts the page wrapper (keyed by pathname) so the slide
  * animation replays: deeper paths enter from the right, shallower from the
- * left — mirroring a native settings stack. The detail screens' own
- * ScreenHeaders (hidden globally on mobile) are re-enabled within
- * .settings-mobile via settings.css and provide the back affordance.
+ * left — mirroring a native settings stack. The section title and back
+ * affordance live in the floating top bar (the in-pane ScreenHeaders stay hidden
+ * on mobile); back pops one level up the settings path.
  */
 function MobileSettings() {
   const { pathname } = useLocation()
@@ -115,6 +123,11 @@ function MobileSettings() {
   useEffect(() => {
     prevDepth.current = depth
   }, [depth])
+
+  // Title in the top bar; a parent-path back (depth>0) avoids a deep link
+  // swiping/popping out of the app. The filled top-left slot suppresses the top
+  // bar's generic back.
+  useMobileTitle(settingsTitle(pathname))
 
   // Swipe-back: a touch starting at the left edge and travelling right pops one
   // level up the settings path (same destination as the header back arrow, so a
@@ -153,6 +166,13 @@ function MobileSettings() {
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchEnd}
     >
+      {depth > 0 && (
+        <MobileTopLeft>
+          <IconButton label="Back" onClick={() => navigate(parentSettingsPath(pathname))}>
+            <BackIcon size={20} />
+          </IconButton>
+        </MobileTopLeft>
+      )}
       <div key={pathname} className={`settings-mobile__page settings-mobile__page--${direction}`}>
         <Routes>
           <Route index element={<MobileSettingsHome />} />

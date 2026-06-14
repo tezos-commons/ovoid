@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { AppBskyFeedDefs, AppBskyRichtextFacet } from '@atproto/api'
 import { Avatar, Button, CounterRing, Icons, RichText } from '@/components'
 import { useAgent } from '@/lib/api/agent'
+import { haptic } from '@/lib/haptics'
 import { useComposerText, onComposerKeyDown } from '@/lib/compose'
 import { useCreatePost, type PendingImage } from './use-create-post'
 import type { ComposeTarget } from '@/store/compose-store'
@@ -78,6 +79,7 @@ export function Composer({ target, onPosted }: ComposerProps) {
       { text, images, target },
       {
         onSuccess: () => {
+          haptic('success')
           images.forEach((i) => URL.revokeObjectURL(i.url))
           onPosted()
         },

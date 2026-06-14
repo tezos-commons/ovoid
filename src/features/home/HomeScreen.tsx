@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { ErrorState, Spinner, IconButton } from '@/components'
-import { PageAside } from '@/components/layout'
+import { PageAside, MobileTopLeft, MobileTopRight, MobileSelect } from '@/components/layout'
 import { GearIcon } from '@/components/Icon'
 import { useAuth, useAgent } from '@/lib/api/agent'
 import { useDragScroll } from '@/lib/use-drag-scroll'
@@ -124,15 +124,37 @@ export function HomeScreen() {
     </nav>
   )
 
+  // Mobile chrome: the feed selector + settings live in the floating top bar, and
+  // a compose entry pill in the bottom bar. The inline feed strip is dropped.
+  const mobileChrome = isMobile && (
+    <>
+      <MobileTopLeft>
+        <IconButton label="Edit feeds" onClick={() => navigate('/feeds')}>
+          <GearIcon size={20} />
+        </IconButton>
+      </MobileTopLeft>
+      <MobileTopRight>
+        <MobileSelect
+          ariaLabel="Select feed"
+          label={activeTab?.label ?? 'Following'}
+          items={tabs.map((t) => ({
+            key: t.key,
+            label: t.label,
+            onSelect: () => setActiveKey(t.key),
+          }))}
+        />
+      </MobileTopRight>
+    </>
+  )
+
   return (
     <>
-      {/* Desktop: menu in the aside. Mobile: into .home (the internally-scrolled
-          flex column) as the first row, so it stays fixed above the feed. */}
+      {/* Desktop: feed menu in the aside. Mobile: feed selection moves to the
+          floating top bar (see mobileChrome). */}
       <PageAside>{!isMobile && feedNav}</PageAside>
+      {mobileChrome}
 
       <div className="home">
-        {isMobile && feedNav}
-
         <div className="home__feed">
           {pinned.isError ? (
             <ErrorState error={pinned.error} onRetry={() => void pinned.refetch()} />

@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/api/agent'
-import { Button, Spinner } from '@/components'
+import { Avatar, Button, Spinner } from '@/components'
 import { useLogin } from './use-login'
 import { useBetaAccess, ACCESS_LIST_URL } from './use-beta-access'
+import { getLastAccount } from './last-account'
 import './auth.css'
 
 /* Where to send the user after a successful sign-in. RequireAuth stashes the
@@ -24,7 +25,10 @@ export default function Login() {
   const pre = usePreLoginPath()
   const { submitting, error: loginError, signInOAuth, clearError } = useLogin(pre)
   const access = useBetaAccess()
-  const [handle, setHandle] = useState('')
+  // The last signed-in account (if any) pre-fills the handle so a returning user
+  // just hits Continue; editing the field hides the hint (read once on mount).
+  const [last] = useState(getLastAccount)
+  const [handle, setHandle] = useState(last?.handle ?? '')
 
   // While the session restores on first paint, don't flash the form.
   if (auth.isLoading) {
@@ -95,6 +99,16 @@ export default function Login() {
                 , and that account isn’t on the list yet. Try a different account
                 once you’ve been verified.
               </span>
+            </div>
+          )}
+
+          {last && handle === last.handle && !denied && (
+            <div className="auth-last">
+              <Avatar src={last.avatar} alt="" fallback={last.handle} size="md" />
+              <div className="auth-last__body">
+                <span className="auth-last__label">Last signed in</span>
+                <span className="auth-last__handle">@{last.handle}</span>
+              </div>
             </div>
           )}
 

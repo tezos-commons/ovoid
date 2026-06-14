@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react'
+import { haptic } from './haptics'
 
 /**
  * Fire `onLongPress` after a touch is held for `ms`, or on a desktop right-click
@@ -24,6 +25,7 @@ export function useLongPress(onLongPress: () => void, ms = 450) {
     clear()
     timer.current = setTimeout(() => {
       fired.current = true
+      haptic('medium') // tactile confirmation that the hold registered
       onLongPress()
     }, ms)
   }, [clear, onLongPress, ms])

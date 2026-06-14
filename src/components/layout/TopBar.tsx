@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from './navItems'
 import { Button } from '../Button'
+import { Tooltip } from '../Tooltip'
 import { PencilIcon } from '../Icon'
 import { useAuth } from '@/lib/api/agent'
 import { useNavBadges } from '@/features/notifications/use-nav-badges'
@@ -37,22 +38,22 @@ export function TopBar({ onNewPost }: TopBarProps) {
                 ? `/profile/${did}`
                 : item.to
           return (
-            <NavLink
-              key={item.key}
-              to={to}
-              end={item.to === '/'}
-              className={({ isActive }) => clsx('topbar__item', isActive && 'topbar__item--active')}
-              title={item.label}
-              aria-label={item.label}
-            >
-              {({ isActive }) => (
-                <>
-                  {item.icon(isActive)}
-                  {item.key === 'notifications' && <NavBadge count={badges.notifications} />}
-                  {item.key === 'chat' && <NavBadge count={badges.chat} />}
-                </>
-              )}
-            </NavLink>
+            <Tooltip key={item.key} label={item.label}>
+              <NavLink
+                to={to}
+                end={item.to === '/'}
+                className={({ isActive }) => clsx('topbar__item', isActive && 'topbar__item--active')}
+                aria-label={item.label}
+              >
+                {({ isActive }) => (
+                  <>
+                    {item.icon(isActive)}
+                    {item.key === 'notifications' && <NavBadge count={badges.notifications} />}
+                    {item.key === 'chat' && <NavBadge count={badges.chat} />}
+                  </>
+                )}
+              </NavLink>
+            </Tooltip>
           )
         })}
       </nav>

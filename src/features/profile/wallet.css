@@ -1,0 +1,329 @@
+/* ============================================================
+   Profile "Wallet" tab — TzKT-backed overview (balance, fungible tokens,
+   owned-NFT preview, recent transactions). Desktop = WalletView, mobile =
+   WalletViewMobile; most sections are shared and styled responsively here.
+   ============================================================ */
+
+.wallet {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------------- Top card row: balance · tokens ---------------- */
+
+.wallet-top {
+  display: flex;
+  /* Top-align so the balance card hugs its content; the taller tokens card
+     drives the row height (no dead space under the balance). */
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.wallet-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--bg-overlay);
+  /* Lift off the page: drop shadow for depth + a 1px top highlight so the edge
+     catches light. Theme-safe (the white inset is invisible on light themes,
+     the shadow reads on both). */
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.16),
+    0 10px 26px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.wallet-card--balance {
+  flex: 0 0 auto;
+  width: 44%;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  /* A faint primary glow in the top-left gives the balance card its own
+     identity against the neutral tokens card. */
+  background:
+    radial-gradient(
+      130% 120% at 0% 0%,
+      color-mix(in srgb, var(--color-primary) 18%, transparent),
+      transparent 55%
+    ),
+    var(--bg-overlay);
+}
+.wallet-card--tokens {
+  flex: 1 1 auto;
+}
+/* No fungibles: the balance card is the row's only child — let it span the
+   full width instead of sitting at 44% with dead space beside it. */
+.wallet-top--solo .wallet-card--balance {
+  width: 100%;
+}
+.wallet-bal__head {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.wallet-balance__amount {
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.wallet-balance__unit {
+  color: var(--text-muted);
+  font-weight: var(--fw-semibold, 600);
+}
+
+/* Tokens card: fixed header + internally scrolling body. */
+.wallet-card__head {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+.wallet-card__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold, 700);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.wallet-card__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  max-height: 220px;
+}
+/* Tighter token rows inside the card than the standalone list. */
+.wallet-card__body .wallet-token {
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Mobile: stack the cards; balance becomes a centered hero. */
+.wallet--mobile .wallet-top {
+  flex-direction: column;
+  /* Stacked cards span the full width (override the desktop flex-start, which on
+     the column cross-axis would shrink them to content width). */
+  align-items: stretch;
+  padding: var(--space-3);
+}
+.wallet--mobile .wallet-card--balance {
+  width: auto;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-5) var(--space-4);
+}
+.wallet--mobile .wallet-card--balance .wallet-balance__amount {
+  font-size: calc(34px * var(--font-scale));
+}
+.wallet--mobile .wallet-card__body {
+  max-height: 280px;
+}
+
+/* ---------------- Copyable address chip ---------------- */
+
+.wallet-addr {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-25);
+  color: var(--text-muted);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.wallet-addr:hover {
+  background: var(--bg-contrast-50);
+  color: var(--text);
+}
+.wallet-addr__text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-sm);
+}
+.wallet-addr__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------------- Section wrapper ---------------- */
+
+.wallet-section {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.wallet-section:last-child {
+  border-bottom: none;
+}
+.wallet-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+.wallet-section__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold, 700);
+}
+.wallet-section__count {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--text-faint);
+}
+.wallet-section__action {
+  color: var(--color-primary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold, 600);
+}
+
+/* ---------------- Fungible tokens ---------------- */
+
+.wallet-tokens {
+  display: flex;
+  flex-direction: column;
+}
+.wallet-token {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+.wallet-token__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--bg-contrast-25);
+}
+.wallet-token__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wallet-token__fallback {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.wallet-token__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.wallet-token__sym {
+  font-weight: var(--fw-semibold, 600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wallet-token__name {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wallet-token__amount {
+  flex: 0 0 auto;
+  font-weight: var(--fw-semibold, 600);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- Transactions ---------------- */
+
+.wallet-activity {
+  display: flex;
+  flex-direction: column;
+}
+.wallet-tx {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text);
+}
+.wallet-tx:hover {
+  background: var(--bg-contrast-25);
+}
+.wallet-tx__dir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  background: var(--bg-contrast-25);
+  color: var(--text-muted);
+}
+.wallet-tx__dir--in {
+  color: var(--color-repost);
+  background: color-mix(in srgb, var(--color-repost) 16%, transparent);
+}
+.wallet-tx__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.wallet-tx__kind {
+  font-weight: var(--fw-semibold, 600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wallet-tx__party {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wallet-tx__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+.wallet-tx__amount {
+  font-weight: var(--fw-semibold, 600);
+  font-variant-numeric: tabular-nums;
+}
+.wallet-tx__amount--in {
+  color: var(--color-repost);
+}
+.wallet-tx__time {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+.wallet-activity__more {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  text-align: center;
+}
+.wallet-activity__more a {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.wallet-activity__more a:hover {
+  color: var(--text);
+}

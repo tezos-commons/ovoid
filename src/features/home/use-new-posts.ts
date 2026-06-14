@@ -66,10 +66,31 @@ export function useNewPosts(
       }
     }
 
-    const id = window.setInterval(tick, POLL_MS)
+    // Poll only while the tab is visible: a backgrounded PWA shouldn't burn the
+    // network/battery on head-peeks. Resume catches up with one immediate tick.
+    let id: number | undefined
+    const start = (immediate: boolean) => {
+      if (id !== undefined) return
+      if (immediate) void tick()
+      id = window.setInterval(tick, POLL_MS)
+    }
+    const stop = () => {
+      if (id !== undefined) {
+        window.clearInterval(id)
+        id = undefined
+      }
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') start(true)
+      else stop()
+    }
+
+    if (document.visibilityState === 'visible') start(false)
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
       cancelled = true
-      window.clearInterval(id)
+      stop()
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [agent, tab, enabled])
 

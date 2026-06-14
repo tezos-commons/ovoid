@@ -17,15 +17,28 @@ import { useUiStore, type Theme } from '@/store/ui-store'
 
 export type FontScale = 'small' | 'default' | 'large' | 'larger'
 export type FontFamily = 'inter' | 'system'
+/** Translucency of the mobile floating "liquid glass" bars (mobile-only). */
+export type GlassOpacity = 'clear' | 'default' | 'frosted' | 'solid'
 
 const SCALE_KEY = 'ovoid:font-scale'
 const FAMILY_KEY = 'ovoid:font-family'
+const GLASS_KEY = 'ovoid:glass-opacity'
 
 const SCALE_VALUE: Record<FontScale, string> = {
   small: '0.9333', // ~14px body
   default: '1',
   large: '1.0667', // ~16px body
   larger: '1.1333', // ~17px body
+}
+
+// Drives the --glass-opacity custom property: the percentage of the surface
+// colour mixed into the bar's translucent fill (higher = more solid). 'default'
+// matches the value hardcoded before this setting existed.
+const GLASS_VALUE: Record<GlassOpacity, string> = {
+  clear: '16%',
+  default: '32%',
+  frosted: '50%',
+  solid: '72%',
 }
 
 const SYSTEM_STACK =
@@ -44,6 +57,12 @@ function readFamily(): FontFamily {
   return localStorage.getItem(FAMILY_KEY) === 'system' ? 'system' : 'inter'
 }
 
+function readGlass(): GlassOpacity {
+  if (typeof localStorage === 'undefined') return 'default'
+  const v = localStorage.getItem(GLASS_KEY)
+  return v === 'clear' || v === 'frosted' || v === 'solid' ? v : 'default'
+}
+
 function applyScale(scale: FontScale) {
   if (typeof document === 'undefined') return
   document.documentElement.style.setProperty('--font-scale', SCALE_VALUE[scale])
@@ -57,16 +76,24 @@ function applyFamily(family: FontFamily) {
   )
 }
 
+function applyGlass(glass: GlassOpacity) {
+  if (typeof document === 'undefined') return
+  document.documentElement.style.setProperty('--glass-opacity', GLASS_VALUE[glass])
+}
+
 export interface AppearanceState {
   fontScale: FontScale
   fontFamily: FontFamily
+  glassOpacity: GlassOpacity
   setFontScale: (s: FontScale) => void
   setFontFamily: (f: FontFamily) => void
+  setGlassOpacity: (g: GlassOpacity) => void
 }
 
 export const useAppearanceStore = create<AppearanceState>((set) => ({
   fontScale: readScale(),
   fontFamily: readFamily(),
+  glassOpacity: readGlass(),
   setFontScale: (fontScale) => {
     applyScale(fontScale)
     try {
@@ -85,11 +112,21 @@ export const useAppearanceStore = create<AppearanceState>((set) => ({
     }
     set({ fontFamily })
   },
+  setGlassOpacity: (glassOpacity) => {
+    applyGlass(glassOpacity)
+    try {
+      localStorage.setItem(GLASS_KEY, glassOpacity)
+    } catch {
+      /* storage unavailable; property still set */
+    }
+    set({ glassOpacity })
+  },
 }))
 
 // Apply persisted appearance at module load (belt-and-braces).
 applyScale(readScale())
 applyFamily(readFamily())
+applyGlass(readGlass())
 
 /**
  * Thin re-export of the shared theme slice so appearance code has a single

@@ -124,7 +124,7 @@
   text-decoration: none;
 }
 .list-detail__by a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 .list-detail__desc {
   margin-top: var(--space-3);
@@ -157,6 +157,8 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
+  /* The whole row is a link; keep its text the normal colour, not link-primary. */
+  color: var(--text);
 }
 .member-row__body {
   min-width: 0;
@@ -172,7 +174,7 @@
   white-space: nowrap;
 }
 .member-row__name:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 .member-row__handle {
   font-size: var(--fs-sm);

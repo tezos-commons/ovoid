@@ -203,7 +203,11 @@
   justify-content: center;
   z-index: 2;
 }
-.replytree__node:hover > .replytree__post > .replytree__collapse {
+.replytree__node:hover > .replytree__post > .replytree__collapse,
+/* Keyboard parity: also reveal when focus enters the node or lands on the
+   collapse control, so it isn't reachable by mouse only. */
+.replytree__node:focus-within > .replytree__post > .replytree__collapse,
+.replytree__collapse:focus-visible {
   display: flex;
 }
 
@@ -218,4 +222,4 @@
   cursor: pointer;
   text-align: left;
 }
-.replytree__more:hover { text-decoration: underline; }
+.replytree__more:hover { text-decoration: none; }

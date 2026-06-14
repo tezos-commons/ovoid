@@ -1,6 +1,7 @@
 import { Fragment, useMemo, type ReactNode } from 'react'
 import { Agent, RichText as AtpRichText, type AppBskyFeedPost } from '@atproto/api'
 import { Link } from 'react-router-dom'
+import { MentionChip } from '@/components/MentionChip'
 import { bskyUrlToInternalPath, rewriteSelfLinksToBsky } from './bsky-links'
 
 export interface RichTextProps {
@@ -10,6 +11,9 @@ export interface RichTextProps {
   /** Link URLs to drop from the rendered text (e.g. a link shown as a preview
    *  card). Trailing whitespace left by a removed trailing link is trimmed. */
   omitLinkUris?: string[]
+  /** Render @-mentions as inline profile chips (avatar + name) instead of a
+   *  plain text link. Used in bios and chat messages. */
+  mentionChips?: boolean
 }
 
 interface Seg {
@@ -26,7 +30,7 @@ interface Seg {
  *
  * Links / tags render as plain anchors; mentions route to /profile/:did.
  */
-export function RichText({ text, facets, className, omitLinkUris }: RichTextProps) {
+export function RichText({ text, facets, className, omitLinkUris, mentionChips }: RichTextProps) {
   // The facet walk (UTF-8 byteSlice over every segment) is the expensive part;
   // memoize it on the record's identity. `facets` comes from the query cache,
   // where structural sharing keeps it referentially stable across re-renders.
@@ -56,10 +60,10 @@ export function RichText({ text, facets, className, omitLinkUris }: RichTextProp
     }
   }
 
-  return <span className={className}>{renderSegs(kept)}</span>
+  return <span className={className}>{renderSegs(kept, mentionChips)}</span>
 }
 
-function renderSegs(segs: Seg[]): ReactNode[] {
+function renderSegs(segs: Seg[], mentionChips?: boolean): ReactNode[] {
   const out: ReactNode[] = []
   let key = 0
   for (const segment of segs) {
@@ -87,9 +91,13 @@ function renderSegs(segs: Seg[]): ReactNode[] {
       )
     } else if (segment.mentionDid) {
       out.push(
-        <Link key={k} to={`/profile/${segment.mentionDid}`} className="rt-link">
-          {segment.text}
-        </Link>,
+        mentionChips ? (
+          <MentionChip key={k} actor={segment.mentionDid} text={segment.text} />
+        ) : (
+          <Link key={k} to={`/profile/${segment.mentionDid}`} className="rt-link">
+            {segment.text}
+          </Link>
+        ),
       )
     } else if (segment.tag) {
       out.push(
@@ -106,6 +114,22 @@ function renderSegs(segs: Seg[]): ReactNode[] {
     }
   }
   return out
+}
+
+/**
+ * Render a profile bio (or any facet-less text): detect links / @mentions / #tags
+ * locally — synchronously, no handle→DID resolution — then render them clickable.
+ * Mentions resolve to /profile/<handle> (the route accepts a handle), and render
+ * as inline profile chips. Bios carry no facets in the profile view, so detection
+ * is what makes them interactive.
+ */
+export function BioText({ text, className }: { text: string; className?: string }) {
+  const facets = useMemo(() => {
+    const rt = new AtpRichText({ text })
+    rt.detectFacetsWithoutResolution()
+    return rt.facets
+  }, [text])
+  return <RichText text={text} facets={facets} className={className} mentionChips />
 }
 
 /**

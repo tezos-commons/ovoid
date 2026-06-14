@@ -88,8 +88,14 @@ export function useFollow(actor: string) {
     },
 
     onSettled: (_d, _e, current) => {
-      // Reconcile every cached representation of the actor with server truth.
-      for (const k of profileKeys(current)) qc.invalidateQueries({ queryKey: k })
+      // Mark the actor's cached profiles stale but DON'T refetch now: the AppView
+      // is eventually consistent, so an immediate getProfile often still returns
+      // the pre-mutation viewer.following and would revert the (correct)
+      // optimistic button. refetchType:'none' lets it reconcile on the next
+      // natural refetch (remount/focus/staleTime), by which point it's propagated.
+      for (const k of profileKeys(current)) {
+        qc.invalidateQueries({ queryKey: k, refetchType: 'none' })
+      }
       // The viewer's own follow count / who-they-follow lists changed too.
       if (did) qc.invalidateQueries({ queryKey: qk.follows(did) })
       qc.invalidateQueries({ queryKey: qk.followers(actor) })

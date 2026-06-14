@@ -203,6 +203,11 @@
   max-width: 78%;
   margin-top: var(--space-2);
 }
+/* An interactive poll card needs more room than a text bubble — let a message
+   carrying one widen past the usual cap (still shrinking on narrow panes). */
+.msg-row:has(.poll) {
+  max-width: min(440px, 92%);
+}
 
 .msg-row--mine {
   align-self: flex-end;
@@ -225,7 +230,7 @@
 
 .msg-bubble__text a {
   color: inherit;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .msg-bubble--mine {
@@ -296,7 +301,11 @@
   right: 100%;
   margin-right: 2px;
 }
-.msg-row:hover .msg-react-btn {
+.msg-row:hover .msg-react-btn,
+/* Keyboard parity: reveal when focus is anywhere in the row, or on the button
+   itself, so the react affordance isn't mouse-only. */
+.msg-row:focus-within .msg-react-btn,
+.msg-react-btn:focus-visible {
   opacity: 1;
 }
 .msg-react-btn:hover {
@@ -421,17 +430,25 @@
 }
 
 .msg-row__avatar {
-  width: 24px;
-  flex: 0 0 24px;
+  width: 32px;
+  flex: 0 0 32px;
   display: flex;
   align-items: flex-end;
+}
+
+.msg-row__avatar-link {
+  display: flex;
 }
 
 .msg-row__name {
   font-size: var(--fs-xs);
   color: var(--text-muted);
   font-weight: 600;
-  margin: 0 0 2px calc(24px + var(--space-2));
+  margin: 0 0 2px calc(32px + var(--space-2));
+}
+/* The name is a profile link in group chats; keep the muted colour, hint on hover. */
+a.msg-row__name:hover {
+  color: var(--text);
 }
 
 /* Tighten the avatar gutter spacing when grouped with the previous bubble. */
@@ -460,7 +477,7 @@
   vertical-align: bottom;
 }
 .msg-system__user:hover span {
-  text-decoration: underline;
+  text-decoration: none;
 }
 .msg-system__user .av {
   width: 16px;
@@ -569,7 +586,17 @@
   background: var(--bg-contrast-25);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  /* Symmetric small inset — the leading poll button and trailing send button
+     provide their own spacing; the textarea's gap handles the rest. */
+  padding: var(--space-1);
+}
+
+.msg-composer__poll {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.msg-composer__poll:disabled {
+  color: var(--text-faint);
 }
 
 .msg-composer__input {
@@ -628,7 +655,7 @@
 }
 
 .chat-detail-title:hover .chat-detail-title__name {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .chat-detail-title__name {
@@ -649,12 +676,20 @@
 }
 
 /* ============================================================
-   Mobile master/detail (<800px): one column, swap by route.
+   Mobile master/detail (<1000px, matching the mobile shell): one column,
+   swap by route. The floating top + bottom bars own the chrome, so the in-pane
+   ScreenHeader is hidden and the scroll areas pad to clear the bars (the
+   composer is portaled into the bottom bar — see MessageThread).
    ============================================================ */
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
   .chat-screen {
     grid-template-columns: 1fr;
-    height: var(--app-height);
+    /* Subtract the keyboard overlap so the card shrinks above the keyboard. On
+       Android (interactive-widget=resizes-content) --kb is ~0 since 100dvh already
+       shrank; on iOS (keyboard overlays, dvh fixed) this is what lifts the message
+       list — and the resulting container resize makes MessageThread's
+       ResizeObserver re-pin to the latest message. */
+    height: calc(var(--app-height) - var(--kb, 0px));
     max-width: none;
     margin: 0;
     border: none;
@@ -663,6 +698,11 @@
 
   .chat-pane--list {
     border-right: none;
+  }
+
+  /* The floating top bar owns chat's chrome on mobile; drop the in-pane header. */
+  .chat-screen .screen-header {
+    display: none;
   }
 
   /* Detail closed -> show list, hide detail. */
@@ -675,8 +715,11 @@
     display: none;
   }
 
-  .chat-detail-back {
-    display: inline-flex;
+  /* Scroll behind the floating bars: pad both scroll regions to clear them. */
+  .msg-thread__scroll,
+  .convo-list {
+    padding-top: var(--mbar-top-zone);
+    padding-bottom: var(--mbar-bottom-zone);
   }
 }
 

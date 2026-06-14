@@ -96,6 +96,34 @@
   gap: var(--space-3);
 }
 
+/* Last-signed-in account hint above the form. */
+.auth-last {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-contrast-25);
+}
+.auth-last__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.auth-last__label {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.auth-last__handle {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .auth-field {
   display: flex;
   flex-direction: column;
@@ -172,7 +200,7 @@
   text-decoration: none;
 }
 .auth-beta a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .auth-note {
@@ -188,7 +216,7 @@
 }
 
 .auth-note a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .auth-divider {

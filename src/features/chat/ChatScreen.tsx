@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { ScreenHeader } from '@/components/layout'
+import { ScreenHeader, MobileTopRight, useMobileTitle } from '@/components/layout'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { useAgent } from '@/lib/api/agent'
 import { ConvoList } from './ConvoList'
 import { MessageThread } from './MessageThread'
@@ -34,8 +35,18 @@ export default function ChatScreen() {
     [convosQ.convos, convoId],
   )
 
+  // Mobile: the list view (no open convo) feeds the floating top bar; an open
+  // convo's chrome is owned by ThreadHeader instead.
+  const isMobile = useIsMobile()
+  useMobileTitle(isMobile && !convoId ? 'Messages' : null)
+
   return (
     <div className="chat-screen" data-detail={convoId ? 'open' : 'closed'}>
+      {isMobile && !convoId && (
+        <MobileTopRight>
+          <ChatListHeaderActions />
+        </MobileTopRight>
+      )}
       {/* Master pane: conversation list */}
       <section className="chat-pane chat-pane--list" aria-label="Conversations">
         <ScreenHeader title="Messages" actions={<ChatListHeaderActions />} />

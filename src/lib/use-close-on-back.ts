@@ -24,6 +24,9 @@ export function useCloseOnBack(open: boolean, close: () => void): void {
   // Pending deferred history.back() (sentinel consume), shared across effect runs
   // of this hook instance so a StrictMode re-setup can cancel it.
   const pendingConsume = useRef<number | null>(null)
+  // URL when the sentinel was pushed; lets cleanup tell an in-place close from a
+  // forward navigation that happened while open.
+  const sentinelHref = useRef<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -35,6 +38,7 @@ export function useCloseOnBack(open: boolean, close: () => void): void {
       pendingConsume.current = null
     } else {
       window.history.pushState({ ...window.history.state, overlay: true }, '')
+      sentinelHref.current = window.location.href
     }
 
     let closedByBack = false
@@ -47,6 +51,13 @@ export function useCloseOnBack(open: boolean, close: () => void): void {
     return () => {
       window.removeEventListener('popstate', onPopState)
       if (closedByBack) return // user Back already popped the sentinel
+      // If the app navigated to a different URL while open (e.g. a link inside the
+      // overlay), the sentinel is now buried under the new entry — a balancing
+      // history.back() would UNDO that navigation. Leave the sentinel be.
+      if (sentinelHref.current !== null && window.location.href !== sentinelHref.current) {
+        sentinelHref.current = null
+        return
+      }
       // Defer so a synchronous StrictMode re-setup can cancel this; on a real
       // close/unmount nothing cancels it and the sentinel is consumed next tick.
       pendingConsume.current = window.setTimeout(() => {

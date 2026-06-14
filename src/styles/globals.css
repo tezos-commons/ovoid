@@ -55,6 +55,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Suppress the native grey/blue tap flash app-wide; deliberate :active states
+     (below) provide the press feedback instead. Inherited, so this covers every
+     tappable descendant. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 input,
@@ -76,8 +80,9 @@ a {
   text-decoration: none;
 }
 
+/* Links are distinguished by colour, never underlined (per design). */
 a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 img,
@@ -122,6 +127,65 @@ ol {
 
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Touch devices: overlay (hidden) scrollbars and no reserved gutter, so content
+   is full-bleed to the right edge — the forced 8px classic scrollbar above would
+   otherwise keep html's stable gutter reserved, leaving a permanent dead strip
+   down the right of #root. Desktop keeps the styled scrollbar + stable gutter
+   (which prevents the centered layout shifting between scrolling/short pages). */
+@media (hover: none) and (pointer: coarse) {
+  html {
+    scrollbar-gutter: auto;
+  }
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+/* Touch press feedback. Coarse pointers have no :hover, so without a press state
+   a tap registers nothing until navigation completes — the UI feels dead. Scoped
+   to (hover: none) so mouse users keep hover-only feedback and don't get a
+   press-scale jitter on every click. These primitives have their own transitions
+   already (.btn, .iconbtn), so the scale eases in/out smoothly. */
+@media (hover: none) and (pointer: coarse) {
+  .btn:active:not(:disabled),
+  .iconbtn:active:not(:disabled),
+  .action:active,
+  .menu__item:active {
+    transform: scale(0.95);
+  }
+  /* Row-level surfaces flash their hover fill instead of scaling (a scaling row
+     would shift its neighbours). */
+  .postcard:not(.postcard--focused):active,
+  .convo-row:active,
+  .personrow:active,
+  .feedcard:active,
+  .list-card:active,
+  .menu__item:active {
+    background: var(--bg-contrast-25);
+  }
+}
+
+/* Mouse press feedback. Fine pointers have :hover, but a click still registers
+   nothing between press and navigation — a momentary deepening of the hover wash
+   acknowledges the click. No scale (that's the touch idiom); rows only, since
+   buttons/icons already have their own :hover and :active treatments. Scoped to
+   (hover: hover) so it never doubles up with the touch press-scale above. */
+@media (hover: hover) and (pointer: fine) {
+  .postcard:not(.postcard--focused):active,
+  .convo-row:active,
+  .personrow:active,
+  .feedcard:active,
+  .list-card:active,
+  .notif:active,
+  .menu__item:active {
+    background: var(--bg-contrast-50);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

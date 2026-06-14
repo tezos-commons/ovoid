@@ -31,14 +31,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Ovoid" />
     <script>
-      // Set data-theme before first paint to avoid a flash of the wrong theme.
+      // Set data-theme + the matching theme-color before first paint, so there's
+      // no flash of the wrong theme and the Android system bars (which follow
+      // theme-color) match the active theme from the start. Colors mirror --bg in
+      // tokens.css (CSS vars aren't parsed yet here, so they're inlined).
       (function () {
+        var BG = { light: '#ffffff', dim: '#110c1d', dark: '#030206' }
+        var t = 'dim'
         try {
-          var t = localStorage.getItem('ovoid:theme') || 'dim'
-          document.documentElement.setAttribute('data-theme', t)
-        } catch (_) {
-          document.documentElement.setAttribute('data-theme', 'dim')
-        }
+          t = localStorage.getItem('ovoid:theme') || 'dim'
+        } catch (_) {}
+        document.documentElement.setAttribute('data-theme', t)
+        var m = document.querySelector('meta[name="theme-color"]')
+        if (m && BG[t]) m.setAttribute('content', BG[t])
       })()
     </script>
   </head>

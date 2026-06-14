@@ -19,17 +19,16 @@ interface MemberRowProps {
 export function MemberRow({ item, canManage, removing, onRemove }: MemberRowProps) {
   const p = item.subject
   const { agent } = useAgent()
-  const prefetchRef = usePrefetchOnVisible<HTMLDivElement>(() => {
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
     const opts = profileOptions(agent, p.handle || p.did)
     schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
   })
   return (
-    <div className="member-row" ref={prefetchRef}>
+    // Whole row navigates to the profile; the Remove control stops the click.
+    <Link className="member-row" to={`/profile/${p.handle || p.did}`} ref={prefetchRef}>
       <Avatar src={p.avatar} alt={p.displayName || p.handle} size="md" />
       <div className="member-row__body">
-        <Link className="member-row__name" to={`/profile/${p.handle || p.did}`}>
-          {p.displayName || p.handle}
-        </Link>
+        <span className="member-row__name">{p.displayName || p.handle}</span>
         <div className="member-row__handle">@{p.handle}</div>
         {p.description && <div className="member-row__desc">{p.description}</div>}
       </div>
@@ -38,11 +37,15 @@ export function MemberRow({ item, canManage, removing, onRemove }: MemberRowProp
           size="sm"
           variant="secondary"
           disabled={removing}
-          onClick={() => onRemove?.(item)}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onRemove?.(item)
+          }}
         >
           {removing ? <Spinner size="sm" /> : 'Remove'}
         </Button>
       )}
-    </div>
+    </Link>
   )
 }

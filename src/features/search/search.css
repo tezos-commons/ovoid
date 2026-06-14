@@ -2,60 +2,18 @@
    Search feature styles. Tokens only — no hardcoded colors.
    ============================================================ */
 
-/* ---------- Recent searches (page aside) ---------- */
-.recentsearch {
-  display: flex;
-  flex-direction: column;
-}
-.recentsearch__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border);
-}
-.recentsearch__title {
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-bold);
-}
-.recentsearch__clear {
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-}
-.recentsearch__clear:hover {
-  color: var(--text);
-  text-decoration: underline;
-}
-.recentsearch__item {
-  width: 100%;
-  text-align: right;
-  padding: var(--space-3) var(--space-4);
-  color: var(--text-muted);
-  font-size: var(--fs-md);
-  font-weight: var(--fw-medium);
-  border-bottom: 1px solid var(--border);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.recentsearch__item:last-child {
-  border-bottom: none;
-}
-.recentsearch__item:hover {
-  color: var(--text);
-}
-.recentsearch__empty {
-  padding: var(--space-4);
-  color: var(--text-muted);
-  font-size: var(--fs-sm);
-  line-height: 1.5;
-  text-align: right;
-}
-
 .search {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+}
+
+/* No reserved aside on search — cap the full-width page area to the main column
+   (centered) so desktop doesn't show an empty left column. */
+@media (min-width: 1001px) {
+  .page--full:has(.search) {
+    width: min(100%, var(--main-max));
+  }
 }
 
 /* ---------- Sticky header: search box + result tabs ---------- */
@@ -331,4 +289,40 @@
   background: var(--bg-contrast-50);
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+/* ---------- Mobile: the search box IS the floating top bar ---------- */
+@media (max-width: 1000px) {
+  /* The box fills the top bar (no fixed header band / padding of its own). */
+  .mbar__fill .search__box {
+    width: 100%;
+    height: auto;
+    padding: 0;
+  }
+  /* In the glass bar the input has no solid fill — it sits on the bar itself. */
+  .mbar__fill .search__input {
+    background: transparent;
+    padding-left: var(--space-2);
+  }
+  .mbar__fill .search__input:focus {
+    outline: none;
+  }
+  /* Search owns its own insets (the page-level padding is opted out for it).
+     Content + result tabs sit below the floating top bar; the tabs stick just
+     under it; the content clears the bottom bar. */
+  .search {
+    padding-top: var(--mbar-top-zone);
+  }
+  .search__header {
+    top: var(--mbar-top-zone);
+  }
+  .search__content {
+    padding-bottom: var(--mbar-bottom-zone);
+  }
+  /* The generic .page__main .inflist bar-padding would double up here (search
+     wraps the list in its own padded column) — neutralise it inside search. */
+  .page__main:has(.search) .inflist {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 }

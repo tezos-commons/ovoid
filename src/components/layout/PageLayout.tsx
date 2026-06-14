@@ -7,6 +7,8 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
+import { useIsWide } from '@/lib/use-is-wide'
+import { DesktopRail } from './DesktopRail'
 
 /**
  * Shell layout primitive: a rounded nav panel + a two-column page area
@@ -21,10 +23,18 @@ import clsx from 'clsx'
  *
  * `usePageFullWidth()` lets a screen (e.g. Chat's own master/detail) drop the
  * reserved aside and span the whole page area.
+ *
+ * At very wide widths a third column — the right rail — appears. By default the
+ * shell fills it with <DesktopRail> (search + trending + who-to-follow). A screen
+ * can replace that with its own contextual content via <PageRail>, which claims
+ * the rail (hiding the default) and portals into the same column.
  */
 interface ShellSlots {
   asideEl: HTMLElement | null
+  railEl: HTMLElement | null
   setFullWidth: (full: boolean) => void
+  setRailClaimed: (claimed: boolean) => void
+  setRailHidden: (hidden: boolean) => void
 }
 
 const ShellSlotsCtx = createContext<ShellSlots | null>(null)
@@ -48,18 +58,31 @@ export interface ShellLayoutProps {
 }
 
 export function ShellLayout({ fullWidth = false, children }: ShellLayoutProps) {
-  // asideEl is held in state (not a plain ref) so <PageAside> consumers re-render
-  // and portal once the container has mounted.
+  // asideEl/railEl are held in state (not plain refs) so <PageAside>/<PageRail>
+  // consumers re-render and portal once the container has mounted.
   const [asideEl, setAsideEl] = useState<HTMLElement | null>(null)
+  const [railEl, setRailEl] = useState<HTMLElement | null>(null)
   const [fullWidthState, setFullWidth] = useState(false)
+  const [railClaimed, setRailClaimed] = useState(false)
+  // A screen can hide the rail and reclaim its space for the main column (e.g.
+  // profile's wide Tezos tabs) via useHidePageRail.
+  const [railHidden, setRailHidden] = useState(false)
   const effectiveFull = fullWidth || fullWidthState
+  // The rail column only exists at very wide widths; gate its React tree (and the
+  // default rail's data fetches) on that so a collapsed/hidden column never fetches.
+  const isWide = useIsWide()
+  const noRail = railHidden && !effectiveFull
+  const showRail = isWide && !effectiveFull && !railHidden
 
   return (
-    <ShellSlotsCtx.Provider value={{ asideEl, setFullWidth }}>
+    <ShellSlotsCtx.Provider value={{ asideEl, railEl, setFullWidth, setRailClaimed, setRailHidden }}>
       <div className="shell">
-        <div className={clsx('page', effectiveFull && 'page--full')}>
+        <div className={clsx('page', effectiveFull && 'page--full', noRail && 'page--no-rail')}>
           <aside className="page__aside" ref={setAsideEl} aria-label="Page sidebar" />
           <main className="page__main">{children}</main>
+          <aside className="page__rail" ref={setRailEl} aria-label="Suggestions">
+            {showRail && !railClaimed && <DesktopRail />}
+          </aside>
         </div>
       </div>
     </ShellSlotsCtx.Provider>
@@ -70,6 +93,37 @@ export function ShellLayout({ fullWidth = false, children }: ShellLayoutProps) {
 export function PageAside({ children }: { children: ReactNode }) {
   const { asideEl } = useShellSlots()
   return asideEl ? createPortal(children, asideEl) : null
+}
+
+/**
+ * Portal contextual content into the shell's right rail, replacing the default
+ * <DesktopRail>. Mounting claims the rail (hides the default) for the screen's
+ * lifetime; the portal only renders at very wide widths where the rail column
+ * exists, so a narrow viewport pays nothing.
+ */
+export function PageRail({ children }: { children: ReactNode }) {
+  const { railEl, setRailClaimed } = useShellSlots()
+  const isWide = useIsWide()
+  useLayoutEffect(() => {
+    setRailClaimed(true)
+    return () => setRailClaimed(false)
+  }, [setRailClaimed])
+  return railEl && isWide ? createPortal(children, railEl) : null
+}
+
+/**
+ * While mounted (and `active`), hide the right rail and widen the main column to
+ * fill its footprint — keeping the same overall page width as the 3-column
+ * layout. Used by wide content that has no use for the rail, e.g. profile's Tezos
+ * Wallet/Created/Owned grids. No-op below the rail breakpoint (there's no rail).
+ */
+export function useHidePageRail(active = true): void {
+  const { setRailHidden } = useShellSlots()
+  useLayoutEffect(() => {
+    if (!active) return
+    setRailHidden(true)
+    return () => setRailHidden(false)
+  }, [active, setRailHidden])
 }
 
 /**

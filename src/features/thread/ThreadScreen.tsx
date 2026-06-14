@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { PostCard, ThreadSkeleton, FeedSkeleton, ErrorState, Tabs } from '@/components'
-import { PageAside } from '@/components/layout'
+import { PageAside, useHideMobileTopBar } from '@/components/layout'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import {
   useThread,
@@ -41,6 +41,9 @@ export default function ThreadScreen() {
   const { data, isLoading, isPlaceholderData, isError, error, refetch } = useThread(actor, rkey)
   const [sort, setSort] = useState<SortKey>('top')
   const isMobile = useIsMobile()
+
+  // Immersive single-post view: no floating top bar (back is via edge-swipe).
+  useHideMobileTopBar()
 
   // Hovering a post highlights its author in the aside grid. One delegated
   // handler reads the nearest [data-author-did] so the post tree needs no

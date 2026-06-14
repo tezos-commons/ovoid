@@ -1,4 +1,5 @@
 import { ScreenHeader } from '@/components/layout/ScreenHeader'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { Section, Row, Segment } from './components'
 import {
   useTheme,
@@ -6,6 +7,7 @@ import {
   type Theme,
   type FontScale,
   type FontFamily,
+  type GlassOpacity,
 } from './theme-store'
 
 /** Swatch dot tinted by a theme's base background, for the theme picker labels. */
@@ -31,12 +33,22 @@ const FAMILY_OPTIONS: { value: FontFamily; label: string }[] = [
   { value: 'system', label: 'System' },
 ]
 
+const GLASS_OPTIONS: { value: GlassOpacity; label: string }[] = [
+  { value: 'clear', label: 'Clear' },
+  { value: 'default', label: 'Default' },
+  { value: 'frosted', label: 'Frosted' },
+  { value: 'solid', label: 'Solid' },
+]
+
 export default function AppearanceSettings() {
   const { theme, setTheme } = useTheme()
+  const isMobile = useIsMobile()
   const fontScale = useAppearanceStore((s) => s.fontScale)
   const fontFamily = useAppearanceStore((s) => s.fontFamily)
+  const glassOpacity = useAppearanceStore((s) => s.glassOpacity)
   const setFontScale = useAppearanceStore((s) => s.setFontScale)
   const setFontFamily = useAppearanceStore((s) => s.setFontFamily)
+  const setGlassOpacity = useAppearanceStore((s) => s.setGlassOpacity)
 
   return (
     <>
@@ -81,6 +93,26 @@ export default function AppearanceSettings() {
             }
           />
         </Section>
+
+        {/* The liquid-glass bars only exist in the mobile chrome, so this knob is
+            irrelevant on desktop — show it only at phone widths. useIsMobile is
+            reactive, so it appears/disappears live when crossing the breakpoint. */}
+        {isMobile && (
+          <Section
+            title="Glass opacity"
+            desc="Translucency of the floating navigation bars. Lower is glassier; higher is more solid."
+          >
+            <div className="settings-stack-control">
+              <Segment
+                full
+                ariaLabel="Glass opacity"
+                value={glassOpacity}
+                options={GLASS_OPTIONS}
+                onChange={setGlassOpacity}
+              />
+            </div>
+          </Section>
+        )}
       </div>
     </>
   )

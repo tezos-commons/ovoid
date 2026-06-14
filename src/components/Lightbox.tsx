@@ -14,6 +14,8 @@ export function Lightbox() {
   const close = useUiStore((s) => s.closeLightbox)
   const [index, setIndex] = useState(0)
   const lastWheel = useRef(0)
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
+  const swiped = useRef(false)
 
   // Back button / back-swipe closes the image viewer instead of navigating away.
   useCloseOnBack(!!lightbox, close)
@@ -23,14 +25,21 @@ export function Lightbox() {
     if (lightbox) setIndex(lightbox.index)
   }, [lightbox])
 
-  // Lock document scroll while open (same as Dialog/NftBrowser) — otherwise the
-  // page's scrollbar paints on top of the fixed overlay at the right edge.
+  // Lock document scroll while open. Lock the documentElement (the real scroller —
+  // body overflow doesn't propagate to the viewport because html has overflow-x:
+  // clip) and drop scrollbar-gutter, so neither the reserved gutter nor a live
+  // scrollbar leaves a strip down the right edge of the fullscreen overlay, and
+  // the list behind can't shift as it opens (matches NftBrowser).
   useEffect(() => {
     if (!lightbox) return
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const html = document.documentElement
+    const prevOverflow = html.style.overflow
+    const prevGutter = html.style.scrollbarGutter
+    html.style.overflow = 'hidden'
+    html.style.scrollbarGutter = 'auto'
     return () => {
-      document.body.style.overflow = prevOverflow
+      html.style.overflow = prevOverflow
+      html.style.scrollbarGutter = prevGutter
     }
   }, [lightbox])
 
@@ -59,11 +68,46 @@ export function Lightbox() {
     setIndex((i) => (delta > 0 ? (i + 1) % count : (i - 1 + count) % count))
   }
 
+  // Touch: a horizontal swipe pages through the gallery. The swiped flag
+  // suppresses the backdrop-close click that would otherwise follow the gesture.
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    touchStart.current = { x: t.clientX, y: t.clientY }
+    swiped.current = false
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = touchStart.current
+    touchStart.current = null
+    if (!s || count <= 1) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - s.x
+    const dy = t.clientY - s.y
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+      swiped.current = true
+      setIndex((i) => (dx < 0 ? (i + 1) % count : (i - 1 + count) % count))
+    }
+  }
+  const onBackdropClick = () => {
+    if (swiped.current) {
+      swiped.current = false
+      return
+    }
+    close()
+  }
+
   if (!lightbox || count === 0) return null
   const img = lightbox.images[Math.min(index, count - 1)]
 
   return (
-    <div className="lightbox" role="dialog" aria-modal="true" onClick={close} onWheel={onWheel}>
+    <div
+      className="lightbox"
+      role="dialog"
+      aria-modal="true"
+      onClick={onBackdropClick}
+      onWheel={onWheel}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
       <div className="lightbox__backdrop" style={{ backgroundImage: `url(${img.src})` }} aria-hidden />
 
       <button className="lightbox__close" onClick={close} aria-label="Close">

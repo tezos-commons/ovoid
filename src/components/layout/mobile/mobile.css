@@ -1,0 +1,384 @@
+/* ============================================================
+   Mobile shell: two floating "liquid glass" bars hovering over the page
+   content, which scrolls behind them. Only rendered below the phone breakpoint
+   (the MobileShell mounts there); these rules are otherwise inert.
+   All colors/spacing via design tokens.
+   ============================================================ */
+
+:root {
+  /* On-screen keyboard overlap height, kept live by useKeyboardInset. 0 when the
+     keyboard is closed (or visualViewport is unavailable). */
+  --kb: 0px;
+  /* Bar geometry + the safe scroll zones the page must pad so content clears the
+     floating bars (bar height + edge margin + breathing room + device insets). */
+  --mbar-edge: 10px;
+  --mbar-top-h: 50px;
+  --mbar-bottom-h: 58px;
+  --mbar-top-zone: calc(env(safe-area-inset-top, 0px) + var(--mbar-edge) + var(--mbar-top-h) + var(--space-2));
+  --mbar-bottom-zone: calc(env(safe-area-inset-bottom, 0px) + var(--mbar-edge) + var(--mbar-bottom-h) + var(--space-2));
+}
+
+/* ---------------- Liquid glass surface ----------------
+   The visual surface (translucency, backdrop blur, border, shadow, and the
+   animated sheen) is painted by an absolutely-positioned child layer that clips
+   itself. The host element stays overflow:visible so dropdowns / popovers that
+   overflow the bar (feed menu, @-mention popover) are NOT clipped. */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+}
+.liquid-glass__layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  overflow: hidden;
+  /* Kept low so content is clearly visible through the blur — the backdrop blur
+     does the "frosting", not opacity. The mix percentage is user-tunable via the
+     Appearance setting (--glass-opacity); 32% is the default when unset. */
+  background: color-mix(in srgb, var(--bg) var(--glass-opacity, 32%), transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  box-shadow:
+    0 10px 34px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+}
+/* The bar's actual content rides above the glass layer. */
+.liquid-glass > *:not(.liquid-glass__layer) {
+  position: relative;
+  z-index: 1;
+}
+/* Slow-drifting tinted highlight within the glass — the "liquid" motion. */
+.liquid-glass__layer::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 60% at 28% 28%, color-mix(in srgb, var(--color-primary) 50%, transparent), transparent 70%),
+    radial-gradient(38% 55% at 78% 65%, color-mix(in srgb, var(--blue-600) 45%, transparent), transparent 72%);
+  filter: blur(22px);
+  opacity: 0.28;
+  animation: liquid-drift 16s ease-in-out infinite alternate;
+}
+@keyframes liquid-drift {
+  0% {
+    transform: translate(-6%, -4%) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate(9%, 6%) rotate(9deg) scale(1.18);
+  }
+  100% {
+    transform: translate(-4%, 9%) rotate(-7deg) scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass::before {
+    animation: none;
+  }
+}
+
+/* ---------------- Shared bar shell ---------------- */
+.mbar {
+  position: fixed;
+  z-index: var(--z-nav);
+  left: var(--mbar-edge);
+  right: var(--mbar-edge);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---------------- Top bar ---------------- */
+.mbar--top {
+  top: calc(env(safe-area-inset-top, 0px) + var(--mbar-edge));
+  height: var(--mbar-top-h);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+.mbar__side {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.mbar__side--left {
+  justify-content: flex-start;
+}
+.mbar__side--right {
+  justify-content: flex-end;
+}
+.mbar__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.mbar__title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Full-width top-bar takeover (e.g. search): the fill content spans the bar. */
+.mbar--top.mbar--fill {
+  display: flex;
+}
+.mbar__fill {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.mbar__fill[hidden] {
+  display: none;
+}
+
+/* ---------------- Bottom bar ---------------- */
+.mbar--bottom {
+  /* Ride above the keyboard when it's open (--kb), else clear the home indicator.
+     transition so the lift tracks the keyboard's slide rather than snapping. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--mbar-edge) + var(--kb));
+  transition: bottom 0.18s ease;
+  min-height: var(--mbar-bottom-h);
+  padding: var(--space-2);
+  border-radius: var(--radius-panel);
+}
+.mbar__multi {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  transition: background 0.15s ease;
+}
+/* Write state: a filled primary CTA (the pencil) so "write" reads as the action. */
+.mbar__multi--write {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.mbar__multi:active {
+  background: color-mix(in srgb, var(--text) 20%, transparent);
+}
+.mbar__bottom-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.mbar__context {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.mbar__context[hidden] {
+  display: none;
+}
+
+/* Nav row inside the bottom bar (multi-toggled). */
+.mbar__nav {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+.mbar__navitem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 42px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+}
+.mbar__navitem svg {
+  width: 24px;
+  height: 24px;
+}
+.mbar__navitem--active {
+  color: var(--text);
+}
+.mbar__navitem:hover {
+  text-decoration: none;
+}
+
+/* When the top bar is suppressed (immersive screens), reclaim its top inset so
+   content starts at the very top. The bottom bar is unaffected. */
+.mobile-shell--no-top .page:not(.page--full) .page__main {
+  padding-top: 0;
+}
+
+/* ---------------- Route slide-in transition ----------------
+   The wrapper is stable (never remounts); MobileShell toggles --run to (re)play
+   the slide on each pathname change. Animation lives on --run, not the base, so
+   it fires only when triggered, not on every React re-render. */
+.route-slide--run {
+  /* `backwards` (not `both`): apply the `from` state before the first frame to
+     avoid a flash, but DON'T retain a transform after — a lingering translateX(0)
+     would make the wrapper a containing block and break position:fixed inside. */
+  animation: route-in 240ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+.route-slide--run.route-slide--back {
+  animation-name: route-in-back;
+}
+@keyframes route-in {
+  from {
+    transform: translateX(9%);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes route-in-back {
+  from {
+    transform: translateX(-9%);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-slide--run {
+    animation: none;
+  }
+}
+
+/* ---------------- Tap feedback ----------------
+   Immediate press response on the bars: a quick scale-down (and a wash on nav
+   items) so a tap reads instantly. No blue tap-highlight flash. */
+.mbar button,
+.mbar a,
+.mbar-feedsel,
+.mbar-compose {
+  -webkit-tap-highlight-color: transparent;
+}
+.mbar__navitem,
+.mbar__multi,
+.mbar-feedsel,
+.mbar-compose,
+.mbar .iconbtn {
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.mbar__navitem:active,
+.mbar__multi:active,
+.mbar-feedsel:active,
+.mbar-compose:active,
+.mbar .iconbtn:active {
+  transform: scale(0.88);
+}
+.mbar__navitem:active {
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+/* ---------------- Chat composer adapted to the bottom bar ----------------
+   The composer is portaled into the bottom bar on mobile; strip its standalone
+   chrome so it sits flush in the glass and the send button stays compact. */
+.mbar__context .msg-composer {
+  width: 100%;
+  border: none;
+  padding: 0;
+  background: none;
+}
+/* Match the Home compose pill: a rounded translucent field + a primary circular
+   send button on the right. */
+.mbar__context .msg-composer__row {
+  margin: 0;
+  min-height: 42px;
+  align-items: center;
+  gap: var(--space-2);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-1) 0 var(--space-4);
+}
+.mbar__context .msg-composer__input {
+  padding: var(--space-2) 0;
+  font-size: var(--fs-md);
+}
+.mbar__context .msg-composer__send {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.mbar__context .msg-composer__send:disabled {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  color: var(--text-faint);
+}
+/* Mention popover floats above the bar rather than pushing it. */
+.mbar__context .mention-pop {
+  bottom: calc(100% + var(--space-2));
+}
+
+/* Home compose entry pill (bottom-bar contextual content on feed surfaces). */
+.mbar-compose {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: 42px;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text-faint);
+  font-size: var(--fs-md);
+  text-align: left;
+}
+.mbar-compose__pencil {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* Top-bar dropdowns always anchor to the right edge (the Menu default), capped to
+   the viewport so they never spill off-screen. */
+.mbar .menu__pop {
+  max-width: calc(100vw - 2 * var(--mbar-edge));
+}
+
+/* Home feed selector trigger in the top bar (active feed name + caret). */
+.mbar-feedsel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 60vw;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.mbar-feedsel__label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mbar-feedsel__caret {
+  flex: 0 0 auto;
+  opacity: 0.7;
+}

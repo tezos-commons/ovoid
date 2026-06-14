@@ -20,6 +20,10 @@
 .notif:hover {
   background: var(--bg-contrast-25);
 }
+/* Cluster rows with a subject post are tappable anywhere. */
+.notif--clickable {
+  cursor: pointer;
+}
 
 /* Subtle blue tint for unread (unseen-since-last-view) items. */
 .notif--unread {

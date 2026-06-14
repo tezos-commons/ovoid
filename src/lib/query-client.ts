@@ -25,12 +25,15 @@ export const MAX_FEED_PAGES = 20
 /**
  * Don't write fast-moving or session-scoped reads to disk: chat (polled at
  * seconds-granularity, and the most privacy-sensitive data we hold), the
- * unread badge (poll-driven), and search/typeahead (only meaningful within
- * the session that typed them). Everything else — feeds, profiles, threads,
- * notifications, preferences, tezos/objkt metadata — persists.
+ * unread badge (poll-driven), search/typeahead (only meaningful within the
+ * session that typed them), and polls (live vote tallies + per-viewer state).
+ * Everything else — feeds, profiles, threads, notifications, preferences,
+ * tezos/objkt metadata — persists.
  */
 function shouldPersist(queryKey: QueryKey): boolean {
-  return !queryKey.some((part) => part === 'chat' || part === 'unread' || part === 'search')
+  return !queryKey.some(
+    (part) => part === 'chat' || part === 'unread' || part === 'search' || part === 'poll',
+  )
 }
 
 /**
