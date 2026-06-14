@@ -715,9 +715,16 @@ a.msg-row__name:hover {
     display: none;
   }
 
-  /* Scroll behind the floating bars: pad both scroll regions to clear them. */
+  /* Scroll behind the floating bars: pad scroll regions to clear them. The
+     group-settings page has no in-pane header on mobile (the global rule hides
+     .screen-header), so its content scrolls under the floating top/bottom nav
+     unless it reserves the same zones. Keep its horizontal inset (space-4). */
   .msg-thread__scroll,
   .convo-list {
+    padding-top: var(--mbar-top-zone);
+    padding-bottom: var(--mbar-bottom-zone);
+  }
+  .group-settings__scroll {
     padding-top: var(--mbar-top-zone);
     padding-bottom: var(--mbar-bottom-zone);
   }

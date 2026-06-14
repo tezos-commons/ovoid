@@ -43,16 +43,23 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
   const candidates = useMentionCandidates(token, members, did)
   const open = token !== null && candidates.length > 0
 
-  // Size the textarea to its content after every committed value change. Driving
-  // this from the rendered `text` (not imperatively in handlers) means the reset
-  // to one line after a send measures the *cleared* DOM, not the stale multiline
-  // content a requestAnimationFrame would race.
-  useLayoutEffect(() => {
+  // Size the textarea to its content. Driving this from the rendered `text`
+  // (not imperatively in handlers) means the reset to one line after a send
+  // measures the *cleared* DOM, not the stale multiline content a
+  // requestAnimationFrame would race.
+  const resize = () => {
     const el = taRef.current
-    if (!el) return
+    // offsetParent is null while the field isn't laid out — on mobile the
+    // composer first mounts inside the bottom-bar slot while it's still hidden
+    // (the nav shows until bottomDefaultOpen settles). Measuring then yields
+    // scrollHeight 0 and would pin the height to 0px, cutting off the
+    // placeholder. Skip; the rows=1 height is correct meanwhile, and we
+    // re-measure on focus / the next edit once it's visible.
+    if (!el || el.offsetParent === null) return
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`
-  }, [text])
+  }
+  useLayoutEffect(resize, [text])
 
   const syncToken = (value: string, caret: number) => {
     const next = findMentionToken(value, caret)
@@ -179,6 +186,7 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
             const el = e.currentTarget
             syncToken(el.value, el.selectionStart ?? el.value.length)
           }}
+          onFocus={resize}
           onKeyDown={onKeyDown}
         />
         <IconButton
