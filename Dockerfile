@@ -19,6 +19,17 @@ COPY . .
 ARG APP_ORIGIN=https://ovoid.at
 RUN sed -i "s#https://ovoid.at#${APP_ORIGIN}#g" public/client-metadata.json
 
+# Notify (push) backend. These are Vite build-time vars (import.meta.env.*), so
+# they must be present in the environment when `npm run build` runs — they bake
+# into the static bundle. Empty values make the app hide all push UI
+# (notifyConfigured() === false). Defaults target the production notify
+# deployment; override to retarget:
+#   docker build --build-arg VITE_NOTIFY_URL=https://notify.staging.ovoid.at ...
+ARG VITE_NOTIFY_URL=https://notify.ovoid.at
+ARG VITE_NOTIFY_DID=did:web:notify.ovoid.at
+ENV VITE_NOTIFY_URL=${VITE_NOTIFY_URL} \
+    VITE_NOTIFY_DID=${VITE_NOTIFY_DID}
+
 RUN npm run build
 
 # ---------- Stage 2: serve with nginx on :8080 ----------

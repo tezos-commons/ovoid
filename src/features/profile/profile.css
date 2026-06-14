@@ -202,35 +202,48 @@
     border-radius: 0;
     /* The banner gradient fades into this; the page below is also var(--bg). */
     background: var(--bg);
+    /* z-index:0 makes this a stacking context so the banner can sit at -1 BEHIND
+       the content. The content then stays in normal flow (no per-element z-index),
+       which avoids a composite hairline at the seam between two lifted layers —
+       previously visible right where the bio sits, between identity and counts. */
     position: relative;
+    z-index: 0;
   }
   /* Mobile banner = the card's whole background: fill the card and fade to the
-     base bg toward the bottom, with all content layered above. */
+     base bg toward the bottom, sitting behind all content. */
   .profhead__banner {
     position: absolute;
     inset: 0;
     height: auto;
+    z-index: -1;
     /* Decorative background; a full-card link would swallow taps on the padding. */
     pointer-events: none;
+  }
+  /* Fill the whole card, not just a top strip. The banner's computed height is
+     `auto` (it only fills via inset:0), so the base `height: 100%` would resolve
+     against an auto height = auto, leaving the image at its intrinsic aspect with
+     a hard bottom edge that reads as a line through the gradient. Absolute +
+     inset:0 makes the used height definite, so object-fit can actually cover. */
+  .profhead__banner img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .profhead__banner::after {
     content: '';
     position: absolute;
     inset: 0;
+    /* A single continuous slope, no interior color stop. The previous 3-stop
+       gradient changed slope at 45% (right under the handle); that slope
+       discontinuity is a Mach band — the eye reads it as a hard line through the
+       gradient. One linear ramp from clear (top) to solid bg removes it. */
     background: linear-gradient(
       to bottom,
-      color-mix(in srgb, var(--bg) 15%, transparent) 0%,
-      color-mix(in srgb, var(--bg) 60%, transparent) 45%,
-      var(--bg) 90%
+      transparent 0%,
+      var(--bg) 92%
     );
-  }
-  /* Content paints above the banner layer. (__bar already carries this.) */
-  .profhead__identity,
-  .profhead__bio,
-  .profhead__counts,
-  .profhead__expand {
-    position: relative;
-    z-index: 1;
   }
   /* Ghost icon buttons need a scrim chip to stay legible over bright banners. */
   .profhead__actions .iconbtn {
@@ -251,8 +264,8 @@
   .profhead__bar {
     margin-top: 0;
     padding-top: var(--space-3);
-    /* Above the identity/bio/counts (also z-index:1 here, but later in the DOM),
-       so the overflow menu's popover floats over them instead of behind. */
+    /* Lift above the in-flow content below it so the overflow menu's popover
+       floats over the identity/counts instead of behind them. */
     z-index: 2;
   }
   /* The avatar is tall, so flex-end drops the action buttons too low; pin them to

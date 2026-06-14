@@ -15,7 +15,10 @@
   --mbar-top-h: 50px;
   --mbar-bottom-h: 58px;
   --mbar-top-zone: calc(env(safe-area-inset-top, 0px) + var(--mbar-edge) + var(--mbar-top-h) + var(--space-2));
-  --mbar-bottom-zone: calc(env(safe-area-inset-bottom, 0px) + var(--mbar-edge) + var(--mbar-bottom-h) + var(--space-2));
+  /* --mbar-bottom-real is the bar's *measured* height (set by MobileBottomBar);
+     it grows with a multiline composer so the scroll zone keeps the last messages
+     above the bar. Falls back to the static min-height before JS runs / on desktop. */
+  --mbar-bottom-zone: calc(env(safe-area-inset-bottom, 0px) + var(--mbar-edge) + var(--mbar-bottom-real, var(--mbar-bottom-h)) + var(--space-2));
 }
 
 /* ---------------- Liquid glass surface ----------------
@@ -304,7 +307,9 @@
   gap: var(--space-2);
   background: color-mix(in srgb, var(--text) 8%, transparent);
   border: none;
-  border-radius: var(--radius-pill);
+  /* Half the resting height: a pill at one line, a rounded rectangle once it
+     grows — not the giant semicircles a full pill radius makes on a tall box. */
+  border-radius: 21px;
   padding: 0 var(--space-1) 0 var(--space-4);
 }
 .mbar__context .msg-composer__input {

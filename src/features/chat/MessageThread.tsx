@@ -74,6 +74,11 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
     ro.observe(el)
     const inner = el.firstElementChild
     if (inner) ro.observe(inner)
+    // On mobile the composer lives in the floating bottom bar, which overlaps the
+    // scroll area. When it grows (multiline), the scroll zone (--mbar-bottom-zone)
+    // expands too — re-pin so the newest message clears the now-taller bar.
+    const bar = document.querySelector('.mbar--bottom')
+    if (bar) ro.observe(bar)
     return () => ro.disconnect()
   }, [])
 

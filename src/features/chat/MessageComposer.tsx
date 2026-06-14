@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import clsx from 'clsx'
 import { Avatar, IconButton } from '@/components'
 import { haptic } from '@/lib/haptics'
@@ -43,12 +43,16 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
   const candidates = useMentionCandidates(token, members, did)
   const open = token !== null && candidates.length > 0
 
-  const grow = () => {
+  // Size the textarea to its content after every committed value change. Driving
+  // this from the rendered `text` (not imperatively in handlers) means the reset
+  // to one line after a send measures the *cleared* DOM, not the stale multiline
+  // content a requestAnimationFrame would race.
+  useLayoutEffect(() => {
     const el = taRef.current
     if (!el) return
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`
-  }
+  }, [text])
 
   const syncToken = (value: string, caret: number) => {
     const next = findMentionToken(value, caret)
@@ -68,7 +72,6 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
       const pos = token.start + inserted.length
       el?.focus()
       el?.setSelectionRange(pos, pos)
-      grow()
     })
   }
 
@@ -81,7 +84,6 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
         haptic('success')
         setText('')
         setToken(null)
-        requestAnimationFrame(grow)
       },
     })
   }
@@ -172,7 +174,6 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
           onChange={(e) => {
             setText(e.target.value)
             syncToken(e.target.value, e.target.selectionStart ?? e.target.value.length)
-            grow()
           }}
           onClick={(e) => {
             const el = e.currentTarget

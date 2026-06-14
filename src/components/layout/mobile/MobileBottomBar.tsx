@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { NavLink, useLocation } from 'react-router-dom'
 import { NAV_ITEMS } from '../navItems'
@@ -26,6 +26,25 @@ export function MobileBottomBar() {
   const ctx = useMobileChromeCtx()
   const { pathname } = useLocation()
   const { openCompose } = useComposer()
+  const navRef = useRef<HTMLElement>(null)
+
+  // Publish the bar's measured height so the scroll zones (--mbar-bottom-zone)
+  // can reserve room for it. A multiline chat composer grows the bar past its
+  // resting min-height; without this the bar would overlap the last messages.
+  useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    const root = document.documentElement
+    const update = () =>
+      root.style.setProperty('--mbar-bottom-real', `${el.getBoundingClientRect().height}px`)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      root.style.removeProperty('--mbar-bottom-real')
+    }
+  }, [])
 
   // Clear the user's manual toggle on navigation, so each screen opens at its
   // own default (chat → its composer; everything else → the nav).
@@ -56,7 +75,7 @@ export function MobileBottomBar() {
   }
 
   return (
-    <nav className="mbar mbar--bottom liquid-glass" aria-label="Primary">
+    <nav ref={navRef} className="mbar mbar--bottom liquid-glass" aria-label="Primary">
       <span className="liquid-glass__layer" aria-hidden="true" />
       <button
         type="button"
