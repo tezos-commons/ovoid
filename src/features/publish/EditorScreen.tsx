@@ -7,6 +7,7 @@ import {
   usePublicationStudio,
   useEditableDocument,
   useSavePost,
+  useDeletePost,
   documentMarkdown,
   slugify,
 } from './use-documents'
@@ -32,6 +33,7 @@ export default function EditorScreen() {
   const studio = usePublicationStudio(subdomain)
   const existing = useEditableDocument(studio.did, rkey)
   const save = useSavePost(studio.pubUri, studio.did)
+  const del = useDeletePost(studio.pubUri, studio.did)
 
   const isEdit = !!rkey
   const [title, setTitle] = useState('')
@@ -223,6 +225,23 @@ export default function EditorScreen() {
                 placeholder="comma, separated"
               />
             </label>
+
+            {isEdit && rkey && (
+              <div className="editor-panel__danger">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  loading={del.isPending}
+                  onClick={() => {
+                    if (confirm(`Delete “${title.trim() || 'this post'}”? This can’t be undone.`)) {
+                      del.mutate(rkey, { onSuccess: () => navigate(`/studio/${subdomain}`) })
+                    }
+                  }}
+                >
+                  Delete post
+                </Button>
+              </div>
+            )}
           </aside>
         )}
       </div>

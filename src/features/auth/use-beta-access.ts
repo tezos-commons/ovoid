@@ -24,6 +24,9 @@ async function loadMembers(): Promise<Set<string>> {
   const listUri = `at://${owner.data.did}/app.bsky.graph.list/${LIST_RKEY}`
 
   const dids = new Set<string>()
+  // The list owner (tezoscommons.org) is always allowed, even though it isn't a
+  // member of its own list.
+  dids.add(owner.data.did)
   let cursor: string | undefined
   do {
     const res = await agent.app.bsky.graph.getList({ list: listUri, limit: 100, cursor })

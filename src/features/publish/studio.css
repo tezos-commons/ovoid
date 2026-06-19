@@ -385,6 +385,11 @@
 .editor-panel__slug .studio-input {
   flex: 1 1 auto;
 }
+.editor-panel__danger {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
 .editor-cover {
   aspect-ratio: 16 / 9;
   border-radius: var(--radius-embed);

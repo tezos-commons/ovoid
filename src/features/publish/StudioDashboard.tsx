@@ -93,7 +93,7 @@ export default function StudioDashboard() {
           </NavLink>
         </nav>
 
-        <Link to={`/studio/${subdomain}/new`} className="btn btn--primary studio-side__new">
+        <Link to={`/studio/${subdomain}/new`} className="btn btn--primary btn--md studio-side__new">
           New post
         </Link>
       </aside>
