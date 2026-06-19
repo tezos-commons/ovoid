@@ -11,16 +11,6 @@ import { documentOptions, type DocumentView } from './use-document'
  * on Leaflet, matuzo.at, etc. (their own verified URLs).
  */
 
-/** Resolve a reader (did, rkey) to the document's canonical embeddable URL. */
-async function resolveCanonical(authority: string, rkey: string): Promise<string | null> {
-  try {
-    const view = await queryClient.fetchQuery(documentOptions(authority, rkey))
-    return view.canonicalUrl ?? null
-  } catch {
-    return null
-  }
-}
-
 /** If `u` is one of our reader article URLs, its (authority, rkey); else null. */
 function readerTarget(u: URL): { authority: string; rkey: string } | null {
   const sameOrigin = typeof window !== 'undefined' && u.host === window.location.host
@@ -30,13 +20,25 @@ function readerTarget(u: URL): { authority: string; rkey: string } | null {
   return m ? { authority: decodeURIComponent(m[1]), rkey: m[2] } : null
 }
 
+/** A standard.site article resolved from a reader link in composed text. */
+export interface EmbeddableArticle {
+  url: string
+  title: string
+  description?: string
+}
+
 /**
- * Rewrite any Ovoid reader links in `text` to the article's canonical embeddable
- * URL, so a shared post/chat gets the rich standard.site embed (incl. the author
- * + Follow button) instead of a dead SPA link. Unresolvable links are left as-is.
+ * Rewrite Ovoid reader links to the article's canonical embeddable URL AND return
+ * the resolved articles, so the composer can both (a) post the embeddable link
+ * (rich standard.site card on Bluesky, incl. author + Follow) instead of a dead
+ * SPA link, and (b) attach the external embed the card actually renders from.
+ * Unresolvable links are left as-is.
  */
-export async function rewriteEmbeddableLinks(text: string): Promise<string> {
+export async function resolveEmbeddableLinks(
+  text: string,
+): Promise<{ text: string; articles: EmbeddableArticle[] }> {
   let out = text
+  const articles: EmbeddableArticle[] = []
   for (const raw of extractTextUrls(text)) {
     let u: URL
     try {
@@ -46,10 +48,23 @@ export async function rewriteEmbeddableLinks(text: string): Promise<string> {
     }
     const target = readerTarget(u)
     if (!target) continue
-    const canonical = await resolveCanonical(target.authority, target.rkey)
-    if (canonical && canonical !== raw) out = out.split(raw).join(canonical)
+    let view: DocumentView
+    try {
+      view = await queryClient.fetchQuery(documentOptions(target.authority, target.rkey))
+    } catch {
+      continue
+    }
+    const canonical = view.canonicalUrl
+    if (!canonical) continue
+    if (canonical !== raw) out = out.split(raw).join(canonical)
+    articles.push({ url: canonical, title: view.doc.title, description: view.doc.description })
   }
-  return out
+  return { text: out, articles }
+}
+
+/** Text-only rewrite (chat, where we don't attach external embeds). */
+export async function rewriteEmbeddableLinks(text: string): Promise<string> {
+  return (await resolveEmbeddableLinks(text)).text
 }
 
 /** Share an article via the native sheet (or clipboard), using its canonical URL. */

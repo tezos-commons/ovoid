@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Avatar, Img, ErrorState, EmptyState } from '@/components'
+import { Avatar, Img, ErrorState, EmptyState, Lightbox } from '@/components'
 import { ShareIcon } from '@/components/Icon'
 import { shareArticle } from './embeddable-url'
 import { absoluteTime } from '@/lib/time'
@@ -64,6 +64,9 @@ export default function ReaderScreen() {
         )}
       </main>
       <ReadingSettings />
+      {/* The shared lightbox lives in the app shell; the reader is outside it,
+          so mount our own for inline-image zoom. */}
+      <Lightbox />
     </div>
   )
 }

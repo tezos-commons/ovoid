@@ -9,7 +9,7 @@ import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 import { bumpReplyCount, insertReplyInThreads, patchPostInAllFeeds } from '@/lib/optimistic'
 import { buildPost } from '@/lib/rich-text'
-import { rewriteEmbeddableLinks } from '@/features/read/embeddable-url'
+import { resolveEmbeddableLinks } from '@/features/read/embeddable-url'
 import { uploadImage } from '@/lib/blob'
 import type { ComposeTarget } from '@/store/compose-store'
 
@@ -88,7 +88,7 @@ export function useCreatePost() {
       // Reader links -> the article's canonical embeddable URL (so the standard.site
       // card renders on Bluesky), then our-site links -> bsky.app + facet detection;
       // the stored record uses `text` (not rawText) so offsets stay aligned.
-      const embeddable = await rewriteEmbeddableLinks(rawText)
+      const { text: embeddable, articles } = await resolveEmbeddableLinks(rawText)
       const { text, facets } = await buildPost(agent, embeddable)
 
       // Upload images (compressed <1MB by lib/blob) and build the images embed.
@@ -120,6 +120,15 @@ export function useCreatePost() {
         embed = imagesEmbed
       } else if (quoteRef) {
         embed = { $type: 'app.bsky.embed.record', record: quoteRef }
+      } else if (articles.length > 0) {
+        // A standard.site article link with no other embed: attach the external
+        // embed the card renders from. The AppView enriches it (publication,
+        // author + Follow) server-side for every client.
+        const a = articles[0]
+        embed = {
+          $type: 'app.bsky.embed.external',
+          external: { uri: a.url, title: a.title, description: a.description ?? '' },
+        }
       }
 
       const reply = target.replyTo ? resolveReply(target.replyTo) : undefined
