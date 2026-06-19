@@ -138,7 +138,7 @@ const ConvoRow = memo(function ConvoRow({
       role="listitem"
     >
       {group ? (
-        <AvatarGroup members={convo.members} size="md" />
+        <AvatarGroup members={convo.members} size="md" total={group.memberCount} />
       ) : (
         <Avatar src={other?.avatar} alt={name} fallback={other?.displayName ?? other?.handle} size="md" />
       )}

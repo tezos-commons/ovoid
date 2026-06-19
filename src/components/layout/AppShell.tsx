@@ -6,6 +6,7 @@ import { RouteTransition } from './RouteTransition'
 import { MobileShell } from './mobile/MobileShell'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import { useWarmNavDestinations } from '@/features/prefetch-routes'
+import { useSettingsSync } from '@/features/settings/use-settings-sync'
 import './layout.css'
 
 export interface AppShellProps {
@@ -30,6 +31,8 @@ export interface AppShellProps {
 export function AppShell({ children, onNewPost, fullWidth }: AppShellProps) {
   // Warm the landing data behind every nav destination once the shell mounts.
   useWarmNavDestinations()
+  // Mirror this account's settings to/from data.ovoid.at (no-op when signed out).
+  useSettingsSync()
   const isMobile = useIsMobile()
 
   if (isMobile) {

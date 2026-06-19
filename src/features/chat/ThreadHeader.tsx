@@ -86,7 +86,7 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
   if (group) {
     title = (
       <Link to={`/messages/${convoId}/settings`} className="chat-detail-title" title="Group settings">
-        <AvatarGroup members={convo!.members} size="sm" max={3} />
+        <AvatarGroup members={convo!.members} size="sm" max={3} total={group.memberCount} />
         <span className="chat-detail-title__name">{convoTitle(convo!, viewerDid)}</span>
       </Link>
     )

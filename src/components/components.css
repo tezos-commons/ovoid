@@ -359,6 +359,14 @@
   color: var(--text);
   text-align: left;
 }
+.menu__itemicon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+  font-size: 16px; /* sizes emoji icons; svg icons carry their own size */
+}
 .menu__item:hover { background: var(--bg-contrast-25); }
 .menu__item--danger { color: var(--color-danger); }
 
@@ -1338,6 +1346,16 @@ video.nftb__backdrop {
 .nftb__head { padding: var(--space-5) var(--space-5) var(--space-4); }
 .nftb__title { font-size: var(--fs-xl); font-weight: var(--fw-bold); line-height: 1.15; }
 .nftb__creator { color: rgba(255, 255, 255, 0.65); font-size: var(--fs-sm); margin-top: var(--space-1); }
+.nftb__creator--link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.nftb__creator--link:hover { color: #fff; }
 
 .nftb__tabs {
   display: flex;

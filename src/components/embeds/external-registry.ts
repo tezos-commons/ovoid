@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { ExternalEmbedProps } from './GenericExternalCard'
 import { bskyChatMatcher } from './providers/bsky-chat'
 import { objktMatcher } from './providers/objkt'
+import { objktCollectionMatcher } from './providers/objkt-collection'
 import { teiaMatcher } from './providers/teia'
 import { pollMatcher } from './providers/poll'
 
@@ -22,6 +23,7 @@ export interface ExternalEmbedMatcher {
 const EXTERNAL_MATCHERS: ExternalEmbedMatcher[] = [
   pollMatcher,
   objktMatcher,
+  objktCollectionMatcher,
   teiaMatcher,
   bskyChatMatcher,
 ]

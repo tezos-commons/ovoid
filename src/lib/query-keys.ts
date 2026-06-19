@@ -158,6 +158,17 @@ export const qk = {
   objktTokens: (addr: string, kind: string, contract: string) =>
     ['tezos', 'objkt', 'tokens', kind, { addr, contract }] as const,
 
+  // Standalone account view (/address/:address). tzbsky reverse lookup (address →
+  // linked DID) + objkt account identity (name / avatar).
+  tezosDidByAddress: (addr: string) => ['tezos', 'did-by-address', { addr }] as const,
+  tezosAccount: (addr: string) => ['tezos', 'account', { addr }] as const,
+
+  // Standalone contract view (/contract/:address). Classification via TzKT, plus
+  // whole-collection metadata + tokens via objkt — keyed by contract, not holder.
+  contractInfo: (contract: string) => ['tezos', 'contract', 'info', { contract }] as const,
+  collection: (contract: string) => ['tezos', 'collection', { contract }] as const,
+  collectionTokens: (contract: string) => ['tezos', 'collection', 'tokens', { contract }] as const,
+
   // Wallet overview (TzKT): tez balance, fungible balances, owned-NFT preview,
   // recent transactions. Keyed by raw tz-address under the same `tezos` root.
   walletBalance: (addr: string) => ['tezos', 'wallet', 'balance', { addr }] as const,
@@ -170,6 +181,17 @@ export const qk = {
   // viewer state so it's authed, but the id alone keys it (one viewer/session).
   poll: (id: string) => ['poll', { id }] as const,
   pollResults: (id: string) => ['poll', 'results', { id }] as const,
+
+  // Ovoid Data service (data.ovoid.at — external first-party JSON-blob store).
+  // Separate `data` root so bsky prefix-invalidation never touches it. Public
+  // reads are keyed by the creator DID (the blob's owner), not the viewer.
+  walletVisibility: (creatorDid: string) =>
+    ['data', 'public', creatorDid, 'wallet-visibility'] as const,
+
+  // Ovoid Graph service (graph.ovoid.at). Separate `graph` root. Follow state is
+  // per-caller, so the key carries the viewer DID (account switch must not bleed).
+  graphFollowingTezos: (viewerDid: string | undefined, address: string) =>
+    ['graph', viewerDid, 'following', 'tezos', { address }] as const,
 
   /**
    * True for any feed-family read (timeline / custom feed / author feed / likes).

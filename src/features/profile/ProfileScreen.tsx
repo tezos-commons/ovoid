@@ -45,6 +45,12 @@ import {
   walletNftsOptions,
   walletActivityOptions,
 } from './use-wallet'
+import {
+  useWalletVisibility,
+  resolveWalletSections,
+  walletVisibilityOptions,
+  type WalletVisibility,
+} from './use-wallet-visibility'
 import './profile.css'
 
 type TabKey =
@@ -102,6 +108,15 @@ export default function ProfileScreen() {
   const tezosQ = useTezosAddress(profile?.did)
   const tezosAddr = tezosQ.data ?? undefined
 
+  // Owner-published wallet visibility (data.ovoid.at). Only read for other
+  // accounts that have a wallet, and only when authed (public reads still need
+  // the viewer's token); otherwise the resolver defaults to fully visible.
+  const checkVisibility = isAuthed && !isSelf && !!tezosAddr
+  const walletVisQ = useWalletVisibility(profile?.did, { enabled: checkVisibility })
+  const walletSections = resolveWalletSections(isSelf, walletVisQ.data)
+  const walletHasVisible =
+    walletSections.balance || walletSections.tokens || walletSections.activity || walletSections.nfts
+
   const tabs: TabItem[] = useMemo(() => {
     const t: TabItem[] = [
       { key: 'posts', label: 'Posts' },
@@ -115,12 +130,15 @@ export default function ProfileScreen() {
     // on your own profile even without one, where they render the link-a-wallet
     // prompt instead of data.
     if (tezosAddr || isSelf) {
-      t.push({ key: 'wallet', label: 'Wallet' })
+      // The Wallet overview is gated by the owner's visibility record; if they've
+      // hidden every section it drops off for other viewers. Created/Owned (the
+      // showcase tabs that linking exists for) always stay.
+      if (isSelf || walletHasVisible) t.push({ key: 'wallet', label: 'Wallet' })
       t.push({ key: 'nfts-created', label: 'Created' })
       t.push({ key: 'nfts-owned', label: 'Owned' })
     }
     return t
-  }, [isSelf, hasFeeds, hasLists, tezosAddr])
+  }, [isSelf, hasFeeds, hasLists, tezosAddr, walletHasVisible])
 
   const requested = (params.get('tab') as TabKey) || 'posts'
   // Guard against a stale/invalid tab from the URL (e.g. ?tab=likes on someone else).
@@ -163,8 +181,11 @@ export default function ProfileScreen() {
         warmQuery(walletNftsOptions(tezosAddr))
         warmQuery(walletActivityOptions(tezosAddr))
       }
+      // Warm the owner's visibility record so the Wallet tab gates without a
+      // cold fetch on tab-switch (same authed/other-account condition as the read).
+      if (checkVisibility && profile?.did) warmQuery(walletVisibilityOptions(agent, profile.did))
     })
-  }, [actor, agent, did, isSelf, tezosAddr])
+  }, [actor, agent, did, isSelf, tezosAddr, checkVisibility, profile?.did])
 
   const setTab = (key: string) => {
     const next = new URLSearchParams(params)
@@ -291,6 +312,7 @@ export default function ProfileScreen() {
             likes={likes}
             tezosAddr={tezosAddr}
             tezosPending={tezosQ.isPending}
+            walletSections={walletSections}
           />
         )}
       </div>
@@ -307,6 +329,7 @@ function ProfileTabContent({
   likes,
   tezosAddr,
   tezosPending,
+  walletSections,
 }: {
   activeKey: TabKey
   actor: string
@@ -316,6 +339,7 @@ function ProfileTabContent({
   likes: ReturnType<typeof useActorLikes>
   tezosAddr: string | undefined
   tezosPending: boolean
+  walletSections: WalletVisibility
 }) {
   const isMobile = useIsMobile()
   // Per profile + tab, so each tab restores its own scroll on back-navigation.
@@ -348,7 +372,12 @@ function ProfileTabContent({
       // With a linked address show the overview; on your own wallet-less profile
       // show the link prompt (skeleton covers the address lookup so it doesn't
       // flash) — same contract as the Created/Owned tabs.
-      if (tezosAddr) return isMobile ? <WalletViewMobile address={tezosAddr} /> : <WalletView address={tezosAddr} />
+      if (tezosAddr)
+        return isMobile ? (
+          <WalletViewMobile address={tezosAddr} sections={walletSections} />
+        ) : (
+          <WalletView address={tezosAddr} sections={walletSections} />
+        )
       if (tezosPending) return <NftGridSkeleton />
       return <LinkTezosSection />
     case 'nfts-created':

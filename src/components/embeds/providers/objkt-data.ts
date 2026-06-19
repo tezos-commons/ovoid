@@ -29,6 +29,15 @@ function ipfsToHttp(uri?: string | null): string | undefined {
   return uri.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${uri.slice('ipfs://'.length)}` : uri
 }
 
+/** Raw IPFS-gateway URL via tcinfra's gateway — a fallback for images the
+ *  transcoding proxy (img.tcinfra.net) 404s on but the gateway serves fine. */
+export function ipfsGatewayUrl(uri?: string | null): string | undefined {
+  if (!uri) return undefined
+  return uri.startsWith('ipfs://')
+    ? `https://rainbow.tcinfra.net/ipfs/${uri.slice('ipfs://'.length)}`
+    : uri
+}
+
 /**
  * Gateway URL for an interactive artifact loaded in an iframe. Uses dweb.link,
  * which redirects path requests to a per-CID *subdomain* origin — so each piece

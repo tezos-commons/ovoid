@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
+import type { InfiniteData, UseInfiniteQueryResult } from '@tanstack/react-query'
 import { Spinner, NftGridSkeleton, ErrorState, EmptyState } from '@/components'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
-import type { useObjktTokens } from './use-nfts'
 import type { NftToken } from './objkt'
+import './nft-grid.css'
 
 export interface NftGridProps {
-  query: ReturnType<typeof useObjktTokens>
+  /** Any infinite query of token pages — the profile tabs or the /contract view. */
+  query: UseInfiniteQueryResult<InfiniteData<NftToken[]>, Error>
   emptyTitle: string
   emptyMessage?: string
 }
@@ -65,7 +67,7 @@ export function NftGrid({ query, emptyTitle, emptyMessage }: NftGridProps) {
           </button>
         ))}
       </div>
-      <div ref={sentinel} className="proffeed__sentinel">
+      <div ref={sentinel} className="nftgrid__sentinel">
         {query.isFetchingNextPage && <Spinner size="sm" />}
       </div>
     </div>

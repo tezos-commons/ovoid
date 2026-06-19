@@ -130,7 +130,7 @@ function CollectionGrid({ query, onOpen, emptyTitle, emptyMessage }: CollectionG
           </button>
         ))}
       </div>
-      <div ref={sentinel} className="proffeed__sentinel">
+      <div ref={sentinel} className="nftgrid__sentinel">
         {query.isFetchingNextPage && <Spinner size="sm" />}
       </div>
     </div>

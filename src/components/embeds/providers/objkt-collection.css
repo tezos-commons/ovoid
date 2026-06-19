@@ -1,0 +1,76 @@
+/* objkt collection embed: title row + a 3×2 grid of token thumbnails. */
+
+.embed--collection {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-embed);
+  overflow: hidden;
+  background: var(--bg-contrast-25);
+  text-decoration: none;
+  color: inherit;
+}
+.embed--collection:hover {
+  border-color: var(--border-strong, var(--border));
+}
+
+.coll-embed__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+.coll-embed__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-2);
+}
+.coll-embed__title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: var(--fs-md);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.coll-embed__src {
+  flex-shrink: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+.coll-embed__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+.coll-embed__cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--bg-contrast-25);
+}
+.coll-embed__cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.coll-embed__cell--ph {
+  background: var(--surface-2);
+}
+.coll-embed__noimg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  text-align: center;
+  overflow: hidden;
+}

@@ -32,7 +32,11 @@ export const MAX_FEED_PAGES = 20
  */
 function shouldPersist(queryKey: QueryKey): boolean {
   return !queryKey.some(
-    (part) => part === 'chat' || part === 'unread' || part === 'search' || part === 'poll',
+    (part) =>
+      part === 'chat' ||
+      part === 'unread' ||
+      part === 'search' ||
+      part === 'poll',
   )
 }
 
@@ -55,7 +59,9 @@ const persister = experimental_createQueryPersister<PersistedQuery>({
   }),
   deserialize: (pq) => pq,
   maxAge: 24 * 60 * 60 * 1000,
-  buster: 'v1',
+  // v3: collection metadata gained a `creator` field (and v2 proxied the
+  // ipfs:// logo); drop older entries so both populate on next load.
+  buster: 'v3',
   prefix: 'ovoid',
   filters: { predicate: (query) => shouldPersist(query.queryKey) },
 })

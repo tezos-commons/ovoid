@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { ErrorState, Spinner, IconButton } from '@/components'
 import { PageAside, MobileTopLeft, MobileTopRight, MobileSelect } from '@/components/layout'
-import { GearIcon } from '@/components/Icon'
+import { GearIcon, BskyIcon } from '@/components/Icon'
 import { useAuth, useAgent } from '@/lib/api/agent'
 import { useDragScroll } from '@/lib/use-drag-scroll'
 import { useIsMobile } from '@/lib/use-is-mobile'
@@ -137,11 +137,14 @@ export function HomeScreen() {
         <MobileSelect
           ariaLabel="Select feed"
           label={activeTab?.label ?? 'Following'}
-          items={tabs.map((t) => ({
-            key: t.key,
-            label: t.label,
-            onSelect: () => setActiveKey(t.key),
-          }))}
+          items={[
+            ...tabs.map((t) => ({
+              key: t.key,
+              label: t.label,
+              icon: <BskyIcon size={16} />,
+              onSelect: () => setActiveKey(t.key),
+            })),
+          ]}
         />
       </MobileTopRight>
     </>

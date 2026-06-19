@@ -454,85 +454,9 @@
   }
 }
 
-.nftgrid {
-  display: flex;
-  flex-direction: column;
-}
-.nftgrid__cells {
-  display: grid;
-  /* Fixed 6 across; minmax(0,1fr) keeps wide artwork from stretching a track. */
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--space-3);
-  padding: var(--space-4);
-}
-@media (max-width: 640px) {
-  .nftgrid__cells {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-.nftcard {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  /* Reset the UA button so it lays out like the surrounding cards. */
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  color: var(--text);
-}
-.nftcard__thumb {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-embed);
-  background: var(--bg-contrast-25);
-  overflow: hidden;
-}
-.nftcard__thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.nftcard:hover .nftcard__thumb {
-  opacity: 0.92;
-}
-.nftcard__noimg {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-3);
-  text-align: center;
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-  overflow: hidden;
-}
-.nftcard__name {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold, 600);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* Token-count badge: nested in the bottom-right of the preview. */
-.nftcard__count {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  background: #000;
-  color: #fff;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold, 600);
-  line-height: 1;
-  padding: 3px 6px;
-  border-top-left-radius: var(--radius-embed);
-}
+/* The NFT/token grid + card styles moved to ./nft-grid.css (imported by
+   NftGrid) so they load on every route that renders the grid, not just the
+   profile chunk. */
 
 /* ---- Follower / following modal ---- */
 .followlist {

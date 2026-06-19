@@ -44,6 +44,8 @@ export interface LanguageState {
   content: string[]
   setPrimary: (code: string) => void
   toggleContent: (code: string) => void
+  /** Replace the whole content-language set (used when hydrating from sync). */
+  setContent: (codes: string[]) => void
 }
 
 export const useLanguageStore = create<LanguageState>((set, get) => ({
@@ -67,5 +69,13 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
       /* storage unavailable */
     }
     set({ content: next })
+  },
+  setContent: (content) => {
+    try {
+      localStorage.setItem(CONTENT_KEY, JSON.stringify(content))
+    } catch {
+      /* storage unavailable */
+    }
+    set({ content })
   },
 }))

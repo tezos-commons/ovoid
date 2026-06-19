@@ -1,0 +1,56 @@
+/* Standalone address profile (/address/:address). Reuses the profile layout
+   (.profaside / .proftab / .profnav from profile.css); only the objkt identity
+   card is bespoke. */
+
+.addrcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--bg-contrast-25);
+  text-align: center;
+}
+
+.addrcard__avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+.addrcard__avatar--empty {
+  display: block;
+}
+
+.addrcard__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+.addrcard__name {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.addrcard__addr {
+  font-size: var(--fs-sm);
+  color: var(--text-faint);
+}
+
+@media (max-width: 1000px) {
+  /* Inset the card from the screen edges, aligned to the floating bars, like the
+     profile's mobile header. (Sections are a top-bar dropdown on mobile, as on
+     the regular profile, so there's no inline nav here.) */
+  .addr-mobile-head {
+    margin: 0 var(--mbar-edge) var(--space-3);
+  }
+}

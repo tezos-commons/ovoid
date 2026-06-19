@@ -107,7 +107,7 @@ export default function GroupSettingsScreen() {
       <div className="group-settings__scroll">
         {/* Header card */}
         <div className="group-settings__header">
-          <AvatarGroup members={convo.members} size="lg" max={4} />
+          <AvatarGroup members={convo.members} size="lg" max={4} total={group.memberCount} />
           <GroupName convoId={convoId!} name={group.name} canEdit={owner} />
           <div className="group-settings__meta">
             {group.memberCount} members · created {absoluteTime(group.createdAt)}

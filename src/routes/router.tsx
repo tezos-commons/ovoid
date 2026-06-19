@@ -95,6 +95,18 @@ const shellRoutes: RouteObject[] = [
     element: lazyEl(() => import('@/features/search/SearchScreen')),
   },
   {
+    // Standalone Tezos contract view (token collections today). Public — the
+    // tzkt/objkt reads need no session, like the profile NFT tabs.
+    path: 'contract/:contract',
+    element: lazyEl(() => import('@/features/contract/ContractScreen')),
+  },
+  {
+    // Standalone Tezos account view: redirects to the linked Bluesky profile if
+    // there is one (tzbsky), else an objkt-identity mini profile. Also public.
+    path: 'address/:address',
+    element: lazyEl(() => import('@/features/address/AddressScreen')),
+  },
+  {
     path: 'feeds',
     element: protectedEl(() => import('@/features/feeds/FeedsScreen')),
   },

@@ -40,6 +40,19 @@ export const HomeIcon: IconFC = ({ size, filled, ...rest }) => (
   </svg>
 )
 
+export const StarIcon: IconFC = ({ size, filled, ...rest }) => (
+  <svg {...svg(size, rest)} fill={filled ? 'currentColor' : 'none'}>
+    <path d="M12 3.5l2.6 5.27 5.82.85-4.21 4.1.99 5.78L12 16.77l-5.2 2.73.99-5.78-4.21-4.1 5.82-.85z" />
+  </svg>
+)
+
+/** Bluesky butterfly logo (filled, single colour). */
+export const BskyIcon: IconFC = ({ size, ...rest }) => (
+  <svg {...svg(size, rest)} fill="currentColor" stroke="none">
+    <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364C23.622 9.418 24 4.458 24 3.768c0-.688-.139-1.86-.902-2.203-.659-.299-1.664-.621-4.3 1.24C16.046 4.747 13.087 8.686 12 10.8z" />
+  </svg>
+)
+
 export const SearchIcon: IconFC = ({ size, ...rest }) => (
   <svg {...svg(size, rest)}>
     <circle cx="11" cy="11" r="7" />

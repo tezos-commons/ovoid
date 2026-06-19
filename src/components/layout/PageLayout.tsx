@@ -127,14 +127,20 @@ export function useHidePageRail(active = true): void {
 }
 
 /**
- * While mounted, the page area drops its reserved aside and spans full width.
- * Applied in a layout effect (pre-paint) so a full-width screen never flashes at
- * the narrower two-column width on mount.
+ * While mounted (and `active`), the page area drops its reserved aside and spans
+ * full width. Applied in a layout effect (pre-paint) so a full-width screen never
+ * flashes at the narrower two-column width on mount.
+ *
+ * `active` lets a screen scope full-width to desktop: on mobile the page is
+ * already full-bleed, and `.page--full` opts out of the floating-bar padding
+ * (meant for self-managed full-height layouts like Chat), so a normal scrolling
+ * screen must NOT be full-width on mobile or its content slides under the bars.
  */
-export function usePageFullWidth(): void {
+export function usePageFullWidth(active = true): void {
   const { setFullWidth } = useShellSlots()
   useLayoutEffect(() => {
+    if (!active) return
     setFullWidth(true)
     return () => setFullWidth(false)
-  }, [setFullWidth])
+  }, [active, setFullWidth])
 }

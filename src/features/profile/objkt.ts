@@ -80,6 +80,49 @@ export async function lookupTezosAddress(did: string): Promise<string | null> {
   return rows.find((r) => r.chain === 'tezos')?.address ?? null
 }
 
+const TZBSKY_REVERSE = 'https://tzbsky.com/api/lookup/address/tezos/'
+
+/**
+ * Reverse of lookupTezosAddress: a verified Tezos address → the Bluesky DID that
+ * linked it, or null when none has. tzbsky 404s with {error:"address not linked"}
+ * for an unlinked address, which is a normal "no match", not an error.
+ */
+export async function lookupDidByAddress(address: string): Promise<string | null> {
+  const res = await fetch(TZBSKY_REVERSE + address)
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`tzbsky reverse lookup failed: ${res.status}`)
+  const data = (await res.json()) as { did?: string }
+  return data.did ?? null
+}
+
+/* --------------------------------------------------------------- account identity */
+
+/** objkt-side identity for a Tezos account, for the standalone /address profile. */
+export interface TezosAccount {
+  address: string
+  /** objkt alias, then tezos domain, then the shortened address. */
+  name: string
+  avatar: string | undefined
+}
+
+const ACCOUNT_QUERY = `query($a: String!) {
+  holder(where: { address: { _eq: $a } }, limit: 1) {
+    address alias logo tzdomain
+  }
+}`
+
+export async function fetchTezosAccount(address: string): Promise<TezosAccount> {
+  const data = await objktGql<{
+    holder?: Array<{ alias: string | null; logo: string | null; tzdomain: string | null }>
+  }>(ACCOUNT_QUERY, { a: address })
+  const h = data.holder?.[0]
+  return {
+    address,
+    name: h?.alias?.trim() || h?.tzdomain?.trim() || shortAddr(address),
+    avatar: proxyImage(h?.logo, 'thumb'),
+  }
+}
+
 /* --------------------------------------------------------------- collections */
 
 interface RawFa {
@@ -222,4 +265,91 @@ export async function fetchObjktTokens(
   const raw =
     kind === 'created' ? (data.token ?? []) : (data.token_holder ?? []).map((h) => h.token)
   return raw.map(normalize)
+}
+
+/* -------------------------------------------------- whole-collection (by contract) */
+
+/**
+ * Collection-level metadata for the /contract view — the whole `fa`, not scoped
+ * to any holder. `logo` is a ready-to-use URL (same as the collection cards),
+ * not an ipfs uri.
+ */
+export interface CollectionCreator {
+  address: string
+  /** objkt alias (display name), falling back to the shortened address. */
+  name: string
+  avatar: string | undefined
+}
+
+export interface CollectionMeta {
+  contract: string
+  name: string
+  description: string | null
+  logo: string | undefined
+  creator: CollectionCreator | null
+}
+
+const COLLECTION_META_QUERY = `query($c: String!) {
+  fa(where: { contract: { _eq: $c } }, limit: 1) {
+    contract name description logo
+    creator { address alias logo }
+  }
+}`
+
+interface RawCreator {
+  address: string
+  alias: string | null
+  logo: string | null
+}
+
+export async function fetchCollectionMeta(contract: string): Promise<CollectionMeta> {
+  const data = await objktGql<{
+    fa?: Array<{
+      name: string | null
+      description: string | null
+      logo: string | null
+      creator: RawCreator | null
+    }>
+  }>(COLLECTION_META_QUERY, { c: contract })
+  const fa = data.fa?.[0]
+  const cr = fa?.creator
+  return {
+    contract,
+    name: fa?.name?.trim() || shortAddr(contract),
+    description: fa?.description?.trim() || null,
+    // objkt logos are ipfs:// URIs — run them through the image proxy like every
+    // other token image, so they load (and are transcoded) rather than 404.
+    logo: proxyImage(fa?.logo, 'thumb'),
+    creator: cr?.address
+      ? {
+          address: cr.address,
+          name: cr.alias?.trim() || shortAddr(cr.address),
+          // Creator avatars are objkt-CDN https URLs; proxyImage passes those
+          // through unchanged but normalizes any ipfs:// ones.
+          avatar: proxyImage(cr.logo, 'thumb'),
+        }
+      : null,
+  }
+}
+
+const COLLECTION_TOKENS_QUERY = `query($c: String!, $limit: Int!, $offset: Int!) {
+  token(
+    where: { fa_contract: { _eq: $c } }
+    order_by: { timestamp: desc }
+    limit: $limit
+    offset: $offset
+  ) { token_id name thumbnail_uri display_uri fa_contract }
+}`
+
+/**
+ * One page of every token in a collection (newest minted first), regardless of
+ * holder. An empty array means no more pages.
+ */
+export async function fetchCollectionTokens(contract: string, offset: number): Promise<NftToken[]> {
+  const data = await objktGql<{ token?: RawToken[] }>(COLLECTION_TOKENS_QUERY, {
+    c: contract,
+    limit: NFT_PAGE_SIZE,
+    offset,
+  })
+  return (data.token ?? []).map(normalize)
 }

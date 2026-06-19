@@ -1,0 +1,84 @@
+/* Standalone contract / collection view (/contract/:address). The route runs
+   full-width (usePageFullWidth), so the shared .nftgrid fills the whole page
+   area — a 6-across gallery on desktop, 3 on mobile. Only the hero needs styling. */
+
+.collection-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.collection-head__logo {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-2);
+}
+
+.collection-head__text {
+  min-width: 0;
+}
+
+.collection-head__name {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.collection-head__creator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  min-width: 0;
+}
+.collection-head__creator-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.collection-head__creator-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.collection-head__creator-addr {
+  font-size: var(--fs-sm);
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+.collection--mobile .collection-head__creator {
+  justify-content: center;
+}
+
+.collection-head__desc {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  margin: var(--space-1) 0 0;
+  /* Keep the hero compact; the collection page is the grid, not the blurb. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 70ch;
+}
+
+/* Mobile: stack the hero and center it above the grid. */
+.collection--mobile .collection-head {
+  flex-direction: column;
+  text-align: center;
+  gap: var(--space-3);
+}
+.collection--mobile .collection-head__desc {
+  -webkit-line-clamp: 4;
+}

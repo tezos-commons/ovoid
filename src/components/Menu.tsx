@@ -69,6 +69,7 @@ export function Menu({ trigger, items, variant = 'list' }: MenuProps) {
                   item.onSelect()
                 }}
               >
+                {item.icon != null && <span className="menu__itemicon">{item.icon}</span>}
                 {item.label}
               </button>
             ),

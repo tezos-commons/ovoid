@@ -213,3 +213,43 @@ export async function fetchActivity(addr: string, limit = 25): Promise<WalletTx[
   }
   return txs
 }
+
+/* ---------------------------------------------------------------- contract kind */
+
+/** What kind of contract an address is, for the /contract dispatcher. */
+export type ContractKind = 'nft-collection' | 'fungible' | 'other'
+
+export interface ContractInfo {
+  address: string
+  kind: ContractKind
+  /** TzKT alias / on-chain name when one is known. */
+  alias?: string
+}
+
+interface TzContract {
+  /** 'asset' for token contracts; other values for plain smart contracts. */
+  kind?: string
+  /** Implemented standards, e.g. ['fa2'] or ['fa1.2']. */
+  tzips?: string[]
+  alias?: string
+}
+
+/**
+ * Classify a KT1 contract via TzKT. Returns null when the address isn't a
+ * contract (404 — e.g. a typo or a tz1 account), so the caller can show a
+ * not-found state rather than a hard error. FA2 contracts are treated as token
+ * collections (the grid view); FA1.2 as fungible; everything else as 'other'.
+ */
+export async function fetchContractInfo(addr: string): Promise<ContractInfo | null> {
+  const res = await fetch(`${TZKT}/contracts/${addr}`)
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`tzkt ${res.status}`)
+  const c = (await res.json()) as TzContract
+  const tzips = c.tzips ?? []
+  const kind: ContractKind = tzips.includes('fa2')
+    ? 'nft-collection'
+    : tzips.includes('fa1.2')
+      ? 'fungible'
+      : 'other'
+  return { address: addr, kind, alias: c.alias }
+}

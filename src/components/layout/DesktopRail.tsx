@@ -6,6 +6,7 @@ import { PersonCard } from '@/features/search/PersonCard'
 import { useTrending, useSuggestedActors } from '@/features/search/use-discover'
 import { useAuth } from '@/lib/api/agent'
 import { useTezosAddress } from '@/features/profile/use-nfts'
+import { tezosEntityPath } from '@/features/contract/contract-route'
 import { useWalletBalance, useWalletActivity } from '@/features/profile/use-wallet'
 import { BalanceCard, ActivitySection } from '@/features/profile/WalletParts'
 import './rail.css'
@@ -42,7 +43,10 @@ function RailSearch() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
     const term = q.trim()
-    navigate(term ? `/search?q=${encodeURIComponent(term)}` : '/search')
+    const dest = term ? tezosEntityPath(term) : null
+    navigate(
+      dest ? dest : term ? `/search?q=${encodeURIComponent(term)}` : '/search',
+    )
   }
 
   return (

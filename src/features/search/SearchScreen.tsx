@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { tezosEntityPath } from '@/features/contract/contract-route'
 import { Tabs, Icons, type TabItem } from '@/components'
 import { MobileTopBarFill } from '@/components/layout'
 import { useIsMobile } from '@/lib/use-is-mobile'
@@ -32,6 +33,7 @@ function parseTab(raw: string | null): TabKey {
  * serve unauthenticated (viewer state is simply absent).
  */
 export default function SearchScreen() {
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const committed = params.get('q')?.trim() ?? ''
   const tab = parseTab(params.get('tab'))
@@ -65,6 +67,12 @@ export default function SearchScreen() {
     inputRef.current?.blur()
     if (!trimmed) {
       setParams({}, { replace: false })
+      return
+    }
+    // A Tezos contract/account address isn't a text search — route to its view.
+    const dest = tezosEntityPath(trimmed)
+    if (dest) {
+      navigate(dest)
       return
     }
     setParams({ q: trimmed, tab: nextTab })

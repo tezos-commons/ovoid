@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Spinner } from '../Spinner'
+import { Avatar } from '../Avatar'
 import { CloseIcon, ChevronLeftIcon, ChevronRightIcon } from '../Icon'
 import { relativeTime } from '@/lib/time'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
+import { useEntityProfile } from '@/features/address/use-address'
 import { useCloseOnBack } from '@/lib/use-close-on-back'
 import { ModelViewer } from './ModelViewer'
 import { useArtifactStore } from '@/store/artifact-store'
@@ -53,6 +56,15 @@ export function NftBrowser() {
   const base = useTezosToken(fa, tokenId)
   const details = useTezosTokenDetails(fa, tokenId, open)
   const artist = useArtistTokens(base.data?.creatorAddress, open && pane === 'artist')
+  const navigate = useNavigate()
+  // Resolve the creator to a Bluesky account (if their wallet is linked) or the
+  // standalone tz profile; clicking opens it directly (closing the viewer).
+  const creator = useEntityProfile(base.data?.creatorAddress)
+  const openCreator = () => {
+    if (!creator.path) return
+    close()
+    navigate(creator.path)
+  }
 
   // Arrow keys step through the collection while open. ESC is handled globally
   // (useEscapeBack) as a back-step. Skip paging while a fullscreen artifact is
@@ -225,7 +237,15 @@ export function NftBrowser() {
       <aside className="nftb__panel" onClick={(e) => e.stopPropagation()}>
         <div className="nftb__head">
           <div className="nftb__title">{t?.name || 'Untitled'}</div>
-          {t?.creator && <div className="nftb__creator">by {t.creator}</div>}
+          {(creator.name || t?.creator) &&
+            (creator.path ? (
+              <button type="button" className="nftb__creator nftb__creator--link" onClick={openCreator}>
+                {creator.avatar && <Avatar src={creator.avatar} alt="" size="xs" />}
+                <span>by {creator.name || t?.creator}</span>
+              </button>
+            ) : (
+              <div className="nftb__creator">by {t?.creator}</div>
+            ))}
         </div>
 
         <div className="nftb__tabs" role="tablist">
