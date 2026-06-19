@@ -9,7 +9,6 @@ import { Img } from '@/components'
 import { useUiStore } from '@/store/ui-store'
 import { bskyUrlToInternalPath } from '@/lib/bsky-links'
 import { CodeBlock } from './CodeBlock'
-import { ContentEmbeds } from './ContentEmbeds'
 import { BskyPostEmbed } from './BskyPostEmbed'
 
 /** Minimal hast shape for walking nodes for links / embed attributes. */
@@ -58,18 +57,6 @@ function mdHeading(level: number) {
       </Tag>
     )
   }
-}
-
-/** Collect every <a href> within a paragraph node (depth-first, in order). */
-function collectHrefs(node: HastNode | undefined): string[] {
-  if (!node) return []
-  const out: string[] = []
-  const walk = (n: HastNode) => {
-    if (n.tagName === 'a' && typeof n.properties?.href === 'string') out.push(n.properties.href)
-    for (const c of n.children ?? []) walk(c)
-  }
-  walk(node)
-  return out
 }
 
 /** Pull the fenced-code text + language out of the <code> child react-markdown
@@ -134,15 +121,6 @@ export function MarkdownContent({ markdown }: { markdown: string }) {
               return <BskyPostEmbed uri={uri} />
             }
             return <blockquote>{children}</blockquote>
-          },
-          p({ node, children }) {
-            const urls = collectHrefs(node as HastNode | undefined)
-            return (
-              <>
-                <p>{children}</p>
-                <ContentEmbeds urls={urls} />
-              </>
-            )
           },
         }}
       >

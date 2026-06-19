@@ -28,6 +28,17 @@ function host(url: string): string {
   }
 }
 
+/** True for Ovoid-hosted publications — their `url` is our own canonical, not an
+ *  external source, so the "Source" badge is pointless. */
+function isOvoidHosted(url: string): boolean {
+  try {
+    const h = new URL(url).hostname
+    return h === 'ovoid.at' || h.endsWith('.ovoid.at')
+  } catch {
+    return false
+  }
+}
+
 /**
  * Public publication index — /pub/<did>/<collection>/<rkey>. Lists every article
  * in the publication (newest first, grouped by year) and surfaces the
@@ -86,7 +97,7 @@ function PublicationHeader({
   const { record, did } = view
   return (
     <header className="rdr-pubhead">
-      {record.url && (
+      {record.url && !isOvoidHosted(record.url) && (
         <a className="rdr-pubhead__source" href={record.url} target="_blank" rel="noopener noreferrer">
           <span className="rdr-pubhead__source-label">Source</span>
           <span className="rdr-pubhead__source-host">{host(record.url)} ↗</span>

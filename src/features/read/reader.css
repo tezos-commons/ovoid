@@ -636,13 +636,6 @@
   text-align: center;
 }
 
-/* Rich embeds rendered under a paragraph that links to objkt/teia/poll/etc. */
-.rdr-embeds {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 /* Embedded Bluesky post (bsky-embed blockquote → native quote card). */
 .rdr-bsky-embed {
   font-size: var(--fs-md);

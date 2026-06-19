@@ -6,7 +6,6 @@ import { useUiStore } from '@/store/ui-store'
 import { blobUrl } from '@/lib/api/repo-read'
 import { bskyUrlToInternalPath } from '@/lib/bsky-links'
 import { CodeBlock } from './CodeBlock'
-import { ContentEmbeds } from './ContentEmbeds'
 import {
   type Block,
   type FacetFeature,
@@ -43,17 +42,6 @@ function renderRichText(rt: RichText, keyBase: string): ReactNode {
     cursor = byteEnd
   })
   if (cursor < bytes.length) out.push(<Fragment key="tail">{slice(cursor, bytes.length)}</Fragment>)
-  return out
-}
-
-/** Every link target carried by a rich-text block's facets, in order. */
-function linkUris(rt: RichText): string[] {
-  const out: string[] = []
-  for (const f of rt.facets ?? []) {
-    for (const feat of f.features) {
-      if (feat.$type.endsWith('#link') && feat.uri) out.push(feat.uri)
-    }
-  }
   return out
 }
 
@@ -179,12 +167,7 @@ function BlockView({
     case 'pub.leaflet.blocks.text': {
       const rt = block as RichText
       if (!rt.plaintext) return <p className="rdr-spacer" aria-hidden="true" />
-      return (
-        <>
-          <p>{renderRichText(rt, k)}</p>
-          <ContentEmbeds urls={linkUris(rt)} />
-        </>
-      )
+      return <p>{renderRichText(rt, k)}</p>
     }
     case 'pub.leaflet.blocks.header': {
       const h = block as RichText & { level: number }

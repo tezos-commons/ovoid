@@ -72,8 +72,9 @@ function Article({ view }: { view: DocumentView }) {
   const { doc, author, did, pds } = view
   const cover = doc.coverImage ? blobUrl(pds, did, doc.coverImage.ref.$link) : null
   const authorName = author?.displayName || author?.handle
-  // Internal Ovoid profile (handle preferred, DID as fallback).
-  const profilePath = `/profile/${author?.handle || did}`
+  // The author's own profile (handle preferred), which for an org publication is
+  // the credited contributor, not the repo owner — only fall back to the repo did.
+  const profilePath = `/profile/${author?.handle || author?.did || did}`
   const minutes = readingMinutes(view)
 
   const bodyRef = useRef<HTMLDivElement>(null)

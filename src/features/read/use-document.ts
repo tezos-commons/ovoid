@@ -66,6 +66,21 @@ async function resolveDid(authority: string): Promise<string> {
 }
 
 /**
+ * The byline author DID. For an org/publication-account doc (the record lives in
+ * the publication's repo, not the writer's), the actual author is credited in
+ * `contributors` — prefer the one with role "author", else the first contributor.
+ * Falls back to the repo owner (a personal blog where author == repo).
+ */
+function authorDid(doc: StandardDocument, repoDid: string): string {
+  const cs = doc.contributors
+  if (cs?.length) {
+    const writer = cs.find((c) => c.role?.toLowerCase() === 'author' && c.did) ?? cs.find((c) => c.did)
+    if (writer?.did) return writer.did
+  }
+  return repoDid
+}
+
+/**
  * Shared config for the public reader. `authority` is a handle or DID, `rkey`
  * the document TID. Pure public reads (no viewer), so the key carries no DID;
  * the same article resolves identically for everyone, signed in or out.
@@ -84,7 +99,7 @@ export function documentOptions(authority: string, rkey: string) {
       const pub = parseAtUri(doc.site)
       const [author, publication] = await Promise.all([
         makePublicAgent()
-          .app.bsky.actor.getProfile({ actor: did })
+          .app.bsky.actor.getProfile({ actor: authorDid(doc, did) })
           .then((r) => r.data as AppBskyActorDefs.ProfileViewBasic)
           .catch(() => null),
         pub && pub.collection === PUB
