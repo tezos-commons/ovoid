@@ -33,6 +33,17 @@ interface ApiError {
   message?: string
 }
 
+/**
+ * Mint a single-purpose service-auth token for one data-service operation
+ * (aud = the service DID, lxm = the operation NSID, ~60s expiry). Exposed so the
+ * publications client — whose POST body is a raw string, not JSON — can reuse
+ * the same auth without going through `req`.
+ */
+export async function dataServiceToken(agent: Agent, lxm: string): Promise<string> {
+  const { data } = await agent.com.atproto.server.getServiceAuth({ aud: DATA_DID, lxm })
+  return data.token
+}
+
 // A 404 is a normal "no such key" answer for reads, not an error — callers map
 // it to null, so req lets it through; every other non-2xx throws.
 async function req(
@@ -42,9 +53,7 @@ async function req(
   lxm: string,
   body?: unknown,
 ): Promise<Response> {
-  const {
-    data: { token },
-  } = await agent.com.atproto.server.getServiceAuth({ aud: DATA_DID, lxm })
+  const token = await dataServiceToken(agent, lxm)
   const res = await fetch(`${DATA_URL}${path}`, {
     method,
     headers: {

@@ -16,6 +16,7 @@ import ModerationListScreen from './ModerationListScreen'
 import AppPasswordsSettings from './AppPasswordsSettings'
 import NotificationSettings from './NotificationSettings'
 import WalletSettings from './WalletSettings'
+import PublicationsSettings from './PublicationsSettings'
 import {
   PrivacySettings,
   AccessibilitySettings,
@@ -48,6 +49,7 @@ const DETAIL_ROUTES: Array<{ path: string; title: string; element: ReactNode }> 
   { path: 'languages', title: 'Languages', element: <LanguageSettings /> },
   { path: 'app-passwords', title: 'App Passwords', element: <AppPasswordsSettings /> },
   { path: 'wallet', title: 'Linked Wallet', element: <WalletSettings /> },
+  { path: 'publications', title: 'Publications', element: <PublicationsSettings /> },
   { path: 'about', title: 'About', element: <AboutSettings /> },
 ]
 

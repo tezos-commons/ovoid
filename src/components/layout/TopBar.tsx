@@ -6,6 +6,7 @@ import { Tooltip } from '../Tooltip'
 import { PencilIcon } from '../Icon'
 import { useAuth } from '@/lib/api/agent'
 import { useNavBadges } from '@/features/notifications/use-nav-badges'
+import { PublishButton } from '@/features/publish/PublishButton'
 import { NavBadge } from './NavBadge'
 
 export interface TopBarProps {
@@ -59,6 +60,7 @@ export function TopBar({ onNewPost }: TopBarProps) {
       </nav>
 
       <div className="topbar__actions">
+        <PublishButton />
         <Button variant="primary" icon={<PencilIcon size={18} />} onClick={onNewPost}>
           New Post
         </Button>

@@ -188,10 +188,41 @@ export const qk = {
   walletVisibility: (creatorDid: string) =>
     ['data', 'public', creatorDid, 'wallet-visibility'] as const,
 
+  // The caller's own subdomain→publication registrations (data.ovoid.at).
+  publications: (viewerDid: string | undefined) => ['data', 'publications', viewerDid] as const,
+  publicationSubdomain: (sub: string) => ['data', 'publications', 'check', { sub }] as const,
+
   // Ovoid Graph service (graph.ovoid.at). Separate `graph` root. Follow state is
   // per-caller, so the key carries the viewer DID (account switch must not bleed).
   graphFollowingTezos: (viewerDid: string | undefined, address: string) =>
     ['graph', viewerDid, 'following', 'tezos', { address }] as const,
+
+  // standard.site long-form document (public reader). Pure public read — same
+  // for every viewer, so no DID in the key. `authority` is whatever the URL
+  // carried (handle or DID); the resolver normalizes it to a repo.
+  standardDoc: (authority: string, rkey: string) =>
+    ['standard', 'document', { authority, rkey }] as const,
+
+  // Every document in a publication. Public read (no viewer). Covers single-repo
+  // publications by listing the owner repo; cross-repo authorship needs an index.
+  publicationDocs: (pubUri: string) => ['standard', 'publication-docs', { pubUri }] as const,
+  publicationRecord: (pubUri: string) => ['standard', 'publication', { pubUri }] as const,
+
+  // Resolve an arbitrary web URL to its site.standard.document at-uri, if it is
+  // one (via the site's /.well-known + publication doc list). Used for chat
+  // links, which carry no AppView associatedRefs. Cached per URL.
+  standardSiteResolve: (url: string) => ['standard', 'resolve', { url }] as const,
+
+  // Hydrated PostViews for AT-URIs embedded in long-form content (bsky-embed
+  // blockquotes). Viewer-dependent (getPosts carries like/repost state).
+  embedPosts: (viewerDid: string | undefined, uris: string[]) =>
+    ['bsky', viewerDid, 'embed-posts', { uris }] as const,
+
+  // Whether the viewer has a site.standard.graph.subscription to `pubUri` (an
+  // at:// publication record). Viewer-dependent — carries the viewer DID so an
+  // account switch can't bleed one reader's subscriptions into another's.
+  standardSubscription: (viewerDid: string | undefined, pubUri: string) =>
+    ['standard', 'subscription', viewerDid, { pubUri }] as const,
 
   /**
    * True for any feed-family read (timeline / custom feed / author feed / likes).

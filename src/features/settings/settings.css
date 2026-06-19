@@ -407,3 +407,65 @@
 [data-reduce-motion] .settings-mobile__page--back {
   animation: none;
 }
+
+/* ---- publications ---- */
+.pub-row__icon {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-embed);
+  overflow: hidden;
+  background: var(--media-bg);
+}
+.pub-row__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pub-row__icon--empty {
+  background: var(--bg-contrast-50);
+}
+
+.pub-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.pub-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pub-field__label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-muted);
+}
+.pub-textarea {
+  resize: vertical;
+  min-height: 3em;
+  font: inherit;
+}
+.pub-subdomain {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pub-subdomain .settings-input {
+  flex: 1 1 auto;
+}
+.pub-subdomain__suffix {
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.pub-hint {
+  font-size: var(--fs-sm);
+  color: var(--text-faint);
+}
+.pub-hint--ok {
+  color: var(--color-repost);
+}
+.pub-hint--bad {
+  color: var(--color-danger);
+}

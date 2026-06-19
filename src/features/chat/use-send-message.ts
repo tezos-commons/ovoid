@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChatBskyConvoDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { buildPost } from '@/lib/rich-text'
+import { rewriteEmbeddableLinks } from '@/features/read/embeddable-url'
 import { qk } from '@/lib/query-keys'
 import { usePrependSentMessage } from './use-messages'
 
@@ -31,7 +32,9 @@ export function useSendMessage(convoId: string) {
       if (!chatAgent) throw new Error('Not signed in to chat')
       const trimmed = text.trim()
       if (!trimmed) throw new Error('Message is empty')
-      const { text: finalText, facets } = await buildPost(agent, trimmed)
+      // Reader links -> the article's canonical embeddable URL (rich card on bsky).
+      const embeddable = await rewriteEmbeddableLinks(trimmed)
+      const { text: finalText, facets } = await buildPost(agent, embeddable)
       const res = await chatAgent.chat.bsky.convo.sendMessage({
         convoId,
         message: { text: finalText, facets },

@@ -9,6 +9,7 @@ import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 import { bumpReplyCount, insertReplyInThreads, patchPostInAllFeeds } from '@/lib/optimistic'
 import { buildPost } from '@/lib/rich-text'
+import { rewriteEmbeddableLinks } from '@/features/read/embeddable-url'
 import { uploadImage } from '@/lib/blob'
 import type { ComposeTarget } from '@/store/compose-store'
 
@@ -84,9 +85,11 @@ export function useCreatePost() {
 
   return useMutation({
     mutationFn: async ({ text: rawText, images, target }: CreatePostArgs) => {
-      // Rewrite our-site links -> bsky.app and detect facets over the result;
+      // Reader links -> the article's canonical embeddable URL (so the standard.site
+      // card renders on Bluesky), then our-site links -> bsky.app + facet detection;
       // the stored record uses `text` (not rawText) so offsets stay aligned.
-      const { text, facets } = await buildPost(agent, rawText)
+      const embeddable = await rewriteEmbeddableLinks(rawText)
+      const { text, facets } = await buildPost(agent, embeddable)
 
       // Upload images (compressed <1MB by lib/blob) and build the images embed.
       let imagesEmbed:

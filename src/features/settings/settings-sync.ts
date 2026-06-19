@@ -9,6 +9,14 @@ import {
 } from './theme-store'
 import { useAccessibilityStore } from './accessibility-store'
 import { useLanguageStore } from './language-store'
+import {
+  useReaderPrefs,
+  READER_THEMES,
+  READER_SIZES,
+  type ReaderTheme,
+  type ReaderFontSize,
+  type ReaderFont,
+} from '@/features/read/reader-prefs'
 
 /**
  * Cross-device settings sync, backed by the data.ovoid.at private namespace.
@@ -61,6 +69,8 @@ interface SettingsBody {
     loggedOutVisibility: boolean
   }
   language: { primary: string; content: string[] }
+  /** Reader appearance — decoupled from the app theme (see reader-prefs). */
+  reader: { theme: ReaderTheme; fontSize: ReaderFontSize; fontFamily: ReaderFont }
 }
 
 interface SettingsSnapshot extends SettingsBody {
@@ -90,6 +100,7 @@ function gather(): SettingsBody {
   const ap = useAppearanceStore.getState()
   const a = useAccessibilityStore.getState()
   const l = useLanguageStore.getState()
+  const r = useReaderPrefs.getState()
   return {
     v: SCHEMA_VERSION,
     theme: ui.theme,
@@ -102,6 +113,7 @@ function gather(): SettingsBody {
       loggedOutVisibility: a.loggedOutVisibility,
     },
     language: { primary: l.primary, content: l.content },
+    reader: { theme: r.theme, fontSize: r.fontSize, fontFamily: r.fontFamily },
   }
 }
 
@@ -155,6 +167,15 @@ function apply(s: SettingsSnapshot) {
       if (lx.primary && lx.primary !== l.primary) l.setPrimary(lx.primary)
       if (Array.isArray(lx.content) && JSON.stringify(lx.content) !== JSON.stringify(l.content))
         l.setContent(lx.content.filter((c): c is string => typeof c === 'string'))
+    }
+
+    const r = useReaderPrefs.getState()
+    const rx = s.reader
+    if (rx) {
+      if (READER_THEMES.includes(rx.theme) && rx.theme !== r.theme) r.setTheme(rx.theme)
+      if (READER_SIZES.includes(rx.fontSize) && rx.fontSize !== r.fontSize) r.setFontSize(rx.fontSize)
+      if ((rx.fontFamily === 'sans' || rx.fontFamily === 'serif') && rx.fontFamily !== r.fontFamily)
+        r.setFontFamily(rx.fontFamily)
     }
   } finally {
     applying = false
@@ -224,6 +245,9 @@ export function startWriteThrough(agent: Agent, did: string): () => void {
     useAppearanceStore.subscribe(onChange),
     useAccessibilityStore.subscribe(onChange),
     useLanguageStore.subscribe(onChange),
+    // settingsOpen toggles also notify, but contentKey (which excludes it)
+    // discards those — only theme/size/font edits push.
+    useReaderPrefs.subscribe(onChange),
   ]
   return () => {
     clearTimeout(timer)

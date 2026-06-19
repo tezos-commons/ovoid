@@ -45,6 +45,17 @@ const publicRoutes: RouteObject[] = [
     path: '/group/join/:code',
     element: lazyEl(() => import('@/features/chat/GroupInviteLanding')),
   },
+  {
+    // Public standard.site reader. Outside the app shell + RequireAuth, so it
+    // renders signed out and bypasses the closed-beta (Tezos list) gate.
+    path: '/read/:authority/:rkey',
+    element: lazyEl(() => import('@/features/read/ReaderScreen')),
+  },
+  {
+    // Public publication index — lists every article in a publication.
+    path: '/pub/:did/:collection/:rkey',
+    element: lazyEl(() => import('@/features/read/PublicationScreen')),
+  },
 ]
 
 // ---- Shell routes (inside RootLayout / AppShell) ----
@@ -126,8 +137,27 @@ const shellRoutes: RouteObject[] = [
   { path: '*', element: lazyEl(() => import('./NotFound')) },
 ]
 
+// ---- Publishing studio (protected, but OUTSIDE the app shell) ----
+// Its own full-viewport chrome; the editor is a separate full-screen route. The
+// `new` / `edit` routes rank above the dashboard splat, so they win.
+const studioRoutes: RouteObject[] = [
+  {
+    path: '/studio/:subdomain/new',
+    element: protectedEl(() => import('@/features/publish/EditorScreen')),
+  },
+  {
+    path: '/studio/:subdomain/edit/:rkey',
+    element: protectedEl(() => import('@/features/publish/EditorScreen')),
+  },
+  {
+    path: '/studio/:subdomain/*',
+    element: protectedEl(() => import('@/features/publish/StudioDashboard')),
+  },
+]
+
 export const router = sentryCreateBrowserRouter([
   ...publicRoutes,
+  ...studioRoutes,
   {
     path: '/',
     element: <RootLayout />,

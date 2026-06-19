@@ -10,6 +10,7 @@ import { PostEmbed } from '@/components'
 import { GenericExternalCard } from '@/components/embeds/GenericExternalCard'
 import { matchExternal, type ExternalEmbedMatcher } from '@/components/embeds/external-registry'
 import { useLinkMeta } from '@/components/embeds/use-link-meta'
+import { useResolveStandardSite } from '@/features/read/use-resolve-standard-site'
 import { extractTextUrls, postLinkParams, isAppLink } from '@/lib/bsky-links'
 import { useAgent } from '@/lib/api/agent'
 import {
@@ -113,8 +114,12 @@ export function MessageEmbeds({ message }: { message: ChatBskyConvoDefs.MessageV
   // Single hook for the one generic candidate keeps hook order stable across
   // renders regardless of how many links the message carries.
   const meta = useLinkMeta(generic)
+  // Chat links carry no AppView refs, so probe whether the generic link is a
+  // standard.site article and, if so, route its card into our reader.
+  const stdSite = useResolveStandardSite(generic)
+  const showGeneric = !!generic && (!!meta.data || !!stdSite.data)
 
-  if (!recordEmbed && posts.length === 0 && providers.length === 0 && !meta.data) {
+  if (!recordEmbed && posts.length === 0 && providers.length === 0 && !showGeneric) {
     return null
   }
 
@@ -129,14 +134,16 @@ export function MessageEmbeds({ message }: { message: ChatBskyConvoDefs.MessageV
         const external = { uri, title: '', description: '' } as AppBskyEmbedExternal.ViewExternal
         return <Provider key={uri} external={external} />
       })}
-      {generic && meta.data && (
+      {showGeneric && generic && (
         <GenericExternalCard
           external={
             {
               uri: generic,
-              title: meta.data.title,
-              description: meta.data.description,
-              thumb: meta.data.image,
+              title: meta.data?.title ?? '',
+              description: meta.data?.description ?? '',
+              thumb: meta.data?.image,
+              // Inject the resolved doc ref so the card opens in our reader.
+              associatedRefs: stdSite.data ? [{ uri: stdSite.data, cid: '' }] : undefined,
             } as AppBskyEmbedExternal.ViewExternal
           }
         />

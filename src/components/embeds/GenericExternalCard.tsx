@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { Link } from 'react-router-dom'
 import type { AppBskyEmbedExternal } from '@atproto/api'
 
 export interface ExternalEmbedProps {
@@ -18,12 +19,33 @@ function cssRgb(c?: { r: number; g: number; b: number }): string | undefined {
 }
 
 /**
+ * If the AppView backed this external link with a standard.site record (carried
+ * in `associatedRefs`), return the in-app reader path so the card opens in
+ * Ovoid's reader instead of the external site. A document wins over a bare
+ * publication link. Null when there's no standard.site record (e.g. chat link
+ * cards, which only have cardyb OG metadata) — caller falls back to the URL.
+ */
+function readerPath(refs: { uri: string }[] | undefined): string | null {
+  let pub: string | null = null
+  for (const ref of refs ?? []) {
+    const doc = /^at:\/\/([^/]+)\/site\.standard\.document\/(.+)$/.exec(ref.uri)
+    if (doc) return `/read/${doc[1]}/${doc[2]}`
+    const p = /^at:\/\/([^/]+)\/site\.standard\.publication\/(.+)$/.exec(ref.uri)
+    if (p && !pub) pub = `/pub/${p[1]}/site.standard.publication/${p[2]}`
+  }
+  return pub
+}
+
+/**
  * External-link card. When the AppView attached standard.site metadata
  * (external.source / associatedProfiles / readingTime — the protocol's
  * enhanced-preview fields, resolved server-side from the linked site's
  * site.standard.publication + site.standard.document records), it renders an
  * enriched card: publication name + icon, author byline, reading time, and the
  * publication's accent colour. Otherwise it's the plain thumbnail/title card.
+ *
+ * standard.site links additionally route into Ovoid's own reader (via the
+ * document's at-uri in associatedRefs) rather than out to the web.
  */
 export function GenericExternalCard({ external }: ExternalEmbedProps) {
   const domain = hostname(external.uri)
@@ -33,16 +55,13 @@ export function GenericExternalCard({ external }: ExternalEmbedProps) {
   const readingTime = external.readingTime
   const enhanced = !!source || !!author || !!readingTime
   const accent = cssRgb(source?.theme?.accentRGB)
+  const internalPath = readerPath(external.associatedRefs)
 
-  return (
-    <a
-      className={clsx('embed embed--external', enhanced && 'embed--standard')}
-      href={external.uri}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={(e) => e.stopPropagation()}
-      style={accent ? { borderLeftColor: accent } : undefined}
-    >
+  const className = clsx('embed embed--external', enhanced && 'embed--standard')
+  const style = accent ? { borderLeftColor: accent } : undefined
+
+  const inner = (
+    <>
       {external.thumb && (
         <img className="embed-ext__thumb" src={external.thumb} alt="" loading="lazy" />
       )}
@@ -59,9 +78,7 @@ export function GenericExternalCard({ external }: ExternalEmbedProps) {
         )}
 
         <div className="embed-ext__title">{external.title || external.uri}</div>
-        {external.description && (
-          <div className="embed-ext__desc">{external.description}</div>
-        )}
+        {external.description && <div className="embed-ext__desc">{external.description}</div>}
 
         {(author || readingTime) && (
           <div className="embed-ext__byline">
@@ -74,12 +91,32 @@ export function GenericExternalCard({ external }: ExternalEmbedProps) {
                 {authors.length > 1 && ` +${authors.length - 1}`}
               </span>
             )}
-            {readingTime ? (
-              <span className="embed-ext__meta">{readingTime} min read</span>
-            ) : null}
+            {readingTime ? <span className="embed-ext__meta">{readingTime} min read</span> : null}
           </div>
         )}
       </div>
+    </>
+  )
+
+  // standard.site → open in our reader (in-app navigation).
+  if (internalPath) {
+    return (
+      <Link to={internalPath} className={className} style={style} onClick={(e) => e.stopPropagation()}>
+        {inner}
+      </Link>
+    )
+  }
+
+  return (
+    <a
+      className={className}
+      href={external.uri}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      style={style}
+    >
+      {inner}
     </a>
   )
 }
