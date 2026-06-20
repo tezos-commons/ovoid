@@ -52,13 +52,18 @@
 
 .profhead__avatar {
   display: block;
+  padding: 0;
   border: 4px solid var(--bg);
   border-radius: var(--radius-pill);
   background: var(--bg);
   line-height: 0;
+  cursor: zoom-in;
 }
-.profhead__avatar:hover {
+.profhead__avatar:hover:not(:disabled) {
   opacity: 0.92;
+}
+.profhead__avatar:disabled {
+  cursor: default;
 }
 
 .profhead__actions {

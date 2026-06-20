@@ -63,7 +63,12 @@ export function Menu({ trigger, items, variant = 'list' }: MenuProps) {
               <button
                 key={item.key}
                 role="menuitem"
-                className={clsx('menu__item', item.danger && 'menu__item--danger')}
+                aria-current={item.active || undefined}
+                className={clsx(
+                  'menu__item',
+                  item.danger && 'menu__item--danger',
+                  item.active && 'menu__item--active',
+                )}
                 onClick={() => {
                   setOpen(false)
                   item.onSelect()

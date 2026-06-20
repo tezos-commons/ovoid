@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { AppBskyFeedDefs } from '@atproto/api'
-import { ScreenHeader } from '@/components/layout'
+import { ScreenHeader, useHideMobileTopBar } from '@/components/layout'
 import {
   Avatar,
   Button,
@@ -40,6 +40,10 @@ type FeedViewPost = AppBskyFeedDefs.FeedViewPost
 export default function FeedView() {
   const { actor = '', rkey = '' } = useParams()
   const { isAuthed } = useAgent()
+  // Mobile: this screen has its own in-content feed header (name/avatar/actions),
+  // so the floating top bar would just be an empty glass pill over it. Suppress
+  // it (back is via edge-swipe) — same as the thread/post view.
+  useHideMobileTopBar()
 
   const uriQuery = useGeneratorUri(actor, rkey)
   const uri = uriQuery.data

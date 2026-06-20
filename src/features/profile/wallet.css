@@ -73,6 +73,9 @@
   font-weight: 800;
   letter-spacing: -0.01em;
   line-height: 1.1;
+  /* Keep the tez mark on the number's line — the space before the unit is a
+     break point that otherwise drops the glyph to a new line on a narrow card. */
+  white-space: nowrap;
 }
 .wallet-balance__unit {
   color: var(--text-muted);

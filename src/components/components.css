@@ -369,6 +369,7 @@
 }
 .menu__item:hover { background: var(--bg-contrast-25); }
 .menu__item--danger { color: var(--color-danger); }
+.menu__item--active { color: var(--color-primary); font-weight: 600; }
 
 /* Grid variant: section switcher as an icon grid, 3 per row (mobile top bar). */
 .menu__pop--grid {
@@ -479,13 +480,12 @@
 }
 
 /* ---------- InfiniteList ---------- */
+/* Window-virtualized: the document scrolls, not this element — so NO height /
+   overflow / compositing-layer here. A transform/contain would make it the
+   containing block for the fixed bars and break them. It's just a positioned
+   box that holds the measured rows. */
 .inflist {
   position: relative;
-  height: 100%;
-  overflow-y: auto;
-  /* Stop overscroll from chaining to the document: reaching the feed's end
-     shouldn't bounce the whole page (and on mobile shouldn't drag the bars). */
-  overscroll-behavior: contain;
 }
 .inflist__inner {
   position: relative;
@@ -520,7 +520,9 @@
 }
 .inflist__newpill {
   position: sticky;
-  top: var(--space-3);
+  /* Document-scrolled now: pin below the top bar (desktop topbar / mobile
+     floating bar) rather than at the raw viewport top. */
+  top: calc(var(--topbar-height) + var(--space-3));
   z-index: var(--z-sticky);
   display: block;
   margin: var(--space-3) auto;
@@ -570,20 +572,14 @@
 }
 
 /* ---------- Screen shell (bounded-height flex column) ---------- */
+/* Window-scrolled screen shell: natural height, the document is the scroller.
+   The InfiniteList inside virtualizes against the window. Top chrome
+   (.screen-header) stays visible via its own position:sticky. */
 .screen {
   display: flex;
   flex-direction: column;
-  height: var(--app-height);
-  min-height: 0;
 }
-/* Top chrome (header + any tabs rendered as ScreenHeader children) stays put. */
-.screen > :not(.screen__body) {
-  flex: 0 0 auto;
-}
-/* The lone scroll region; an InfiniteList inside owns the actual scrolling. */
 .screen__body {
-  flex: 1 1 0;
-  min-height: 0;
   position: relative;
 }
 
@@ -1613,7 +1609,9 @@ video.nftb__backdrop {
   border-bottom: 1px solid var(--border);
   cursor: pointer;
 }
-.postcard:hover { background: var(--bg-contrast-25); }
+/* Barely-there wash: the post highlight should be close to the background, not
+   a noticeable fill (unlike the heavier row hovers elsewhere). */
+.postcard:hover { background: color-mix(in srgb, var(--text) 3%, transparent); }
 .postcard--focused { grid-template-columns: 1fr; cursor: default; }
 .postcard--focused:hover { background: transparent; }
 .postcard__reason {

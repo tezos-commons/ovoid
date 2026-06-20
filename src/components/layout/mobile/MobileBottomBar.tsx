@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { NavLink, useLocation } from 'react-router-dom'
 import { NAV_ITEMS } from '../navItems'
@@ -46,6 +46,34 @@ export function MobileBottomBar() {
     }
   }, [])
 
+  // iOS UX: when a top-bar input (e.g. search) is focused and the on-screen
+  // keyboard is up, the bottom bar would otherwise sit right on top of the
+  // keyboard — distracting and useless while typing above. Hide it for that
+  // case. Gated on a real keyboard overlap so an external keyboard (no on-screen
+  // one) leaves the bar in place.
+  const [hideForTopInput, setHideForTopInput] = useState(false)
+  useEffect(() => {
+    const vv = window.visualViewport
+    const compute = () => {
+      const kbOpen = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) > 60 : false
+      const active = document.activeElement
+      const topBar = document.querySelector('.mbar--top')
+      const focusInTop = !!(active && topBar?.contains(active))
+      setHideForTopInput(kbOpen && focusInTop)
+    }
+    compute()
+    vv?.addEventListener('resize', compute)
+    vv?.addEventListener('scroll', compute)
+    document.addEventListener('focusin', compute)
+    document.addEventListener('focusout', compute)
+    return () => {
+      vv?.removeEventListener('resize', compute)
+      vv?.removeEventListener('scroll', compute)
+      document.removeEventListener('focusin', compute)
+      document.removeEventListener('focusout', compute)
+    }
+  }, [])
+
   // Clear the user's manual toggle on navigation, so each screen opens at its
   // own default (chat → its composer; everything else → the nav).
   useEffect(() => {
@@ -75,7 +103,11 @@ export function MobileBottomBar() {
   }
 
   return (
-    <nav ref={navRef} className="mbar mbar--bottom liquid-glass" aria-label="Primary">
+    <nav
+      ref={navRef}
+      className={clsx('mbar mbar--bottom liquid-glass', hideForTopInput && 'mbar--kbhidden')}
+      aria-label="Primary"
+    >
       <span className="liquid-glass__layer" aria-hidden="true" />
       <button
         type="button"

@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { Link } from 'react-router-dom'
 import type { ChatBskyConvoDefs } from '@atproto/api'
 import { Avatar, AvatarGroup, ConvoListSkeleton, EmptyState, ErrorState, Spinner } from '@/components'
+import { useFadeTopBarOnScroll } from '@/components/layout'
 import { relativeTime } from '@/lib/time'
 import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
@@ -39,6 +40,10 @@ function lastTime(convo: ChatBskyConvoDefs.ConvoView): string {
 export function ConvoList({ viewerDid, activeConvoId }: ConvoListProps) {
   const q = useConvos()
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  // Mobile: fade the top bar on scroll-down / in on scroll-up. Enabled only once
+  // the list is actually rendered (so the ref points at the scroller, not window).
+  useFadeTopBarOnScroll(listRef, q.convos.length > 0)
 
   useEffect(() => {
     const el = sentinelRef.current
@@ -80,7 +85,7 @@ export function ConvoList({ viewerDid, activeConvoId }: ConvoListProps) {
   }
 
   return (
-    <div className="convo-list" role="list">
+    <div className="convo-list" role="list" ref={listRef}>
       {q.convos.map((convo) => (
         <ConvoRow
           key={convo.id}

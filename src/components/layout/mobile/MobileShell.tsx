@@ -81,7 +81,15 @@ function useKeyboardInset(): void {
       // Overlap = the slice of the layout viewport the visual viewport no longer
       // covers at the bottom. Rounded to avoid sub-pixel thrash from elastic
       // scroll firing a stream of resize/scroll events.
-      const overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      //
+      // Gate on a focused text input: a keyboard can ONLY be up when one is
+      // focused. Without this, iOS rubber-band overscroll (e.g. pulling past the
+      // top of a profile) drives vv.offsetTop negative, the formula reads a
+      // phantom overlap, and the bottom bar — which adds var(--kb) to its offset —
+      // drifts upward. No focus → no keyboard → 0.
+      const overlap = isTextEntry(document.activeElement)
+        ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+        : 0
       root.style.setProperty('--kb', `${Math.round(overlap)}px`)
       // Keyboard just opened (not minor jitter, not closing): bring a focused
       // input into view. Anchored inputs (chat composer in the fixed bottom bar,

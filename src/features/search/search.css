@@ -2,10 +2,11 @@
    Search feature styles. Tokens only — no hardcoded colors.
    ============================================================ */
 
+/* Window-scrolled now: natural height, the document scrolls. The InfiniteList
+   tabs virtualize against the window (mirrors .home). */
 .search {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
 }
 
 /* No reserved aside on search — cap the full-width page area to the main column
@@ -19,8 +20,11 @@
 /* ---------- Sticky header: search box + result tabs ---------- */
 
 .search__header {
+  flex: 0 0 auto;
   position: sticky;
-  top: 0;
+  /* Document-scrolled: pin below the desktop top bar (0 on mobile, where the box
+     is portaled into the floating bar instead). */
+  top: var(--topbar-height);
   z-index: var(--z-sticky);
   background: var(--bg);
   border-bottom: 1px solid var(--border);
@@ -132,8 +136,10 @@
 
 /* ---------- Content area ---------- */
 
+/* Natural height — the document scrolls (Discover/Feeds lists flow; Posts/People
+   tabs window-virtualize). No internal overflow host any more. */
 .search__content {
-  flex: 1 1 auto;
+  position: relative;
 }
 
 .search__list {
@@ -293,9 +299,28 @@
 
 /* ---------- Mobile: the search box IS the floating top bar ---------- */
 @media (max-width: 1000px) {
-  /* The box fills the top bar (no fixed header band / padding of its own). */
+  /* Search is a full-width route, so it's skipped by the generic
+     .page:not(.page--full) .page__main padding — clear the floating bars here so
+     results rest below the top bar (which holds the search box) and the last row
+     clears the bottom bar. */
+  .search {
+    padding-top: var(--mbar-top-zone);
+    padding-bottom: var(--mbar-bottom-zone);
+  }
+  /* The bar holds the input (growing) plus the result-type dropdown beside it. */
+  .search__mobilebar {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+  /* The box fills the remaining bar width (no fixed header band / padding). The
+     result-type dropdown beside it is the shared .mbar-feedsel pill (borderless,
+     identical to Home's feed selector). */
   .mbar__fill .search__box {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     height: auto;
     padding: 0;
   }
@@ -307,22 +332,7 @@
   .mbar__fill .search__input:focus {
     outline: none;
   }
-  /* Search owns its own insets (the page-level padding is opted out for it).
-     Content + result tabs sit below the floating top bar; the tabs stick just
-     under it; the content clears the bottom bar. */
-  .search {
-    padding-top: var(--mbar-top-zone);
-  }
-  .search__header {
-    top: var(--mbar-top-zone);
-  }
-  .search__content {
-    padding-bottom: var(--mbar-bottom-zone);
-  }
-  /* The generic .page__main .inflist bar-padding would double up here (search
-     wraps the list in its own padded column) — neutralise it inside search. */
-  .page__main:has(.search) .inflist {
-    padding-top: 0;
-    padding-bottom: 0;
-  }
+  /* The document scrolls now (the .search column is natural-height and its tabs
+     window-virtualize), so the generic .page__main top+bottom bar padding applies
+     unchanged — no per-search opt-out needed. */
 }

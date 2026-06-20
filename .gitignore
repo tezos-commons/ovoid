@@ -9,6 +9,9 @@ dist-ssr
 .env
 .env.*.local
 
+# Vendored reference source (upstream bsky social-app, witchsky, etc.) — read-only
+ref/
+
 # Editor / OS
 .DS_Store
 .vscode/*

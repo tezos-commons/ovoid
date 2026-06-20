@@ -20,5 +20,6 @@ export {
   MobileTopBarFill,
   useMobileTitle,
   useHideMobileTopBar,
+  useFadeTopBarOnScroll,
 } from './mobile/MobileChrome'
 export { MobileSelect, type MobileSelectProps } from './mobile/MobileSelect'

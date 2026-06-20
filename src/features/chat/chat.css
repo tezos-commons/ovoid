@@ -156,15 +156,35 @@
 .msg-thread__scroll {
   flex: 1;
   overflow-y: auto;
+  /* Clip the cross axis: with only overflow-y set, the spec computes overflow-x
+     to `auto` too, so any content a touch wider than the pane (a wide embed, a
+     long unbroken token) becomes horizontally scrollable — on iOS that's the
+     sideways rubber-band the user feels. Feeds avoid it only because their rows
+     never overflow; clip it explicitly here. */
+  overflow-x: hidden;
   min-height: 0;
   display: flex;
   flex-direction: column;
   padding: var(--space-3) var(--space-4) var(--space-2);
-  gap: 2px;
   /* Keep touch scrolling inside the thread — no rubber-band chaining to the
-     document, and momentum scrolling on iOS. */
+     document. NB: do NOT add `-webkit-overflow-scrolling: touch` here. Combined
+     with `overflow-x: hidden` it triggers an iOS WebKit paint bug where scroll
+     tiles go blank (chat content appears cut off until re-scrolled). Modern iOS
+     does momentum scrolling natively, so it's unnecessary anyway. */
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  /* iOS: own compositing layer so scroll tiles repaint reliably under the fixed
+     backdrop-filter (liquid-glass) bars — otherwise sections render blank / show
+     a stale background until re-scrolled. */
+  transform: translateZ(0);
+}
+
+/* Single content wrapper around all message lines: it (not the fixed-height
+   scroller) is what the ResizeObserver watches, so late-expanding embeds keep
+   the view pinned to the bottom. Carries the inter-message gap. */
+.msg-thread__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .msg-thread__center {
@@ -381,6 +401,14 @@
   min-width: min(300px, 70vw);
   max-width: 100%;
 }
+/* Desktop: the detail pane is wide, so a 100%-of-row card balloons. Cap it to
+   roughly the mobile size (where it's already right) instead of letting it fill
+   the bubble's 78% column. */
+@media (min-width: 1001px) {
+  .msg-embeds .embed {
+    max-width: 340px;
+  }
+}
 
 /* Quick-reaction picker popover. */
 .reaction-picker {
@@ -416,6 +444,95 @@
 }
 .reaction-picker__btn:hover {
   background: var(--bg-contrast-25);
+}
+
+/* ---------- Per-message context menu (group chats) ---------- */
+/* Anchored above the bubble like the reaction picker; a small vertical list of
+   actions (Reply, Copy text) opened on long-press / right-click. */
+.msg-menu {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 6px;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-embed);
+  background: var(--bg-overlay);
+  box-shadow: var(--shadow-menu);
+}
+.msg-menu--start {
+  left: 0;
+}
+.msg-menu--end {
+  right: 0;
+}
+/* Mobile: a fixed bottom sheet portaled to <body> (escapes the chat scroll
+   container's clipping). Wider tap targets, anchored above the floating bottom
+   bar. */
+.msg-menu--sheet {
+  position: fixed;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: calc(var(--mbar-bottom-zone) + var(--space-3));
+  top: auto;
+  min-width: 0;
+  z-index: var(--z-modal);
+}
+.msg-menu--sheet .msg-menu__item {
+  padding: var(--space-3) var(--space-3);
+  font-size: var(--fs-base);
+}
+.msg-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(0, 0, 0, 0.32);
+}
+.msg-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-embed);
+  background: none;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.msg-menu__item:hover {
+  background: var(--bg-contrast-25);
+}
+
+/* ---------- Replied-to quote (atop a reply bubble) ---------- */
+.msg-reply-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: var(--space-1);
+  padding: 2px var(--space-2);
+  border-left: 2px solid currentColor;
+  opacity: 0.85;
+  font-size: var(--fs-xs);
+  line-height: 1.3;
+}
+.msg-reply-quote__name {
+  font-weight: 600;
+}
+.msg-reply-quote__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+}
+.msg-reply-quote__text--muted {
+  font-style: italic;
+  opacity: 0.8;
 }
 
 /* ---------- Group message attribution ---------- */
@@ -579,6 +696,53 @@ a.msg-row__name:hover {
   padding: 0 var(--space-2) var(--space-2);
 }
 
+/* Reply banner above the input row (group replies): "Replying to X" + snippet,
+   with a cancel button. */
+.msg-composer__reply {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--color-primary);
+  border-radius: var(--radius-embed);
+  background: var(--bg-contrast-25);
+}
+.msg-composer__reply-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.msg-composer__reply-label {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.msg-composer__reply-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+}
+.msg-composer__reply-cancel {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.msg-composer__reply-cancel:hover {
+  background: var(--bg-contrast-50);
+  color: var(--text);
+}
+
 .msg-composer__row {
   display: flex;
   align-items: flex-end;
@@ -715,10 +879,16 @@ a.msg-row__name:hover {
     display: none;
   }
 
-  /* Scroll behind the floating bars: pad both scroll regions to clear them. */
-  .msg-thread__scroll,
+  /* The convo list clears the floating top bar (like the other list screens).
+     The message thread keeps content to the top edge — it's bottom-anchored, so
+     the newest messages sit above the composer and older ones scroll up behind
+     the translucent bar (the immersive chat look). Both clear the bottom bar. */
   .convo-list {
     padding-top: var(--mbar-top-zone);
+    padding-bottom: var(--mbar-bottom-zone);
+  }
+  .msg-thread__scroll {
+    padding-top: 0;
     padding-bottom: var(--mbar-bottom-zone);
   }
 }

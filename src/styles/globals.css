@@ -161,13 +161,16 @@ ol {
   }
   /* Row-level surfaces flash their hover fill instead of scaling (a scaling row
      would shift its neighbours). */
-  .postcard:not(.postcard--focused):active,
   .convo-row:active,
   .personrow:active,
   .feedcard:active,
   .list-card:active,
   .menu__item:active {
     background: var(--bg-contrast-25);
+  }
+  /* Posts get only a barely-there wash, not the full row fill. */
+  .postcard:not(.postcard--focused):active {
+    background: color-mix(in srgb, var(--text) 3%, transparent);
   }
 }
 
@@ -177,7 +180,6 @@ ol {
    buttons/icons already have their own :hover and :active treatments. Scoped to
    (hover: hover) so it never doubles up with the touch press-scale above. */
 @media (hover: hover) and (pointer: fine) {
-  .postcard:not(.postcard--focused):active,
   .convo-row:active,
   .personrow:active,
   .feedcard:active,
@@ -185,6 +187,10 @@ ol {
   .notif:active,
   .menu__item:active {
     background: var(--bg-contrast-50);
+  }
+  /* Posts get only a barely-there wash, not the full row fill. */
+  .postcard:not(.postcard--focused):active {
+    background: color-mix(in srgb, var(--text) 3%, transparent);
   }
 }
 

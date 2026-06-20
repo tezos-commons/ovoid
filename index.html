@@ -10,7 +10,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="theme-color" content="#110c1d" />
+    <meta name="theme-color" content="#120e1a" />
     <title>Ovoid</title>
 
     <!-- Warm the sockets the first paint depends on, in parallel with JS parse.
@@ -28,7 +28,12 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <!-- black-translucent: in standalone (home-screen) mode the web view fills the
+         WHOLE screen including behind the status bar / camera island, and
+         env(safe-area-inset-top) reports the real inset. Plain "black" instead
+         reserves a solid opaque band and zeroes the top inset, so content can
+         never sit behind the island regardless of CSS. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Ovoid" />
     <script>
       // Set data-theme + the matching theme-color before first paint, so there's
@@ -36,7 +41,7 @@
       // theme-color) match the active theme from the start. Colors mirror --bg in
       // tokens.css (CSS vars aren't parsed yet here, so they're inlined).
       (function () {
-        var BG = { light: '#ffffff', dim: '#110c1d', dark: '#030206' }
+        var BG = { light: '#ffffff', dim: '#120e1a', dark: '#030206', copycat: '#151d28' }
         var t = 'dim'
         try {
           t = localStorage.getItem('ovoid:theme') || 'dim'

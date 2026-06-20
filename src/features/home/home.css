@@ -6,14 +6,12 @@
    (the InfiniteList virtualizer needs a bounded-height scroll parent).
    --app-height is the dynamic viewport minus the mobile tab bar, so the feed
    isn't clipped behind the bar at the mobile breakpoint. */
+/* Window-scrolled now: natural height, the document scrolls (so feed content can
+   rise into the iOS camera-island safe area). The feed below virtualizes against
+   the window rather than an internal --app-height scroller. */
 .home {
   display: flex;
   flex-direction: column;
-  /* Subtract the page top inset (.page padding-top) so the screen + inset still
-     equal exactly one --app-height and never spawn a second scrollbar. The var
-     is inherited from .page: --layout-gap on desktop, 0 on mobile / full-width. */
-  height: calc(var(--app-height) - var(--page-top-gap, 0px));
-  min-height: 0;
 }
 
 /* The top bars keep their natural height. Without this they inherit the default
@@ -28,11 +26,9 @@
   flex: 0 0 auto;
 }
 
-/* flex-basis:0 (not auto) is load-bearing: the feed grows INTO the remaining
-   space rather than contributing its ~row-total content height to the column. */
+/* Natural height — the feed contributes its virtualized total height to the
+   document, which is the scroller. (Was flex:1 1 0 for the old bounded column.) */
 .home__feed {
-  flex: 1 1 0;
-  min-height: 0;
   position: relative;
 }
 

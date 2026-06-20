@@ -22,13 +22,23 @@ import { usePrependSentMessage } from './use-messages'
  * bubble that then has to be reconciled by id would be more code for no gain
  * given the round-trip latency here.
  */
+/** Send a message, optionally as a reply to another message (group chats). */
+export interface SendMessageInput {
+  text: string
+  /** Message id this is a reply to; attaches a `replyTo` ref (group replies). */
+  replyToId?: string
+}
+
 export function useSendMessage(convoId: string) {
   const { agent, chatAgent, did } = useAgent()
   const qc = useQueryClient()
   const prepend = usePrependSentMessage(convoId)
 
   return useMutation({
-    mutationFn: async (text: string): Promise<ChatBskyConvoDefs.MessageView> => {
+    mutationFn: async ({
+      text,
+      replyToId,
+    }: SendMessageInput): Promise<ChatBskyConvoDefs.MessageView> => {
       if (!chatAgent) throw new Error('Not signed in to chat')
       const trimmed = text.trim()
       if (!trimmed) throw new Error('Message is empty')
@@ -37,7 +47,11 @@ export function useSendMessage(convoId: string) {
       const { text: finalText, facets } = await buildPost(agent, embeddable)
       const res = await chatAgent.chat.bsky.convo.sendMessage({
         convoId,
-        message: { text: finalText, facets },
+        message: {
+          text: finalText,
+          facets,
+          ...(replyToId ? { replyTo: { messageId: replyToId } } : {}),
+        },
       })
       return res.data
     },

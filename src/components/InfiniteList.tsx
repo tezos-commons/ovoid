@@ -1,7 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
+import { useNavigationType } from 'react-router-dom'
+import { useWindowVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 import { Spinner } from './Spinner'
+import { useFadeTopBarOnScroll } from './layout/mobile/MobileChrome'
+import { getSavedWindowScroll, useWindowScrollRestoration } from '@/lib/scroll-restoration'
 import { isOverlayOpen, isTypingTarget } from '@/lib/keyboard'
 
 export interface InfiniteListProps<T> {
@@ -30,21 +33,29 @@ export interface InfiniteListProps<T> {
    * degrade to no-ops on non-post rows. Default on.
    */
   cursorNav?: boolean
+  /**
+   * Mobile only: fade the floating top bar out while scrolling down and back in
+   * while scrolling up. Opt-in (feeds), so surfaces whose top bar holds an input
+   * — e.g. search — keep it visible.
+   */
+  fadeTopBarOnScroll?: boolean
 }
 
 /**
- * Remembered scroll state, keyed by `scrollKey`. Persisting the measurement
- * cache (not just the px offset) is what makes restoration exact: a fresh
- * virtualizer would otherwise re-estimate every row and the offset would land at
- * a different logical position. Module-level so it survives the component's
- * unmount; lives for the page session only (never serialized).
+ * Remembered row-measurement cache, keyed by `scrollKey`. The scroll OFFSET is
+ * restored via useWindowScrollRestoration; persisting the measurement cache
+ * alongside it is what makes restoration exact — a fresh virtualizer would
+ * re-estimate every row and the same offset would land at a different logical
+ * position. Module-level so it survives unmount; page-session lifetime only.
  */
-type SavedScroll = { offset: number; measurements: VirtualItem[] }
-const scrollMemory = new Map<string, SavedScroll>()
+const measurementsMemory = new Map<string, VirtualItem[]>()
 
 /**
- * Virtualized infinite list. Uses the window/document scroll via a measured
- * container; rows are dynamically measured so variable-height posts work.
+ * Virtualized infinite list, virtualized against the WINDOW (document) scroll —
+ * the same model as ProfileFeed. The document is the sole scroller: this keeps
+ * the DOM bounded however deep the user pages, and (unlike an internal
+ * overflow:auto container) lets content rise into the iOS safe-area / camera
+ * island, which only happens for the document scroller.
  *
  * Invariant: the virtualizer's item count == items.length; the loading row is
  * rendered outside the virtual window so it never shifts measured offsets.
@@ -63,44 +74,53 @@ export function InfiniteList<T>({
   emptyState,
   scrollKey,
   cursorNav = true,
+  fadeTopBarOnScroll = false,
 }: InfiniteListProps<T>) {
-  const parentRef = useRef<HTMLDivElement>(null)
-  const restore = scrollKey ? scrollMemory.get(scrollKey) : undefined
+  const listRef = useRef<HTMLDivElement>(null)
+  // The list's start offset from the document top, fed to the virtualizer so it
+  // maps window scrollY → item space. getBoundingClientRect().top + scrollY is
+  // the true document offset and (unlike offsetTop) is correct regardless of any
+  // positioned ancestor (.home__feed etc. are position:relative). Scroll-
+  // invariant, so it only changes when chrome above the list resizes.
+  const [scrollMargin, setScrollMargin] = useState(0)
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = listRef.current
+      if (el) setScrollMargin(el.getBoundingClientRect().top + window.scrollY)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+  const isPop = useNavigationType() === 'POP'
+  // Window-scrolled: restore the document scroll offset across unmount/remount.
+  useWindowScrollRestoration(scrollKey)
+  // Mobile: fade the top bar out on scroll-down / in on scroll-up (opt-in). No
+  // ref → tracks the window scroll, which is now the list's scroller.
+  useFadeTopBarOnScroll(undefined, fadeTopBarOnScroll)
 
-  const virtualizer = useVirtualizer({
+  const virtualizer = useWindowVirtualizer({
     count: items.length,
-    getScrollElement: () => parentRef.current,
     estimateSize: () => estimateSize,
     overscan: 6,
+    scrollMargin,
     getItemKey: (index) => getKey(items[index]),
-    // Seed from saved state so the first paint already renders the correct
-    // window at the right total height (no flash before the effect runs).
-    initialOffset: restore?.offset,
-    initialMeasurementsCache: restore?.measurements,
+    // Seed the SAME offset useWindowScrollRestoration applies: 0 on forward
+    // navigation, the saved offset on POP. The library default is the CURRENT
+    // window.scrollY — at construction still the PREVIOUS screen's depth — whose
+    // scroll-anchoring would yank the window back after our reset.
+    initialOffset: isPop ? getSavedWindowScroll(scrollKey) ?? 0 : 0,
+    // Measurements are positions from a previous visit, valid only with the
+    // restored offset; seeding them on a fresh (top) entry corrupts row deltas.
+    initialMeasurementsCache:
+      isPop && scrollKey ? measurementsMemory.get(scrollKey) : undefined,
   })
 
-  // Apply the saved offset to the actual scroll element on mount. initialOffset
-  // only seeds the virtualizer's math; the DOM element still starts at 0.
-  useLayoutEffect(() => {
-    if (restore && parentRef.current) parentRef.current.scrollTop = restore.offset
-    // Mount-only: re-running on restore changes would fight the user's scroll.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Persist offset + measured heights on scroll and at unmount.
+  // Persist measured heights at unmount so back-navigation restores exactly.
   useEffect(() => {
-    const el = parentRef.current
-    if (!el || !scrollKey) return
-    const save = () => {
-      scrollMemory.set(scrollKey, {
-        offset: el.scrollTop,
-        measurements: virtualizer.measurementsCache,
-      })
-    }
-    el.addEventListener('scroll', save, { passive: true })
+    if (!scrollKey) return
     return () => {
-      save()
-      el.removeEventListener('scroll', save)
+      measurementsMemory.set(scrollKey, virtualizer.measurementsCache)
     }
   }, [scrollKey, virtualizer])
 
@@ -128,11 +148,11 @@ export function InfiniteList<T>({
             ?.click()
         }
       }
-      const row = parentRef.current?.querySelector('.inflist__row--cursor')
+      const row = listRef.current?.querySelector('.inflist__row--cursor')
       if (row) return run(row)
       // Cursor scrolled out of the rendered window: bring it back, then act.
       virtualizer.scrollToIndex(cursor, { align: 'center' })
-      requestAnimationFrame(() => run(parentRef.current?.querySelector('.inflist__row--cursor')))
+      requestAnimationFrame(() => run(listRef.current?.querySelector('.inflist__row--cursor')))
     }
 
     const onKey = (e: KeyboardEvent) => {
@@ -188,7 +208,7 @@ export function InfiniteList<T>({
   // scrolls the feed back to the very top so they're in view.
   const handleNewItems = () => {
     onNewItems?.()
-    parentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // Prefetch the next page when the tail comes into view.
@@ -205,7 +225,7 @@ export function InfiniteList<T>({
   }
 
   return (
-    <div className="inflist" ref={parentRef}>
+    <div className="inflist" ref={listRef}>
       {newItemsCount > 0 && (
         <button className="inflist__newpill" onClick={handleNewItems}>
           {newItemsCount} new {newItemsCount === 1 ? 'post' : 'posts'}
@@ -219,7 +239,7 @@ export function InfiniteList<T>({
             data-index={vi.index}
             ref={virtualizer.measureElement}
             className={clsx('inflist__row', cursorNav && cursor === vi.index && 'inflist__row--cursor')}
-            style={{ transform: `translateY(${vi.start}px)` }}
+            style={{ transform: `translateY(${vi.start - virtualizer.options.scrollMargin}px)` }}
           >
             {renderItem(items[vi.index], vi.index)}
           </div>

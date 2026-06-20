@@ -3,6 +3,7 @@ import { useNavigationType } from 'react-router-dom'
 import { useWindowVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { PostCard, Spinner, FeedSkeleton, ErrorState, EmptyState } from '@/components'
+import { useFadeTopBarOnScroll } from '@/components/layout'
 import { getSavedWindowScroll, useWindowScrollRestoration } from '@/lib/scroll-restoration'
 
 interface FeedPage {
@@ -64,6 +65,9 @@ export function ProfileFeed({ query, emptyTitle, emptyMessage, scrollKey }: Prof
   const listRef = useRef<HTMLDivElement>(null)
   const isPop = useNavigationType() === 'POP'
   useWindowScrollRestoration(scrollKey)
+  // Mobile: fade the top bar on scroll-down / in on scroll-up. Profile feeds are
+  // window-scrolled (no ref → window).
+  useFadeTopBarOnScroll()
 
   const items: AppBskyFeedDefs.FeedViewPost[] =
     query.data?.pages.flatMap((p) => p.feed) ?? []

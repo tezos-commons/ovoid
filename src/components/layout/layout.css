@@ -317,28 +317,12 @@
     max-height: none;
     overflow: visible;
   }
-  /* Document-scrolled screens scroll behind the floating top + bottom bars; pad
-     the main column so the first/last rows clear them. Chat (.page--full) owns
-     its own full-height layout and opts out. The zone vars come from mobile.css. */
+  /* Every screen now DOCUMENT-scrolls (lists window-virtualize), so the single
+     page column reserves both bars: content rests below the floating top bar and
+     scrolls up behind it (and into the iOS camera-island safe area); the last row
+     clears the bottom bar. No :has() — the padding is unconditional, so it can't
+     go stale across navigation on the never-remounting .page__main. */
   .page:not(.page--full) .page__main {
-    padding-top: var(--mbar-top-zone);
-    padding-bottom: var(--mbar-bottom-zone);
-  }
-  /* Internal-scroll screens (.home's own 100dvh column, or any InfiniteList — its
-     .inflist owns the scroll) must NOT get page-level padding: it would push the
-     scroller down (a solid gap behind the top bar) and overflow the fixed-height
-     column. They clear the bars via their scroller's own padding instead. The
-     selector is more specific than the rule above so it actually wins, and uses a
-     descendant match because the route-slide wrapper sits between them. */
-  .page:not(.page--full) .page__main:has(.home),
-  .page:not(.page--full) .page__main:has(.inflist) {
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-  /* The InfiniteList scroller clears the bars itself: content rests just below
-     the top bar (and scrolls up behind it), last row clears the bottom bar.
-     Scoped to the page area so modal lists are unaffected. */
-  .page__main .inflist {
     padding-top: var(--mbar-top-zone);
     padding-bottom: var(--mbar-bottom-zone);
   }

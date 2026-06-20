@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type Theme = 'light' | 'dim' | 'dark'
+export type Theme = 'light' | 'dim' | 'dark' | 'copycat'
 
 const THEME_KEY = 'ovoid:theme'
 
@@ -8,7 +8,7 @@ function readTheme(): Theme {
   // Default is the 'dim' purple theme; only an explicit stored choice overrides it.
   if (typeof localStorage === 'undefined') return 'dim'
   const t = localStorage.getItem(THEME_KEY)
-  return t === 'light' || t === 'dim' || t === 'dark' ? t : 'dim'
+  return t === 'light' || t === 'dim' || t === 'dark' || t === 'copycat' ? t : 'dim'
 }
 
 function applyTheme(theme: Theme) {

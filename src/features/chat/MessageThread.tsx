@@ -1,11 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import type { ChatBskyConvoDefs } from '@atproto/api'
 import { Avatar, Button, EmptyState, ErrorState, MessageThreadSkeleton, Spinner } from '@/components'
-import { MobileBottomContent } from '@/components/layout'
+import { MobileBottomContent, useFadeTopBarOnScroll } from '@/components/layout'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import { MessageBubble } from './MessageBubble'
-import { MessageComposer } from './MessageComposer'
+import { MessageComposer, type ReplyTarget } from './MessageComposer'
 import { SystemMessage, referredDids } from './SystemMessage'
 import { useMessages, useMarkRead, type MessageItem } from './use-messages'
 import { useToggleReaction } from './use-react-message'
@@ -39,6 +39,7 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
   useMarkRead(convoId, latestId)
 
   const scrollRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const prevLatest = useRef<string | undefined>(undefined)
   const prevScrollHeight = useRef(0)
@@ -64,6 +65,10 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
   // Keep pinned to the bottom as the scroll region resizes — late-loading media
   // on open (content grows) and the keyboard opening (container shrinks) both
   // fire this, so the newest message stays visible without a manual scroll.
+  // Mobile: fade the top bar on scroll-down / in on scroll-up.
+  useFadeTopBarOnScroll(scrollRef)
+
+  const hasList = !q.isLoading && messages.length > 0
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -72,15 +77,18 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
     }
     const ro = new ResizeObserver(pin)
     ro.observe(el)
-    const inner = el.firstElementChild
-    if (inner) ro.observe(inner)
+    // Observe the content wrapper, not el: el is the fixed-height scroller and
+    // never reports content growth. The wrapper grows whenever a message's embed
+    // expands late (image/card load, quote unfurl) — re-pin so we stay at the
+    // bottom instead of drifting up by the embed's height.
+    if (listRef.current) ro.observe(listRef.current)
     // On mobile the composer lives in the floating bottom bar, which overlaps the
     // scroll area. When it grows (multiline), the scroll zone (--mbar-bottom-zone)
     // expands too — re-pin so the newest message clears the now-taller bar.
     const bar = document.querySelector('.mbar--bottom')
     if (bar) ro.observe(bar)
     return () => ro.disconnect()
-  }, [])
+  }, [hasList])
 
   // The on-screen keyboard opening/closing shrinks the usable height in steps
   // (visualViewport → --kb → chat-screen height). The ResizeObserver can pin
@@ -180,12 +188,34 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
         reaction.mutate({ messageId, value, add })
     : undefined
 
+  // Replying is a group-only affordance (matches the bsky feature). The bubble's
+  // Reply menu item lifts the target here; the composer shows it and attaches the
+  // reply ref on send. undefined onReply keeps 1:1 bubbles on the reaction picker.
+  const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null)
+  const onReply =
+    isGroup && viewerDid
+      ? (m: ChatBskyConvoDefs.MessageView) =>
+          setReplyTo({
+            id: m.id,
+            authorName: m.sender?.did ? nameFor(m.sender.did) : '',
+            text: m.text,
+          })
+      : undefined
+  // Drop a stale reply target if the thread is reused for another convo.
+  useEffect(() => setReplyTo(null), [convoId])
+
   // A locked group accepts no new messages; lock the composer to match.
   const replyDisabled = group ? group.lockStatus !== 'unlocked' : false
 
   const isMobile = useIsMobile()
   const composer = (
-    <MessageComposer convoId={convoId} disabled={replyDisabled} members={convo?.members ?? []} />
+    <MessageComposer
+      convoId={convoId}
+      disabled={replyDisabled}
+      members={convo?.members ?? []}
+      replyTo={replyTo}
+      onClearReply={() => setReplyTo(null)}
+    />
   )
 
   if (q.isError) {
@@ -217,7 +247,7 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
             />
           </div>
         ) : (
-          <>
+          <div className="msg-thread__list" ref={listRef}>
             {q.isFetchingNextPage && (
               <div className="msg-thread__more">
                 <Spinner size="sm" />
@@ -252,12 +282,14 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
                     senderName={sd ? nameFor(sd) : undefined}
                     senderAvatar={sd ? avatarFor(sd) : undefined}
                     onReact={onReact}
+                    onReply={onReply}
+                    nameFor={nameFor}
                   />
                 </div>
               )
             })}
             <div ref={bottomRef} />
-          </>
+          </div>
         )}
       </div>
       {/* Mobile: the composer lives in the floating bottom bar, shown by default

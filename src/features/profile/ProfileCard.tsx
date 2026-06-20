@@ -13,6 +13,7 @@ import {
 } from '@/lib/notify/use-notify'
 import { useStartConvo } from '@/features/chat/use-start-convo'
 import { isChatPermissionError } from '@/features/chat/chat-errors'
+import { useUiStore } from '@/store/ui-store'
 import { useFollow } from './use-follow'
 import { useMuteBlock } from './use-mute-block'
 import { useTezosAddress } from './use-nfts'
@@ -49,6 +50,7 @@ function formatCount(n: number | undefined): string {
  */
 export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardProps) {
   const navigate = useNavigate()
+  const openLightbox = useUiStore((s) => s.openLightbox)
   // Key follow/mute/block off the route actor so their optimistic cache patch
   // hits the same qk.profile(actor) entry this screen reads from.
   const follow = useFollow(actor)
@@ -159,9 +161,21 @@ export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardPro
       </Link>
 
       <div className="profhead__bar">
-        <Link to={actorRoute} className="profhead__avatar" aria-label={`View @${profile.handle}'s profile`}>
+        <button
+          type="button"
+          className="profhead__avatar"
+          aria-label={`View @${profile.handle}'s avatar`}
+          disabled={!profile.avatar}
+          onClick={() =>
+            profile.avatar &&
+            openLightbox({
+              images: [{ src: profile.avatar, alt: profile.displayName || profile.handle }],
+              index: 0,
+            })
+          }
+        >
           <Avatar src={profile.avatar} alt={profile.displayName || profile.handle} size="xl" />
-        </Link>
+        </button>
 
         <div className="profhead__actions">
           {showNotifyControls && (

@@ -1,10 +1,13 @@
 import { memo, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
-import type { ChatBskyConvoDefs, ChatBskyGroupDefs } from '@atproto/api'
+import { ChatBskyConvoDefs } from '@atproto/api'
+import type { ChatBskyGroupDefs } from '@atproto/api'
 import { Avatar } from '@/components'
 import { RichText, textWithoutLinkUris } from '@/lib/rich-text'
 import { absoluteTime, clockTime } from '@/lib/time'
+import { haptic } from '@/lib/haptics'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { useLongPress } from '@/lib/use-long-press'
 import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
@@ -15,6 +18,7 @@ import { authorFeedOptions } from '@/features/profile/use-author-feed'
 import { MessageEmbeds, messagePreviewedLinkUris } from './MessageEmbeds'
 import { MessageReactions } from './MessageReactions'
 import { ReactionPicker } from './ReactionPicker'
+import { MessageMenu } from './MessageMenu'
 import type { MessageItem } from './use-messages'
 
 const JOIN_LINK_EMBED = 'chat.bsky.embed.joinLink#view'
@@ -62,6 +66,12 @@ export interface MessageBubbleProps {
   /** Toggle a reaction on this message; absent when reactions are unavailable
    *  (signed out). add=true to add the viewer's reaction, false to remove. */
   onReact?: (messageId: string, value: string, add: boolean) => void
+  /** Start a reply to this message. Present only in group chats — its presence
+   *  switches long-press / right-click from the reaction picker to the Reply/Copy
+   *  context menu. */
+  onReply?: (message: ChatBskyConvoDefs.MessageView) => void
+  /** Resolve a sender DID to a display name (for the replied-to quote preview). */
+  nameFor?: (did: string) => string
 }
 
 /**
@@ -81,13 +91,23 @@ export const MessageBubble = memo(function MessageBubble({
   senderName,
   senderAvatar,
   onReact,
+  onReply,
+  nameFor,
 }: MessageBubbleProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const isMobile = useIsMobile()
   const senderDid = 'sender' in message ? message.sender?.did : undefined
   const mine = senderDid === viewerDid
   // A group message from someone else gets the avatar gutter + name treatment.
   const attributed = isGroup && !mine
-  const longPress = useLongPress(() => onReact && setPickerOpen(true))
+  // In groups (onReply set) the long-press opens the Reply/Copy menu; in 1:1s it
+  // opens the reaction picker. Both share the same press/right-click trigger.
+  const interactive = !!(onReply || onReact)
+  const longPress = useLongPress(() => {
+    if (onReply) setMenuOpen(true)
+    else if (onReact) setPickerOpen(true)
+  })
 
   // Warm the sender's profile (+ its default Posts tab) when their avatar dwells
   // in view, so tapping through to a group member's profile renders from cache.
@@ -149,7 +169,23 @@ export const MessageBubble = memo(function MessageBubble({
   const hasFacets = !!message.facets?.length
   const displayText = hasFacets ? message.text : remaining
   const displayFacets = hasFacets ? message.facets : undefined
-  const showBubble = remaining.length > 0 || message.embed?.$type === JOIN_LINK_EMBED
+
+  // The message this one replies to (group replies), hydrated by the server as
+  // the referenced message or a tombstone. Rendered as a small quote atop the
+  // bubble so the reply has visible context.
+  const replyTo = message.replyTo
+  const replyPreview = ChatBskyConvoDefs.isDeletedMessageView(replyTo)
+    ? { deleted: true as const }
+    : ChatBskyConvoDefs.isMessageView(replyTo)
+      ? {
+          deleted: false as const,
+          name: replyTo.sender?.did && nameFor ? nameFor(replyTo.sender.did) : '',
+          text: replyTo.text,
+        }
+      : null
+
+  const showBubble =
+    remaining.length > 0 || message.embed?.$type === JOIN_LINK_EMBED || !!replyPreview
 
   const react = (value: string, add: boolean) => {
     onReact?.(message.id, value, add)
@@ -181,14 +217,30 @@ export const MessageBubble = memo(function MessageBubble({
         <div
           className="msg-bubble-wrap"
           // With no bubble, the wrap (i.e. the embed cards) is the long-press
-          // target so reactions stay reachable on touch.
-          {...(!showBubble && onReact ? longPress.handlers : {})}
+          // target so reactions / the menu stay reachable on touch.
+          {...(!showBubble && interactive ? longPress.handlers : {})}
         >
           {showBubble && (
             <div
               className={clsx('msg-bubble', mine ? 'msg-bubble--mine' : 'msg-bubble--theirs')}
-              {...(onReact ? longPress.handlers : {})}
+              {...(interactive ? longPress.handlers : {})}
             >
+              {replyPreview && (
+                <div className="msg-reply-quote">
+                  {replyPreview.deleted ? (
+                    <span className="msg-reply-quote__text msg-reply-quote__text--muted">
+                      Deleted message
+                    </span>
+                  ) : (
+                    <>
+                      {replyPreview.name && (
+                        <span className="msg-reply-quote__name">{replyPreview.name}</span>
+                      )}
+                      <span className="msg-reply-quote__text">{replyPreview.text}</span>
+                    </>
+                  )}
+                </div>
+              )}
               {displayText && (
                 <RichText
                   text={displayText}
@@ -207,6 +259,22 @@ export const MessageBubble = memo(function MessageBubble({
               align={mine ? 'end' : 'start'}
               onPick={pickFromPicker}
               onClose={() => setPickerOpen(false)}
+            />
+          )}
+          {menuOpen && (
+            <MessageMenu
+              align={mine ? 'end' : 'start'}
+              mobile={isMobile}
+              onReply={() => {
+                onReply?.(message)
+                setMenuOpen(false)
+              }}
+              onCopy={() => {
+                void navigator.clipboard?.writeText(message.text)
+                haptic('success')
+                setMenuOpen(false)
+              }}
+              onClose={() => setMenuOpen(false)}
             />
           )}
         </div>

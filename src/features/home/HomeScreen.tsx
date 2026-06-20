@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
-import type { AppBskyFeedDefs } from '@atproto/api'
 import { ErrorState, Spinner, IconButton } from '@/components'
 import { PageAside, MobileTopLeft, MobileTopRight, MobileSelect } from '@/components/layout'
 import { GearIcon, BskyIcon } from '@/components/Icon'
@@ -15,7 +14,6 @@ import { FeedView } from './FeedView'
 import { usePinnedFeeds, type HomeTab } from './use-pinned-feeds'
 import { useTimeline } from './use-timeline'
 import { useCustomFeed, customFeedOptions } from './use-custom-feed'
-import { useNewPosts } from './use-new-posts'
 import './home.css'
 
 const FOLLOWING_KEY = 'following'
@@ -79,19 +77,6 @@ export function HomeScreen() {
   )
 
   const active = isFollowing ? timeline : customFeed
-
-  // Top rendered post uri drives new-post detection.
-  const topUri: string | undefined = (() => {
-    const pages = active.data?.pages as { feed: AppBskyFeedDefs.FeedViewPost[] }[] | undefined
-    return pages?.[0]?.feed?.[0]?.post.uri
-  })()
-
-  const { newItemsCount, reset } = useNewPosts(activeTab, topUri, isAuthed)
-
-  const onNewItems = () => {
-    reset()
-    void active.refetch()
-  }
 
   const navRef = useDragScroll<HTMLElement>()
   const isMobile = useIsMobile()
@@ -168,8 +153,6 @@ export function HomeScreen() {
               key={activeTab?.key ?? FOLLOWING_KEY}
               query={active as never}
               scrollKey={`home:${activeTab?.key ?? FOLLOWING_KEY}`}
-              newItemsCount={newItemsCount}
-              onNewItems={onNewItems}
               emptyMessage={
                 isFollowing
                   ? 'Follow people to see their posts here.'

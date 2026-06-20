@@ -124,18 +124,42 @@
   color-scheme: dark;
 }
 
-/* ---------------- Dim (soft dark purple) — the default ---------------- */
+/* ---------------- Dim (soft dark purple) — the default ----------------
+   Slightly desaturated from the original purple (~30% toward neutral) so the
+   tint reads softer; surfaces stay in the same value range. */
 :root,
 :root[data-theme='dim'] {
-  --bg: #110c1d;
-  --bg-contrast-25: #1a1330;
-  --bg-contrast-50: #241b3c;
-  --bg-overlay: #150f26;
-  --border: #2d2247;
-  --text: #f1ecfb;
-  --text-muted: #b3a8d0;
-  --text-faint: #877ba6;
+  --bg: #120e1a;
+  --bg-contrast-25: #1c172b;
+  --bg-contrast-50: #261f36;
+  --bg-overlay: #161222;
+  --border: #2f2741;
+  --text: #f2eef9;
+  --text-muted: #b5adc9;
+  --text-faint: #89819f;
   --scrim: rgba(4, 2, 10, 0.7);
+  color-scheme: dark;
+}
+
+/* ---------------- CopyCat (Bluesky-like blue-grey) ----------------
+   Mimics the regular Bluesky app: a dark blue-grey ground (#151d28) with the
+   bsky blue accent (overrides the app's violet primary for this theme only). */
+:root[data-theme='copycat'] {
+  --blue-25: rgba(16, 131, 254, 0.16);
+  --blue-50: rgba(16, 131, 254, 0.28);
+  --color-primary: #1083fe;
+  --color-primary-hover: #4596fe;
+  --color-on-primary: #ffffff;
+
+  --bg: #151d28;
+  --bg-contrast-25: #1e2733;
+  --bg-contrast-50: #28323f;
+  --bg-overlay: #1a232f;
+  --border: #2e3a48;
+  --text: #f1f4f8;
+  --text-muted: #aab8c6;
+  --text-faint: #788896;
+  --scrim: rgba(0, 0, 0, 0.7);
   color-scheme: dark;
 }
 

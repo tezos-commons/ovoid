@@ -182,7 +182,8 @@ function apply(s: SettingsSnapshot) {
   }
 }
 
-const isTheme = (t: unknown): t is Theme => t === 'light' || t === 'dim' || t === 'dark'
+const isTheme = (t: unknown): t is Theme =>
+  t === 'light' || t === 'dim' || t === 'dark' || t === 'copycat'
 
 /** Push the current local snapshot to the server, unless byte-identical to the last write. */
 async function pushSnapshot(agent: Agent, did: string): Promise<void> {

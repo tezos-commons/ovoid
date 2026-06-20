@@ -45,6 +45,7 @@ export function PostResults({ q, sort }: { q: string; sort: PostSort }) {
       hasNextPage={query.hasNextPage}
       isFetchingNextPage={query.isFetchingNextPage}
       fetchNextPage={query.fetchNextPage}
+      fadeTopBarOnScroll
       renderItem={(post) => <PostCard post={post} />}
       emptyState={
         <EmptyState
@@ -78,6 +79,7 @@ export function PeopleResults({ q }: { q: string }) {
       hasNextPage={query.hasNextPage}
       isFetchingNextPage={query.isFetchingNextPage}
       fetchNextPage={query.fetchNextPage}
+      fadeTopBarOnScroll
       renderItem={(actor) => <PersonCard actor={actor} />}
       emptyState={
         <EmptyState

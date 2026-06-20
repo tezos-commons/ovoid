@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -55,6 +56,10 @@ interface MobileChromeValue {
   /** When true the top bar is suppressed (e.g. immersive thread view). */
   hideTop: boolean
   setHideTop: (b: boolean) => void
+  /** Transient: the top bar is faded out because the feed is scrolling down.
+   *  (Distinct from hideTop — this is reversible per scroll-direction.) */
+  topHiddenByScroll: boolean
+  setTopHiddenByScroll: (b: boolean) => void
 }
 
 const Ctx = createContext<MobileChromeValue | null>(null)
@@ -64,6 +69,47 @@ export function useMobileChromeCtx(): MobileChromeValue {
   const v = useContext(Ctx)
   if (!v) throw new Error('useMobileChromeCtx must be used within <MobileChromeProvider>')
   return v
+}
+
+/** Non-throwing accessor for components that also render outside the mobile shell
+ *  (e.g. InfiniteList on desktop). Returns null when there's no provider. */
+export function useMobileChromeOptional(): MobileChromeValue | null {
+  return useContext(Ctx)
+}
+
+/**
+ * Fade the floating top bar out on scroll-down, back in on scroll-up, for a given
+ * scroller. Pass a ref to the scroll element, or omit it to track the window
+ * scroll (document-scrolled screens like profile feeds). Hysteresis (act past a
+ * 6px delta) avoids momentum flicker; within 64px of the top the bar is always
+ * shown. Resets to visible on unmount/disable so the next screen never inherits a
+ * hidden bar. No-op off the mobile shell (no provider) or when disabled.
+ */
+export function useFadeTopBarOnScroll(
+  ref?: RefObject<HTMLElement | null>,
+  enabled = true,
+): void {
+  const setTopHidden = useContext(Ctx)?.setTopHiddenByScroll
+  useEffect(() => {
+    if (!enabled || !setTopHidden) return
+    const el = ref?.current ?? null
+    const target: HTMLElement | Window = el ?? window
+    const getY = () => (el ? el.scrollTop : window.scrollY)
+    let lastY = getY()
+    const onScroll = () => {
+      const y = getY()
+      const dy = y - lastY
+      if (y <= 64) setTopHidden(false)
+      else if (dy > 6) setTopHidden(true)
+      else if (dy < -6) setTopHidden(false)
+      if (Math.abs(dy) > 6) lastY = y
+    }
+    target.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      target.removeEventListener('scroll', onScroll)
+      setTopHidden(false)
+    }
+  }, [ref, enabled, setTopHidden])
 }
 
 export function MobileChromeProvider({ children }: { children: ReactNode }) {
@@ -76,6 +122,7 @@ export function MobileChromeProvider({ children }: { children: ReactNode }) {
   const [userMode, setUserMode] = useState<'context' | 'nav' | null>(null)
   const [bottomDefaultOpen, setBottomDefaultOpen] = useState(false)
   const [hideTop, setHideTop] = useState(false)
+  const [topHiddenByScroll, setTopHiddenByScroll] = useState(false)
 
   const bump = useCallback((slot: CountedSlot, delta: number) => {
     setCounts((c) => ({ ...c, [slot]: c[slot] + delta }))
@@ -101,8 +148,10 @@ export function MobileChromeProvider({ children }: { children: ReactNode }) {
       setBottomDefaultOpen,
       hideTop,
       setHideTop,
+      topHiddenByScroll,
+      setTopHiddenByScroll,
     }),
-    [topLeftEl, topRightEl, bottomEl, topFillEl, counts, bump, title, userMode, bottomDefaultOpen, hideTop],
+    [topLeftEl, topRightEl, bottomEl, topFillEl, counts, bump, title, userMode, bottomDefaultOpen, hideTop, topHiddenByScroll],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

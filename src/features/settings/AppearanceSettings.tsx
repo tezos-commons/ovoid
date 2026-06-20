@@ -17,7 +17,8 @@ function Swatch({ bg }: { bg: string }) {
 
 const THEME_OPTIONS: { value: Theme; label: React.ReactNode }[] = [
   { value: 'dark', label: <><Swatch bg="#030206" /> Dark</> },
-  { value: 'dim', label: <><Swatch bg="#1e1730" /> Dim</> },
+  { value: 'dim', label: <><Swatch bg="#1e1a29" /> Dim</> },
+  { value: 'copycat', label: <><Swatch bg="#151d28" /> CopyCat</> },
   { value: 'light', label: <><Swatch bg="#ffffff" /> Light</> },
 ]
 

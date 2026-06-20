@@ -102,6 +102,14 @@
   border-radius: var(--radius-pill);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+/* Faded out while a feed scrolls down (restored on scroll up). Quick opacity
+   fade + a small lift; pointer-events off so the invisible bar isn't tappable. */
+.mbar--top.mbar--hidden {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
 }
 .mbar__side {
   display: flex;
@@ -145,13 +153,25 @@
 
 /* ---------------- Bottom bar ---------------- */
 .mbar--bottom {
-  /* Ride above the keyboard when it's open (--kb), else clear the home indicator.
+  /* Rest above the home indicator (safe-inset); when the keyboard is up, ride
+     above it via --kb (which on iOS already includes the keyboard's accessory
+     bar). max() takes whichever is taller, so the keyboard case naturally DROPS
+     the now-redundant home-indicator inset — the keyboard covers that zone — and
+     the bar sits snug above the accessory bar with no ~1cm dead gap. Pure CSS:
+     no UA sniffing, and a no-op on Android (--kb ≈ 0 there).
      transition so the lift tracks the keyboard's slide rather than snapping. */
-  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--mbar-edge) + var(--kb));
-  transition: bottom 0.18s ease;
+  bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--kb)) + var(--mbar-edge));
+  transition: bottom 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
   min-height: var(--mbar-bottom-h);
   padding: var(--space-2);
   border-radius: var(--radius-panel);
+}
+/* Slid out of the way while a top-bar input (e.g. search) holds the keyboard —
+   the bar would otherwise sit on top of the keyboard. */
+.mbar--bottom.mbar--kbhidden {
+  transform: translateY(calc(100% + var(--kb) + var(--mbar-edge) + env(safe-area-inset-bottom, 0px)));
+  opacity: 0;
+  pointer-events: none;
 }
 .mbar__multi {
   flex: 0 0 auto;
@@ -321,16 +341,26 @@
   height: 34px;
   flex-shrink: 0;
   border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: none;
+  color: var(--color-primary);
 }
 .mbar__context .msg-composer__send:disabled {
-  background: color-mix(in srgb, var(--text) 12%, transparent);
+  background: none;
   color: var(--text-faint);
 }
 /* Mention popover floats above the bar rather than pushing it. */
 .mbar__context .mention-pop {
   bottom: calc(100% + var(--space-2));
+}
+/* Reply banner floats above the bar too (like the mention popover). In flow it
+   would grow the composer, and since the bottom bar centers its row, the left
+   multi button would drift up off the input — so keep the composer one row tall. */
+.mbar__context .msg-composer__reply {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+  margin-bottom: 0;
 }
 
 /* Home compose entry pill (bottom-bar contextual content on feed surfaces). */

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { tezosEntityPath } from '@/features/contract/contract-route'
-import { Tabs, Icons, type TabItem } from '@/components'
-import { MobileTopBarFill } from '@/components/layout'
+import { Tabs, Icons, type TabItem, type MenuItem } from '@/components'
+import { MobileTopBarFill, MobileSelect, useFadeTopBarOnScroll } from '@/components/layout'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import './search.css'
 import { TypeaheadDropdown } from './TypeaheadDropdown'
@@ -42,6 +42,11 @@ export default function SearchScreen() {
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  // Fade the top bar (the search input) on scroll once results are showing. The
+  // Posts/People tabs scroll inside their own InfiniteList (handled there); this
+  // covers the document-flow Feeds tab, which scrolls .search__content itself.
+  useFadeTopBarOnScroll(contentRef, !!committed)
 
   // Keep the input in sync when the committed query changes externally
   // (e.g. navigating in via a trending chip / browser back-forward).
@@ -95,6 +100,14 @@ export default function SearchScreen() {
   const showTypeahead = focused && draft.trim().length > 0
   const isMobile = useIsMobile()
 
+  const activeTab = TABS.find((t) => t.key === tab) ?? TABS[0]
+  const tabMenuItems: MenuItem[] = TABS.map((t) => ({
+    key: t.key,
+    label: t.label,
+    active: t.key === tab,
+    onSelect: () => setTab(t.key),
+  }))
+
   // The search field. On mobile it becomes the whole top bar; on desktop it's the
   // in-page header band.
   const searchBox = (
@@ -138,19 +151,31 @@ export default function SearchScreen() {
 
   return (
     <>
-      {isMobile && <MobileTopBarFill>{searchBox}</MobileTopBarFill>}
+      {isMobile && (
+        <MobileTopBarFill>
+          <div className="search__mobilebar">
+            {searchBox}
+            {/* Tabs don't fit a phone-width bar — fold them into the shared
+                top-bar dropdown (same as Home's feed selector), shown only once a
+                query is committed. */}
+            {committed && (
+              <MobileSelect ariaLabel="Result type" label={activeTab.label} items={tabMenuItems} />
+            )}
+          </div>
+        </MobileTopBarFill>
+      )}
 
       <div className="search">
-      {/* Mobile: the search box is the top bar; the header keeps only the result
-          tabs (and only when there's a committed query). */}
-      {(!isMobile || committed) && (
+      {/* Desktop: the in-page header holds the search box + result tabs. On mobile
+          the box and tab dropdown live in the floating top bar instead. */}
+      {!isMobile && (
         <header className="search__header">
-          {!isMobile && searchBox}
+          {searchBox}
           {committed && <Tabs items={TABS} activeKey={tab} onChange={setTab} sticky />}
         </header>
       )}
 
-      <div className="search__content">
+      <div className="search__content" ref={contentRef}>
         {!committed ? (
           <DiscoverState />
         ) : tab === 'people' ? (

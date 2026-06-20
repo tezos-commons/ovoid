@@ -113,19 +113,19 @@ export function SettingsNav() {
       </Section>
 
       <Section title="Settings">
-        <Row to="/settings/account" icon={<PersonIcon />} label="Account" sub="Handle, DID, data export" />
+        <Row to="/settings/account" icon={<PersonIcon />} label="Account" />
         <Row to="/settings/privacy" icon={<ShieldIcon />} label="Privacy & Security" />
-        <Row to="/settings/notifications" icon={<BellIcon />} label="Notifications" sub="Push notifications & per-type settings" />
-        <Row to="/settings/moderation" icon={<GearIcon />} label="Moderation" sub="Muted words, content filters" />
-        <Row to="/settings/appearance" icon={<HashIcon />} label="Appearance" sub="Theme & font" />
+        <Row to="/settings/notifications" icon={<BellIcon />} label="Notifications" />
+        <Row to="/settings/moderation" icon={<GearIcon />} label="Moderation" />
+        <Row to="/settings/appearance" icon={<HashIcon />} label="Appearance" />
         <Row to="/settings/accessibility" icon={<AccessibilityIcon />} label="Accessibility" />
         <Row to="/settings/languages" icon={<GlobeIcon />} label="Languages" />
       </Section>
 
       <Section title="Advanced">
-        <Row to="/settings/publications" icon={<PenIcon />} label="Publications" sub="Publish long-form articles under your own subdomain" />
-        <Row to="/settings/wallet" icon={<WalletIcon />} label="Linked Wallet" sub="Tezos address shown on your profile" />
-        <Row to="/settings/app-passwords" icon={<KeyIcon />} label="App Passwords" sub="Session & legacy access" />
+        <Row to="/settings/publications" icon={<PenIcon />} label="Publications" />
+        <Row to="/settings/wallet" icon={<WalletIcon />} label="Linked Wallet" />
+        <Row to="/settings/app-passwords" icon={<KeyIcon />} label="App Passwords" />
         <Row to="/settings/lists" icon={<ListIcon />} label="Threads & feed preferences" />
         <Row to="/settings/about" icon={<InfoIcon />} label="About" />
       </Section>

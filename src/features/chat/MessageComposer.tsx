@@ -15,11 +15,22 @@ import {
 } from './MentionSuggest'
 import type { ConvoMember } from './group'
 
+/** A message being replied to (group chats), surfaced as the composer banner. */
+export interface ReplyTarget {
+  id: string
+  authorName: string
+  text: string
+}
+
 export interface MessageComposerProps {
   convoId: string
   disabled?: boolean
   /** Convo roster — first-choice mention suggestions (group members / the DM peer). */
   members?: ConvoMember[]
+  /** Active reply target (group chats); shows a banner and attaches a reply ref. */
+  replyTo?: ReplyTarget | null
+  /** Dismiss the current reply target. */
+  onClearReply?: () => void
 }
 
 /**
@@ -31,7 +42,13 @@ export interface MessageComposerProps {
  * arrows move it — Enter only sends when no suggestion list is showing. The
  * inserted @handle becomes a real mention facet in useSendMessage's buildPost.
  */
-export function MessageComposer({ convoId, disabled, members = [] }: MessageComposerProps) {
+export function MessageComposer({
+  convoId,
+  disabled,
+  members = [],
+  replyTo,
+  onClearReply,
+}: MessageComposerProps) {
   const [text, setText] = useState('')
   const [token, setToken] = useState<MentionToken | null>(null)
   const [highlight, setHighlight] = useState(0)
@@ -86,20 +103,24 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
     e?.preventDefault()
     const value = text.trim()
     if (!value || send.isPending || disabled) return
-    send.mutate(value, {
-      onSuccess: () => {
-        haptic('success')
-        setText('')
-        setToken(null)
+    send.mutate(
+      { text: value, replyToId: replyTo?.id },
+      {
+        onSuccess: () => {
+          haptic('success')
+          setText('')
+          setToken(null)
+          onClearReply?.()
+        },
       },
-    })
+    )
   }
 
   // After a poll is created, share it as a message — the link unfurls into the
   // interactive poll card (and is stripped from the bubble text).
   const createdPoll = (id: string) => {
     setPollOpen(false)
-    send.mutate(pollUrl(id), { onSuccess: () => haptic('success') })
+    send.mutate({ text: pollUrl(id) }, { onSuccess: () => haptic('success') })
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -123,6 +144,10 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
         setToken(null)
         return
       }
+    }
+    if (e.key === 'Escape' && replyTo) {
+      onClearReply?.()
+      return
     }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -159,6 +184,24 @@ export function MessageComposer({ convoId, disabled, members = [] }: MessageComp
       {send.isError && (
         <div className="msg-composer__error" role="alert">
           {normalizeXrpcError(send.error).message}
+        </div>
+      )}
+      {replyTo && (
+        <div className="msg-composer__reply">
+          <div className="msg-composer__reply-body">
+            <span className="msg-composer__reply-label">
+              Replying to <strong>{replyTo.authorName}</strong>
+            </span>
+            {replyTo.text && <span className="msg-composer__reply-text">{replyTo.text}</span>}
+          </div>
+          <button
+            type="button"
+            className="msg-composer__reply-cancel"
+            aria-label="Cancel reply"
+            onClick={() => onClearReply?.()}
+          >
+            <CloseIcon />
+          </button>
         </div>
       )}
       <div className="msg-composer__row">
@@ -208,6 +251,14 @@ function PollIcon() {
   return (
     <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
       <path d="M6 20v-6M12 20V4M18 20v-10" />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" />
     </svg>
   )
 }

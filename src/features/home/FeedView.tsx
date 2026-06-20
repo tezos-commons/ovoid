@@ -56,6 +56,7 @@ export function FeedView({
       hasNextPage={query.hasNextPage}
       isFetchingNextPage={query.isFetchingNextPage}
       fetchNextPage={() => void query.fetchNextPage()}
+      fadeTopBarOnScroll
       newItemsCount={newItemsCount}
       onNewItems={onNewItems}
       emptyState={

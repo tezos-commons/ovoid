@@ -144,3 +144,4 @@ export function usePageFullWidth(active = true): void {
     return () => setFullWidth(false)
   }, [active, setFullWidth])
 }
+

@@ -137,6 +137,7 @@ export default function NotificationsScreen() {
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         fetchNextPage={fetchNextPage}
+        fadeTopBarOnScroll
         emptyState={
           <EmptyState
             icon={<BellIcon size={40} />}

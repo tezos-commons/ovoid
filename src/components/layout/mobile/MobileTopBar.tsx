@@ -26,7 +26,14 @@ export function MobileTopBar() {
   const hasFill = ctx.counts.topFill > 0
 
   return (
-    <header className={clsx('mbar mbar--top liquid-glass', hasFill && 'mbar--fill')} role="banner">
+    <header
+      className={clsx(
+        'mbar mbar--top liquid-glass',
+        hasFill && 'mbar--fill',
+        ctx.topHiddenByScroll && 'mbar--hidden',
+      )}
+      role="banner"
+    >
       <span className="liquid-glass__layer" aria-hidden="true" />
       {/* Full-width slot — always mounted (portal target); shown only when filled. */}
       <div className="mbar__fill" ref={ctx.setTopFillEl} hidden={!hasFill} />

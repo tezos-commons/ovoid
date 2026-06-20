@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Avatar, Img, ErrorState, EmptyState, Lightbox } from '@/components'
 import { ShareIcon } from '@/components/Icon'
 import { shareArticle } from './embeddable-url'
+import { useWindowScrollRestoration } from '@/lib/scroll-restoration'
 import { absoluteTime } from '@/lib/time'
 import { blobUrl } from '@/lib/api/repo-read'
 import { useDocument, type DocumentView } from './use-document'
@@ -37,6 +38,12 @@ function markpubMarkdown(content: { $type: string } & Record<string, unknown>): 
 export default function ReaderScreen() {
   const { authority, rkey } = useParams<{ authority: string; rkey: string }>()
   const { data, isLoading, isError, error, refetch } = useDocument(authority, rkey)
+
+  // This public route lives outside RootLayout (which resets document scroll on
+  // navigation), so opening an article from a scrolled-down publication list
+  // would otherwise keep the old window offset. Reset to the top per article;
+  // restores the prior offset on back/forward (POP).
+  useWindowScrollRestoration(authority && rkey ? `read:${authority}/${rkey}` : undefined)
 
   const cover =
     data?.doc.coverImage && data

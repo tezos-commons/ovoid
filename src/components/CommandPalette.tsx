@@ -31,7 +31,12 @@ function fuzzy(query: string, text: string): boolean {
   return true
 }
 
-const THEME_CYCLE: Record<Theme, Theme> = { light: 'dim', dim: 'dark', dark: 'light' }
+const THEME_CYCLE: Record<Theme, Theme> = {
+  light: 'dim',
+  dim: 'dark',
+  dark: 'copycat',
+  copycat: 'light',
+}
 
 /**
  * ⌘K command palette: fuzzy-filtered navigation + actions. Built on Dialog (scrim,
