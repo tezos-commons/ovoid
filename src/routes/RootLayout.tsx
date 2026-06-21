@@ -16,6 +16,7 @@ import { CommandPalette } from '@/components/CommandPalette'
 import { ShortcutsDialog } from '@/components/ShortcutsDialog'
 import { useAgent } from '@/lib/api/agent'
 import { setLastAccount } from '@/features/auth/last-account'
+import { setLastNavigationType } from '@/lib/nav-tracking'
 
 // Interaction-gated overlays. Code-split AND conditionally mounted: a lazy
 // component that always renders (even returning null) still loads its chunk at
@@ -49,6 +50,11 @@ export function RootLayout() {
   const { pathname } = useLocation()
   const navigationType = useNavigationType()
   const fullWidth = FULL_WIDTH_PREFIXES.some((p) => pathname.startsWith(p))
+
+  // Record the nav type synchronously during render — before the child route and
+  // its query observers mount — so the QueryClient's refetchOnMount sees the
+  // current navigation when it decides whether to refetch (see nav-tracking.ts).
+  setLastNavigationType(navigationType)
 
   // Reset document scroll to the top on forward (PUSH/REPLACE) navigation, so a
   // newly opened screen — a profile tapped from a scrolled feed, a thread — does

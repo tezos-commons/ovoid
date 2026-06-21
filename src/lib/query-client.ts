@@ -4,6 +4,7 @@ import {
   type PersistedQuery,
 } from '@tanstack/query-persist-client-core'
 import { idbStorage, clearIdbStorage } from './idb-storage'
+import { isPopNavigation } from './nav-tracking'
 
 /**
  * Single shared QueryClient. React Query is the sole server-state cache.
@@ -73,6 +74,12 @@ export const queryClient = new QueryClient({
       gcTime: 5 * 60_000,
       retry: 1,
       refetchOnWindowFocus: false,
+      // Don't refetch already-cached data when arriving via back/forward (POP):
+      // an infinite-feed refetch replays all pages and the virtualizer reflows,
+      // throwing away the restored scroll position. Cold queries ignore this and
+      // fetch as normal, so forward navigation still loads fresh. (See
+      // nav-tracking.ts.)
+      refetchOnMount: () => (isPopNavigation() ? false : true),
       persister: persister.persisterFn,
     },
     mutations: {

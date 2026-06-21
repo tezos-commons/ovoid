@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react'
 import { RootLayout } from './RootLayout'
 import { RequireAuth } from './RequireAuth'
 import { RequireAccess } from './RequireAccess'
+import { RouteErrorBoundary } from './RouteErrorBoundary'
 
 // Instruments data-router navigations as Sentry transactions (pageload + route
 // changes), pairing with browserTracingIntegration in instrument.ts.
@@ -189,11 +190,20 @@ const studioRoutes: RouteObject[] = [
 ]
 
 export const router = sentryCreateBrowserRouter([
-  ...publicRoutes,
-  ...studioRoutes,
   {
-    path: '/',
-    element: <RootLayout />,
-    children: shellRoutes,
+    // Pathless layout route: renders its matched child via the default Outlet,
+    // but its errorElement catches errors from EVERY descendant route (a lazy
+    // chunk that fails to load, a route render throw) — replacing react-router's
+    // default "💿 Hey developer" screen with a hard-reload recovery.
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      ...publicRoutes,
+      ...studioRoutes,
+      {
+        path: '/',
+        element: <RootLayout />,
+        children: shellRoutes,
+      },
+    ],
   },
 ])
