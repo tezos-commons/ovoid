@@ -13,17 +13,11 @@ import { ThreadView } from './ThreadScreen'
 export function PostSheet() {
   const { actor, rkey, close } = usePostSheetStore()
 
-  // Dialog locks body scroll (overflow:hidden), which on mobile drops the
-  // window scroll to 0. The feed underneath never unmounts, so we just snapshot
-  // its offset at open (first render, before the lock) and restore it on close.
-  const feedScrollY = useRef(window.scrollY)
-  useEffect(() => {
-    return () => window.scrollTo(0, feedScrollY.current)
-  }, [])
-
-  // NB: back/edge-swipe → close is handled in RootLayout via useCloseOnBack on
-  // the store's open flag — from an always-mounted component, so the history
-  // sentinel exists immediately (this sheet is lazy and would push it late).
+  // NB: the feed's scroll is preserved by Dialog's position-preserving scroll
+  // lock (it freezes the background and restores the offset on close), and
+  // back/edge-swipe → close is handled in RootLayout via useCloseOnBack on the
+  // store's open flag — from an always-mounted component, so the history sentinel
+  // exists immediately (this sheet is lazy and would push it late).
 
   // If something inside the thread navigates the route (an author link, a
   // counts link), close the sheet so that destination isn't left under it.

@@ -40,8 +40,27 @@ export function Dialog({
   useEffect(() => {
     if (!open) return
 
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    // Position-preserving scroll lock. Plain overflow:hidden lets mobile (notably
+    // Android) collapse the window scroll to 0, so the page behind a sheet visibly
+    // jumps to the top as it opens. Pinning body with position:fixed + top:-scrollY
+    // freezes the background exactly where it is; we restore the offset on close.
+    // The full prev-style save lets stacked dialogs nest and unwind correctly.
+    const body = document.body
+    const scrollY = window.scrollY
+    const prev = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+    }
+    body.style.overflow = 'hidden'
+    body.style.position = 'fixed'
+    body.style.top = `-${scrollY}px`
+    body.style.left = '0'
+    body.style.right = '0'
+    body.style.width = '100%'
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -60,8 +79,14 @@ export function Dialog({
     toFocus?.focus()
 
     return () => {
-      document.body.style.overflow = prevOverflow
+      body.style.overflow = prev.overflow
+      body.style.position = prev.position
+      body.style.top = prev.top
+      body.style.left = prev.left
+      body.style.right = prev.right
+      body.style.width = prev.width
       document.removeEventListener('keydown', onKey)
+      window.scrollTo(0, scrollY)
     }
   }, [open])
 
