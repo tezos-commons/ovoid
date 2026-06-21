@@ -40,6 +40,9 @@ export function customFeedOptions(
     },
     getNextPageParam: (last) => last.cursor || undefined,
     maxPages: MAX_FEED_PAGES,
+    // Never auto-refetch a cached feed on (re)mount — returning from a post must
+    // show the feed exactly as left, not reflow it. Cold queries still fetch.
+    refetchOnMount: false,
   })
 }
 

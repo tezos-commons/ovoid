@@ -10,6 +10,7 @@ import {
   type AppBskyFeedDefs,
 } from '@atproto/api'
 import { Avatar } from './Avatar'
+import { usePostActions } from './PostActionsContext'
 import { Img } from './Img'
 import { VideoPlayer } from './VideoPlayer'
 import { GenericExternalCard } from './embeds/GenericExternalCard'
@@ -225,12 +226,15 @@ function QuotePost({
   depth: number
 }) {
   const navigate = useNavigate()
+  const actions = usePostActions()
   const a = record.author
   const val = AppBskyFeedPost.isRecord(record.value)
     ? (record.value as AppBskyFeedPost.Record)
     : null
   const rkey = record.uri.split('/').pop() ?? ''
   const permalink = `/profile/${a.handle || a.did}/post/${rkey}`
+  const openThread = () =>
+    actions ? actions.openThread(a.handle || a.did, rkey) : navigate(permalink)
   // Bound nesting: a top-level quote shows its own media; deeper quotes don't.
   const nested = depth < 1 ? record.embeds?.[0] : undefined
 
@@ -252,7 +256,7 @@ function QuotePost({
       role="link"
       onClick={(e) => {
         e.stopPropagation()
-        navigate(permalink)
+        openThread()
       }}
     >
       <div className="embed-quote__head">

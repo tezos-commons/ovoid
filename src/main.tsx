@@ -18,6 +18,12 @@ import '@/components/components.css'
 import '@/components/layout/layout.css'
 import { App } from './App'
 
+// The app owns scroll restoration (RootLayout resets on forward nav; InfiniteList
+// restores virtualized feeds on back). Turn off the browser's own restoration so
+// it doesn't race ours — with 'auto' the browser re-applies a remembered offset
+// after our restore, which reads as "lands then jumps to top" on back.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+
 // atproto's OAuth loopback client forbids the "localhost" hostname in
 // redirect_uris (RFC 8252 §8.3) — only the loopback IP literal is permitted.
 // The dev origin is the single source of truth for both the synthesized

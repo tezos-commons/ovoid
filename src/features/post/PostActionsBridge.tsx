@@ -1,6 +1,9 @@
 import { useMemo, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { PostActionsProvider, type PostActions } from '@/components'
 import { useComposer } from '@/store/compose-store'
+import { useIsMobile } from '@/lib/use-is-mobile'
+import { usePostSheetStore } from '@/store/post-sheet-store'
 import { usePostMutations, sharePost } from './use-post-mutations'
 
 /**
@@ -12,6 +15,10 @@ import { usePostMutations, sharePost } from './use-post-mutations'
 export function PostActionsBridge({ children }: { children: ReactNode }) {
   const { toggleLike, toggleRepost } = usePostMutations()
   const { openReply, openQuote } = useComposer()
+  const navigate = useNavigate()
+  // One device check for every PostCard, instead of a media-query listener per card.
+  const isMobile = useIsMobile()
+  const openSheet = usePostSheetStore((s) => s.openPost)
 
   const value = useMemo<PostActions>(
     () => ({
@@ -20,8 +27,10 @@ export function PostActionsBridge({ children }: { children: ReactNode }) {
       reply: openReply,
       quote: openQuote,
       share: (post) => void sharePost(post),
+      openThread: (actor, rkey) =>
+        isMobile ? openSheet(actor, rkey) : navigate(`/profile/${actor}/post/${rkey}`),
     }),
-    [toggleLike, toggleRepost, openReply, openQuote],
+    [toggleLike, toggleRepost, openReply, openQuote, isMobile, openSheet, navigate],
   )
 
   return <PostActionsProvider value={value}>{children}</PostActionsProvider>

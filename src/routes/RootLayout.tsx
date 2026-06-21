@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigationType } from 'react-router-dom'
 import { AppShell } from '@/components/layout'
 import { Spinner, Lightbox } from '@/components'
 import { useComposer, useComposerStore } from '@/store/compose-store'
+import { usePostSheetStore } from '@/store/post-sheet-store'
 import { useChatStore } from '@/store/chat-store'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
 import { useArtifactStore } from '@/store/artifact-store'
@@ -11,6 +12,7 @@ import { RequireAuth } from './RequireAuth'
 import { RequireAccess } from './RequireAccess'
 import { usePushBoot } from '@/features/notifications/use-push-boot'
 import { useEscapeBack } from '@/lib/use-escape-back'
+import { useCloseOnBack } from '@/lib/use-close-on-back'
 import { useGlobalShortcuts } from '@/lib/use-global-shortcuts'
 import { CommandPalette } from '@/components/CommandPalette'
 import { ShortcutsDialog } from '@/components/ShortcutsDialog'
@@ -33,6 +35,9 @@ const NftBrowser = lazy(() =>
 )
 const ArtifactPlayer = lazy(() =>
   import('@/components/embeds/ArtifactPlayer').then((m) => ({ default: m.ArtifactPlayer })),
+)
+const PostSheet = lazy(() =>
+  import('@/features/thread/PostSheet').then((m) => ({ default: m.PostSheet })),
 )
 
 /**
@@ -63,12 +68,25 @@ export function RootLayout() {
   // InfiniteList) can restore the remembered position. The whole app scrolls the
   // window (useWindowVirtualizer), so window is the right target. /messages owns
   // its own internal scroll and starts at the list, so excluding it is moot.
+  //
+  // Passive effect on purpose: it runs AFTER child passive effects, so for a
+  // thread it overrides ThreadScreen's scrollIntoView and the screen opens at the
+  // true top (author header visible) rather than scrolled into the focused post's
+  // body. (history.scrollRestoration='manual' in main.tsx already stops the
+  // browser from re-applying a remembered offset here.)
   useEffect(() => {
     if (navigationType !== 'POP') window.scrollTo(0, 0)
   }, [pathname, navigationType])
 
   const composeOpen = useComposerStore((s) => s.open)
+  const postSheetOpen = usePostSheetStore((s) => s.open)
+  const closePostSheet = usePostSheetStore((s) => s.close)
   const newChatOpen = useChatStore((s) => s.newChatOpen)
+
+  // Back / edge-swipe closes the mobile post sheet (instead of navigating the
+  // route). Driven from here — always mounted — so the history sentinel is in
+  // place the instant the sheet opens, before the lazy PostSheet chunk loads.
+  useCloseOnBack(postSheetOpen, closePostSheet)
   const nftOpen = useNftBrowserStore((s) => s.open)
   // The player stays mounted through mini ⇄ full so audio survives; it only
   // unmounts (stopping playback) when explicitly closed.
@@ -111,6 +129,7 @@ export function RootLayout() {
             </Suspense>
           </AppShell>
           <Suspense fallback={null}>
+            {postSheetOpen && <PostSheet />}
             {composeOpen && <ComposeModal />}
             {newChatOpen && <NewChatDialog />}
             {nftOpen && <NftBrowser />}

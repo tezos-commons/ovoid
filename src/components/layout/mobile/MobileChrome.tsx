@@ -218,15 +218,17 @@ export function MobileBottomContent({
   return <Portal slot="bottom">{children}</Portal>
 }
 
-/** Suppress the floating top bar while mounted (immersive screens). No-op on desktop. */
-export function useHideMobileTopBar(): void {
+/** Suppress the floating top bar while mounted (immersive screens). No-op on
+ *  desktop, or when `enabled` is false (e.g. the thread rendered inside a sheet,
+ *  which must not touch the underlying feed's chrome/layout). */
+export function useHideMobileTopBar(enabled = true): void {
   const ctx = useContext(Ctx)
   const setHideTop = ctx?.setHideTop
   useEffect(() => {
-    if (!setHideTop) return
+    if (!enabled || !setHideTop) return
     setHideTop(true)
     return () => setHideTop(false)
-  }, [setHideTop])
+  }, [enabled, setHideTop])
 }
 
 /** Set the top bar's centered title fallback while mounted. No-op on desktop. */

@@ -96,7 +96,11 @@ export const PostCard = memo(function PostCard({
       : null
 
   const open = () => {
-    if (!focused) navigate(permalink)
+    if (focused) return
+    // Route on desktop, sheet on mobile (decided in the bridge); fall back to a
+    // plain navigate when no bridge is mounted (e.g. tests).
+    if (actions) actions.openThread(author.handle || author.did, post.uri.split('/').pop() ?? '')
+    else navigate(permalink)
   }
 
   // Warm what tapping this card can lead to — the post's thread, the author's

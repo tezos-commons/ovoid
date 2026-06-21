@@ -18,6 +18,21 @@ import './home.css'
 
 const FOLLOWING_KEY = 'following'
 
+// Remember the selected feed tab across HomeScreen unmount/remount (opening a
+// post and sliding back remounts the screen). Without this, activeKey re-inits to
+// Following, so you return to a DIFFERENT feed — which also remounts a possibly
+// cold feed query: blank → load → scroll lost. Stored in sessionStorage (not a
+// module variable) so it ALSO survives a full page reload — mobile/iOS-standalone
+// sometimes reloads the document on back, which would wipe an in-memory value.
+const TAB_STORAGE_KEY = 'ovoid:home-feed-tab'
+function loadLastTab(): string {
+  try {
+    return sessionStorage.getItem(TAB_STORAGE_KEY) || FOLLOWING_KEY
+  } catch {
+    return FOLLOWING_KEY
+  }
+}
+
 /**
  * Home timeline screen.
  *
@@ -41,24 +56,36 @@ export function HomeScreen() {
     { key: FOLLOWING_KEY, label: 'Following', kind: 'following', value: 'following', id: 'timeline', pinned: true },
   ]
 
-  const [activeKey, setActiveKey] = useState(FOLLOWING_KEY)
+  const [activeKey, setActiveKey] = useState(loadLastTab)
   const activeTab = useMemo(
     () => tabs.find((t) => t.key === activeKey) ?? tabs[0],
     [tabs, activeKey],
   )
 
-  // If the active key vanishes (prefs changed), fall back to Following.
+  // Persist the selection so a remount or reload (post → back) restores the same tab.
   useEffect(() => {
-    if (!tabs.some((t) => t.key === activeKey)) setActiveKey(FOLLOWING_KEY)
-  }, [tabs, activeKey])
+    try {
+      sessionStorage.setItem(TAB_STORAGE_KEY, activeKey)
+    } catch {
+      /* private mode / storage disabled — fall back to in-session default */
+    }
+  }, [activeKey])
 
-  // Preload every pinned feed's first page once the strip is known, so clicking
-  // a feed name renders instantly instead of cold-fetching. Only the active tab
-  // is `enabled`, so without this each switch starts from an empty cache. Idle +
-  // concurrency-bounded so it never delays the active feed's first paint.
+  // If the active key vanishes (prefs changed), fall back to Following — but only
+  // once pinned feeds have loaded. While loading, `tabs` is just the default
+  // [Following], which would spuriously reset a restored custom-feed key.
+  useEffect(() => {
+    if (pinned.data && !tabs.some((t) => t.key === activeKey)) setActiveKey(FOLLOWING_KEY)
+  }, [pinned.data, tabs, activeKey])
+
+  // Preload every INACTIVE pinned feed's first page once the strip is known, so
+  // clicking a feed name renders instantly instead of cold-fetching. The active
+  // tab is excluded: prefetchInfiniteQuery ignores refetchOnMount and would
+  // refetch the feed you're currently viewing once it's stale — reflowing it and
+  // losing scroll (the "feed refreshes on its own"). Idle + concurrency-bounded.
   useEffect(() => {
     if (!isAuthed) return
-    const feeds = tabs.filter((t) => t.kind !== 'following' && t.value)
+    const feeds = tabs.filter((t) => t.kind !== 'following' && t.value && t.key !== activeKey)
     if (feeds.length === 0) return
     return runWhenIdle(() => {
       for (const t of feeds) {
@@ -66,7 +93,7 @@ export function HomeScreen() {
         schedulePrefetch(opts.queryKey, () => queryClient.prefetchInfiniteQuery(opts))
       }
     })
-  }, [tabs, agent, did, isAuthed])
+  }, [tabs, agent, did, isAuthed, activeKey])
 
   const isFollowing = activeTab?.kind === 'following'
   const timeline = useTimeline(isAuthed && isFollowing)

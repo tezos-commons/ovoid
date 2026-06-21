@@ -15,6 +15,12 @@ export interface PostActions {
   reply: (post: AppBskyFeedDefs.PostView) => void
   quote: (post: AppBskyFeedDefs.PostView) => void
   share: (post: AppBskyFeedDefs.PostView) => void
+  /**
+   * Open a post's thread. Desktop navigates to the permalink route; mobile opens
+   * it in a sheet over the current screen (so the feed stays mounted). Decided
+   * centrally here so PostCard needs no per-instance device check.
+   */
+  openThread: (actor: string, rkey: string) => void
 }
 
 const PostActionsContext = createContext<PostActions | null>(null)

@@ -37,14 +37,33 @@ const SORT_TABS = [
  * Public-capable: getPostThread serves signed-out against the public AppView;
  * the composer renders a sign-in prompt instead of a textarea when unauthed.
  */
+/** Route entry: reads actor/rkey from the URL and renders the thread. */
 export default function ThreadScreen() {
   const { actor = '', rkey = '' } = useParams()
+  return <ThreadView actor={actor} rkey={rkey} />
+}
+
+/**
+ * The thread for a post. Used by the route above and, on mobile, inside a sheet
+ * (PostSheet) — which passes actor/rkey and sets `inSheet` so it doesn't touch
+ * the underlying feed's mobile chrome.
+ */
+export function ThreadView({
+  actor,
+  rkey,
+  inSheet = false,
+}: {
+  actor: string
+  rkey: string
+  inSheet?: boolean
+}) {
   const { data, isLoading, isPlaceholderData, isError, error, refetch } = useThread(actor, rkey)
   const [sort, setSort] = useState<SortKey>('top')
   const isMobile = useIsMobile()
 
   // Immersive single-post view: no floating top bar (back is via edge-swipe).
-  useHideMobileTopBar()
+  // Skipped in a sheet — the sheet owns its chrome and must not mutate the feed's.
+  useHideMobileTopBar(!inSheet)
 
   // Hovering a post highlights its author in the aside grid. One delegated
   // handler reads the nearest [data-author-did] so the post tree needs no
