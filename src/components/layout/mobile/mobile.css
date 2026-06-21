@@ -237,6 +237,24 @@
   text-decoration: none;
 }
 
+/* Keep the document ALWAYS scrollable (1px over the viewport). iOS standalone
+   only renders content behind the status bar / camera island while the document
+   scrolls; the instant it meets a non-scrollable page (scrollH == innerH — a
+   short screen, or chat, whose .chat-screen is fixed to the viewport height and
+   scrolls internally) it pins the solid status-bar band and keeps it until
+   reload. The guard must sit on BODY, the document scroller's direct child: a
+   min-height on .mobile-shell is defeated because its only in-flow child (.shell)
+   is itself pinned to exactly --app-height (== 100dvh) and the bars are
+   position:fixed (out of flow), so the shell never exceeds the viewport. body
+   can't be clamped by any descendant. The 1px hides under the bottom bar.
+   Scoped to the mobile-shell range (max-width:1000px) so desktop, where the
+   shell doesn't mount, never gets a stray 1px document scrollbar. */
+@media (max-width: 1000px) {
+  body {
+    min-height: calc(100dvh + 1px);
+  }
+}
+
 /* When the top bar is suppressed (immersive screens), reclaim its top inset so
    content starts at the very top. The bottom bar is unaffected. */
 .mobile-shell--no-top .page:not(.page--full) .page__main {
