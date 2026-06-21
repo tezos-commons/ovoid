@@ -6,13 +6,8 @@ import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 import { useTezosAddress } from '@/features/profile/use-nfts'
 import { linkTezosWallet, unlinkTezosWallet, isUserAbort, type LinkStatus } from '@/features/profile/tezos-link'
-import {
-  useMyWalletVisibility,
-  useSetWalletVisibility,
-  ALL_VISIBLE,
-  type WalletVisibility,
-} from '@/features/profile/use-wallet-visibility'
-import { Section, Row, Switch } from './components'
+import { WalletVisibilityFields } from '@/features/profile/WalletVisibilityFields'
+import { Section } from './components'
 
 const STATUS_TEXT: Record<LinkStatus, string> = {
   connecting: 'Connecting wallet…',
@@ -126,58 +121,18 @@ export default function WalletSettings() {
   )
 }
 
-const VISIBILITY_FIELDS: { key: keyof WalletVisibility; label: string; sub?: string }[] = [
-  { key: 'balance', label: 'Tez balance' },
-  { key: 'tokens', label: 'Fungible tokens' },
-  { key: 'activity', label: 'Recent activity', sub: 'Your recent on-chain transactions.' },
-  {
-    key: 'nfts',
-    label: 'NFT preview',
-    sub: 'The owned-NFT grid on the Wallet tab. Your Created and Owned tabs stay visible regardless.',
-  },
-]
-
 /**
- * Per-section wallet visibility (data.ovoid.at public record). Opt-out: every
- * section shows by default; a toggle writes the whole record. The draft mirrors
- * the pending state so the switch flips instantly, reverting if the write fails.
+ * Per-section wallet visibility (data.ovoid.at public record). The controls
+ * themselves are shared with onboarding via WalletVisibilityFields; this just
+ * wraps them in the settings section chrome.
  */
 function WalletVisibilitySection() {
-  const visQ = useMyWalletVisibility()
-  const setVis = useSetWalletVisibility()
-  const [draft, setDraft] = useState<WalletVisibility | null>(null)
-
-  const current = draft ?? visQ.data ?? ALL_VISIBLE
-
-  const toggle = (key: keyof WalletVisibility) => {
-    const next = { ...current, [key]: !current[key] }
-    setDraft(next)
-    setVis.mutate(next, { onError: () => setDraft(null) })
-  }
-
   return (
     <Section
       title="Profile visibility"
       desc="Choose which parts of your wallet other people can see on your profile. Everything is shown by default. (The wallet data is public on-chain regardless — this only controls what the app displays.)"
     >
-      {visQ.isPending ? (
-        <SettingsListSkeleton count={VISIBILITY_FIELDS.length} trailing />
-      ) : (
-        VISIBILITY_FIELDS.map((f) => (
-          <Row
-            key={f.key}
-            label={f.label}
-            sub={f.sub}
-            trailing={
-              <Switch
-                label={`Show ${f.label.toLowerCase()}`}
-                checked={current[f.key]}
-                onChange={() => toggle(f.key)}
-              />
-            }
-          />
-        ))
-      )}
+      <WalletVisibilityFields />
     </Section>
   )
 }

@@ -7,6 +7,8 @@ import { useChatStore } from '@/store/chat-store'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
 import { useArtifactStore } from '@/store/artifact-store'
 import { PostActionsBridge } from '@/features/post/PostActionsBridge'
+import { RequireAuth } from './RequireAuth'
+import { RequireAccess } from './RequireAccess'
 import { usePushBoot } from '@/features/notifications/use-push-boot'
 import { useEscapeBack } from '@/lib/use-escape-back'
 import { useGlobalShortcuts } from '@/lib/use-global-shortcuts'
@@ -82,29 +84,38 @@ export function RootLayout() {
     if (isAuthed && did && handle) setLastAccount({ did, handle, avatar })
   }, [isAuthed, did, handle, avatar])
 
+  // The entire shell is gated: a session is required (RequireAuth → /login),
+  // then access (RequireAccess → /onboarding when not on the list and no wallet).
+  // Gating here, above AppShell, means a no-access user never sees the nav chrome
+  // before the redirect. /onboarding and /login are top-level routes outside this
+  // layout, so they're never caught by these boundaries (no redirect loop).
   return (
-    <PostActionsBridge>
-      <AppShell onNewPost={openCompose} fullWidth={fullWidth}>
-        <Suspense
-          fallback={
-            <div style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
-              <Spinner size="lg" />
-            </div>
-          }
-        >
-          <Outlet />
-        </Suspense>
-      </AppShell>
-      <Suspense fallback={null}>
-        {composeOpen && <ComposeModal />}
-        {newChatOpen && <NewChatDialog />}
-        {nftOpen && <NftBrowser />}
-        {artifactMode !== 'closed' && <ArtifactPlayer />}
-      </Suspense>
-      <Lightbox />
-      <CommandPalette />
-      <ShortcutsDialog />
-    </PostActionsBridge>
+    <RequireAuth>
+      <RequireAccess>
+        <PostActionsBridge>
+          <AppShell onNewPost={openCompose} fullWidth={fullWidth}>
+            <Suspense
+              fallback={
+                <div style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
+                  <Spinner size="lg" />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </AppShell>
+          <Suspense fallback={null}>
+            {composeOpen && <ComposeModal />}
+            {newChatOpen && <NewChatDialog />}
+            {nftOpen && <NftBrowser />}
+            {artifactMode !== 'closed' && <ArtifactPlayer />}
+          </Suspense>
+          <Lightbox />
+          <CommandPalette />
+          <ShortcutsDialog />
+        </PostActionsBridge>
+      </RequireAccess>
+    </RequireAuth>
   )
 }
 

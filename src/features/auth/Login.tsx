@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/api/agent'
 import { Avatar, Button, Spinner } from '@/components'
 import { useLogin } from './use-login'
-import { useBetaAccess, ACCESS_LIST_URL } from './use-beta-access'
+import { ACCESS_LIST_URL } from './use-beta-access'
 import { getLastAccount } from './last-account'
 import './auth.css'
 
@@ -20,11 +20,15 @@ function usePreLoginPath(): string {
   return '/'
 }
 
+/**
+ * Sign-in: hand off to Bluesky OAuth. The closed-beta / wallet gate now runs
+ * AFTER sign-in (see useOvoidAccess + the onboarding flow), so anyone with a
+ * Bluesky account can authenticate here; access is decided once they're in.
+ */
 export default function Login() {
   const auth = useAuth()
   const pre = usePreLoginPath()
-  const { submitting, error: loginError, signInOAuth, clearError } = useLogin(pre)
-  const access = useBetaAccess()
+  const { submitting, error, signInOAuth, clearError } = useLogin(pre)
   // The last signed-in account (if any) pre-fills the handle so a returning user
   // just hits Continue; editing the field hides the hint (read once on mount).
   const [last] = useState(getLastAccount)
@@ -44,28 +48,15 @@ export default function Login() {
     return <Navigate to={pre} replace />
   }
 
-  // Editing the handle invalidates any prior access check.
   function onHandleChange(value: string) {
     setHandle(value)
-    if (access.status !== 'idle') access.reset()
-    if (loginError) clearError()
+    if (error) clearError()
   }
 
-  // Step 1: resolve the DID and test list membership.
-  function onCheck(e: FormEvent) {
+  function onSubmit(e: FormEvent) {
     e.preventDefault()
-    clearError()
-    void access.check(handle)
-  }
-
-  // Step 2 (allowed only): hand off to OAuth.
-  function onLogin() {
     void signInOAuth(handle)
   }
-
-  const allowed = access.status === 'allowed'
-  const denied = access.status === 'denied'
-  const error = loginError ?? access.error
 
   return (
     <div className="auth-screen">
@@ -88,21 +79,7 @@ export default function Login() {
             </div>
           )}
 
-          {denied && (
-            <div className="auth-beta" role="status">
-              <strong>Ovoid is in a closed beta.</strong>
-              <span>
-                Access is currently limited to{' '}
-                <a href={ACCESS_LIST_URL} target="_blank" rel="noreferrer">
-                  verified Tezos users on Bluesky
-                </a>
-                , and that account isn’t on the list yet. Try a different account
-                once you’ve been verified.
-              </span>
-            </div>
-          )}
-
-          {last && handle === last.handle && !denied && (
+          {last && handle === last.handle && (
             <div className="auth-last">
               <Avatar src={last.avatar} alt="" fallback={last.handle} size="md" />
               <div className="auth-last__body">
@@ -112,7 +89,7 @@ export default function Login() {
             </div>
           )}
 
-          <form className="auth-form" onSubmit={onCheck} noValidate>
+          <form className="auth-form" onSubmit={onSubmit} noValidate>
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="login-handle">
                 Handle or DID
@@ -134,35 +111,20 @@ export default function Login() {
               />
             </div>
 
-            {allowed ? (
-              <>
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="lg"
-                  className="auth-form__submit"
-                  loading={submitting}
-                  onClick={onLogin}
-                >
-                  Log in with Bluesky
-                </Button>
-                <p className="auth-note">
-                  You’re a verified Tezos user. You’ll be redirected to your
-                  provider to authorize access — no password is ever entered here.
-                </p>
-              </>
-            ) : (
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className="auth-form__submit"
-                loading={access.status === 'checking'}
-                disabled={!handle.trim() || submitting}
-              >
-                Continue
-              </Button>
-            )}
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="auth-form__submit"
+              loading={submitting}
+              disabled={!handle.trim()}
+            >
+              Log in with Bluesky
+            </Button>
+            <p className="auth-note">
+              You’ll be redirected to your provider to authorize access — no password is ever
+              entered here. After signing in, you’ll connect a Tezos wallet to finish setup.
+            </p>
           </form>
 
           <div className="auth-divider">New to Bluesky?</div>
@@ -171,11 +133,11 @@ export default function Login() {
             <a href="https://bsky.app" target="_blank" rel="noreferrer">
               bsky.app
             </a>
-            , then get verified as a Tezos user to join the beta (see the{' '}
+            . Ovoid is for the{' '}
             <a href={ACCESS_LIST_URL} target="_blank" rel="noreferrer">
-              list
+              Tezos community
             </a>
-            ).
+            , so you’ll link a Tezos wallet once you’re in.
           </p>
         </div>
       </main>

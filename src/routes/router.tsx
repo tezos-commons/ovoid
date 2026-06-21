@@ -3,6 +3,7 @@ import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import { RootLayout } from './RootLayout'
 import { RequireAuth } from './RequireAuth'
+import { RequireAccess } from './RequireAccess'
 
 // Instruments data-router navigations as Sentry transactions (pageload + route
 // changes), pairing with browserTracingIntegration in instrument.ts.
@@ -30,6 +31,19 @@ function protectedEl(factory: () => Promise<{ default: ComponentType<unknown> }>
   )
 }
 
+/** Auth + access gated, for protected routes OUTSIDE the shell (studio) — the
+ *  shell's own gate lives in RootLayout, so its child routes don't need this. */
+function gatedEl(factory: () => Promise<{ default: ComponentType<unknown> }>) {
+  const C = lazy(factory)
+  return (
+    <RequireAuth>
+      <RequireAccess>
+        <C />
+      </RequireAccess>
+    </RequireAuth>
+  )
+}
+
 // ---- Public routes (rendered outside the app shell) ----
 const publicRoutes: RouteObject[] = [
   {
@@ -39,6 +53,13 @@ const publicRoutes: RouteObject[] = [
   {
     path: '/oauth/callback',
     element: lazyEl(() => import('@/features/auth/Callback')),
+  },
+  {
+    // Wallet-connect onboarding. Requires a session (RequireAuth) but is NOT
+    // access-gated — it's where no-access users are sent, so gating it would
+    // loop. Top-level (outside RootLayout) so it renders without shell chrome.
+    path: '/onboarding',
+    element: protectedEl(() => import('@/features/auth/Onboarding')),
   },
   {
     // Group invite landing — public so it resolves the preview before sign-in.
@@ -143,15 +164,15 @@ const shellRoutes: RouteObject[] = [
 const studioRoutes: RouteObject[] = [
   {
     path: '/studio/:subdomain/new',
-    element: protectedEl(() => import('@/features/publish/EditorScreen')),
+    element: gatedEl(() => import('@/features/publish/EditorScreen')),
   },
   {
     path: '/studio/:subdomain/edit/:rkey',
-    element: protectedEl(() => import('@/features/publish/EditorScreen')),
+    element: gatedEl(() => import('@/features/publish/EditorScreen')),
   },
   {
     path: '/studio/:subdomain/*',
-    element: protectedEl(() => import('@/features/publish/StudioDashboard')),
+    element: gatedEl(() => import('@/features/publish/StudioDashboard')),
   },
 ]
 

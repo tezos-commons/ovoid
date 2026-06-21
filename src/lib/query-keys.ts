@@ -145,6 +145,11 @@ export const qk = {
   // separate `tezos` root so the bsky prefix-invalidation never touches them.
   tezosAddress: (did: string) => ['tezos', 'address', { did }] as const,
 
+  // Whether a DID is on the tezoscommons closed-beta list (one of the two
+  // access conditions; the other is a linked wallet). Membership is stable, so
+  // keyed by did under the `tezos` root.
+  tezosListMember: (did: string) => ['tezos', 'list-member', { did }] as const,
+
   objktCollections: (addr: string, kind: string) =>
     ['tezos', 'objkt', 'collections', kind, { addr }] as const,
 

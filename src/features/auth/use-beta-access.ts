@@ -1,11 +1,12 @@
-import { useCallback, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { makePublicAgent } from '@/lib/api/public-agent'
+import { qk } from '@/lib/query-keys'
 
 /**
- * Closed-beta gate. While Ovoid is in dev, only verified Tezos users on Bluesky
- * (the tezoscommons.org list) may sign in. We resolve the entered handle to a
- * DID and check it against the list's membership (both via the unauthenticated
- * public AppView) BEFORE handing off to OAuth.
+ * Tezos closed-beta list. List membership is one of the two ways to access
+ * Ovoid (the other is a linked wallet — see useOvoidAccess); it's checked
+ * AFTER sign-in, against the signed-in DID, via the unauthenticated public
+ * AppView. Members skip the wallet-connect onboarding.
  *
  * List: https://bsky.app/profile/tezoscommons.org/lists/3mm5sncuz2s2v
  */
@@ -46,71 +47,18 @@ function listMembers(): Promise<Set<string>> {
   return membersPromise
 }
 
-/** Resolve a handle (or pass a did:… through) to a DID via the public AppView. */
-async function resolveDid(input: string): Promise<string> {
-  const v = input.trim().replace(/^@/, '')
-  if (v.startsWith('did:')) return v
-  const agent = makePublicAgent()
-  const res = await agent.com.atproto.identity.resolveHandle({ handle: v })
-  return res.data.did
-}
-
-function messageFor(err: unknown): string {
-  if (err instanceof Error) {
-    if (/resolve|not.?found|unable to resolve|invalid handle/i.test(err.message)) {
-      return 'Could not find that account. Check the handle and try again.'
-    }
-    if (/network|fetch|failed to fetch/i.test(err.message)) {
-      return 'Network error while checking access. Try again.'
-    }
-    return err.message
-  }
-  return 'Something went wrong. Please try again.'
-}
-
-export type AccessStatus = 'idle' | 'checking' | 'allowed' | 'denied'
-
-export interface BetaAccess {
-  status: AccessStatus
-  /** The resolved DID once a check has run (allowed or denied). */
-  did: string | null
-  error: string | null
-  /** Resolve the handle and test list membership. */
-  check: (handle: string) => Promise<void>
-  /** Return to the idle (re-enter handle) state. */
-  reset: () => void
-}
-
-export function useBetaAccess(): BetaAccess {
-  const [status, setStatus] = useState<AccessStatus>('idle')
-  const [did, setDid] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const check = useCallback(async (handle: string) => {
-    const v = handle.trim()
-    if (!v) {
-      setError('Enter your handle (e.g. alice.bsky.social).')
-      return
-    }
-    setError(null)
-    setStatus('checking')
-    try {
-      const resolved = await resolveDid(v)
-      const allow = await listMembers()
-      setDid(resolved)
-      setStatus(allow.has(resolved) ? 'allowed' : 'denied')
-    } catch (err) {
-      setStatus('idle')
-      setDid(null)
-      setError(messageFor(err))
-    }
-  }, [])
-
-  const reset = useCallback(() => {
-    setStatus('idle')
-    setDid(null)
-    setError(null)
-  }, [])
-
-  return { status, did, error, check, reset }
+/**
+ * Whether the signed-in DID is on the closed-beta list. `data === true` means
+ * the user is a member (one of the two access conditions). Disabled until a DID
+ * is known. Long staleTime — membership barely changes within a session, and
+ * the members set is loaded once and shared across checks.
+ */
+export function useIsListMember(did: string | undefined) {
+  return useQuery({
+    queryKey: qk.tezosListMember(did ?? ''),
+    enabled: !!did,
+    queryFn: async () => (await listMembers()).has(did!),
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+  })
 }

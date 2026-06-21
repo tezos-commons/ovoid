@@ -258,6 +258,27 @@
   color: var(--text-muted);
 }
 
+/* --- onboarding (wallet connect + visibility) --- */
+.onb-explainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.onb-explainer strong {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+}
+/* Hold the shared settings rows in a card so they read as a contained group
+   (the settings page gives them a <Section>; here we supply the chrome). */
+.onb-vis {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
 /* --- callback (centered spinner) --- */
 .auth-callback {
   min-height: 100dvh;
