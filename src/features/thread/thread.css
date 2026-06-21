@@ -139,6 +139,13 @@
     top: 0;
   }
 }
+/* Inside the mobile post sheet the thread scrolls in the sheet's own body, which
+   uses the overlay background — so don't pin the sort strip (it would float over
+   the replies) and let it inherit the sheet's colour instead of var(--bg). */
+.thread--sheet .thread__sort {
+  position: static;
+  background: transparent;
+}
 .thread__sort .tabs {
   padding: 0 var(--space-2);
 }

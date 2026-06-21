@@ -11,10 +11,18 @@ import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { runWhenIdle } from '@/lib/idle'
 import { FeedView } from './FeedView'
+import { FeedRefreshButton } from './FeedRefreshButton'
 import { usePinnedFeeds, type HomeTab } from './use-pinned-feeds'
-import { useTimeline } from './use-timeline'
+import { useTimeline, timelineOptions } from './use-timeline'
 import { useCustomFeed, customFeedOptions } from './use-custom-feed'
+import { useFeedRefresh } from './use-feed-refresh'
 import './home.css'
+
+/** Newest post uri on screen for a feed query's cached pages. */
+function topUriOf(data: unknown): string | undefined {
+  const pages = (data as { pages?: { feed?: { post?: { uri?: string } }[] }[] } | undefined)?.pages
+  return pages?.[0]?.feed?.[0]?.post?.uri
+}
 
 const FOLLOWING_KEY = 'following'
 
@@ -78,21 +86,33 @@ export function HomeScreen() {
     if (pinned.data && !tabs.some((t) => t.key === activeKey)) setActiveKey(FOLLOWING_KEY)
   }, [pinned.data, tabs, activeKey])
 
-  // Preload every INACTIVE pinned feed's first page once the strip is known, so
-  // clicking a feed name renders instantly instead of cold-fetching. The active
-  // tab is excluded: prefetchInfiniteQuery ignores refetchOnMount and would
-  // refetch the feed you're currently viewing once it's stale — reflowing it and
-  // losing scroll (the "feed refreshes on its own"). Idle + concurrency-bounded.
+  // Keep every INACTIVE pinned feed fresh in the background — initially (instant
+  // tab switch) and on a periodic timer (new posts land without the user asking).
+  // The ACTIVE feed is excluded: it never auto-refetches under the user (that
+  // would reflow + lose scroll); it surfaces a refresh badge instead (below).
+  // prefetchInfiniteQuery refetches a stale entry and bypasses refetchOnMount.
   useEffect(() => {
     if (!isAuthed) return
-    const feeds = tabs.filter((t) => t.kind !== 'following' && t.value && t.key !== activeKey)
-    if (feeds.length === 0) return
-    return runWhenIdle(() => {
-      for (const t of feeds) {
-        const opts = customFeedOptions(agent, did, t.value, t.kind === 'list' ? 'list' : 'feed')
-        schedulePrefetch(opts.queryKey, () => queryClient.prefetchInfiniteQuery(opts))
+    const refreshInactive = () => {
+      for (const t of tabs) {
+        if (t.key === activeKey || !t.value) continue
+        const opts =
+          t.kind === 'following'
+            ? timelineOptions(agent, did)
+            : customFeedOptions(agent, did, t.value, t.kind === 'list' ? 'list' : 'feed')
+        schedulePrefetch(opts.queryKey, () =>
+          queryClient.prefetchInfiniteQuery(
+            opts as Parameters<typeof queryClient.prefetchInfiniteQuery>[0],
+          ),
+        )
       }
-    })
+    }
+    const cancelIdle = runWhenIdle(refreshInactive)
+    const id = window.setInterval(refreshInactive, 90_000)
+    return () => {
+      cancelIdle?.()
+      window.clearInterval(id)
+    }
   }, [tabs, agent, did, isAuthed, activeKey])
 
   const isFollowing = activeTab?.kind === 'following'
@@ -104,6 +124,17 @@ export function HomeScreen() {
   )
 
   const active = isFollowing ? timeline : customFeed
+
+  // Refresh affordance for the active feed: detect a newer head (cache >1min old)
+  // and reload-to-top on tap. Never auto-refetches the visible feed.
+  const { hasNew, refresh } = useFeedRefresh({
+    agent,
+    did,
+    tab: activeTab,
+    enabled: isAuthed && !!active.data,
+    visibleTopUri: topUriOf(active.data),
+    dataUpdatedAt: active.dataUpdatedAt,
+  })
 
   const navRef = useDragScroll<HTMLElement>()
   const isMobile = useIsMobile()
@@ -189,6 +220,8 @@ export function HomeScreen() {
           )}
         </div>
       </div>
+
+      <FeedRefreshButton show={hasNew} onRefresh={refresh} isMobile={isMobile} />
     </>
   )
 }

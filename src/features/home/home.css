@@ -39,6 +39,49 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* ---------- "New posts" refresh affordance ---------- */
+.feed-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  z-index: var(--z-nav);
+  animation: feed-refresh-in 160ms ease-out;
+}
+@keyframes feed-refresh-in {
+  from { opacity: 0; transform: translateY(-6px) translateX(var(--fr-tx, 0)); }
+  to { opacity: 1; transform: translateY(0) translateX(var(--fr-tx, 0)); }
+}
+/* Desktop: a pill centered at the top of the feed column. */
+.feed-refresh--desktop {
+  --fr-tx: -50%;
+  position: fixed;
+  top: calc(var(--topbar-height) + var(--space-3));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  box-shadow: var(--shadow-menu);
+}
+/* Mobile: round liquid-glass button, bottom-right above the floating bottom bar. */
+.feed-refresh--mobile {
+  position: fixed;
+  right: var(--mbar-edge);
+  bottom: calc(var(--mbar-bottom-zone) + var(--space-2));
+  width: 48px;
+  height: 48px;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  box-shadow: var(--shadow-menu);
+}
+
 /* ---------- Vertical feed menu (page aside) ---------- */
 .feednav {
   display: flex;

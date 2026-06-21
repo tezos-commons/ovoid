@@ -140,7 +140,11 @@ export function ThreadView({
         </PageAside>
       )}
 
-      <div className="thread" onMouseOver={onThreadHover} onMouseLeave={() => setHovered(null)}>
+      <div
+        className={`thread${inSheet ? ' thread--sheet' : ''}`}
+        onMouseOver={onThreadHover}
+        onMouseLeave={() => setHovered(null)}
+      >
         {/* Parent ancestor chain — oldest first, each connected to the next. */}
         {brokenTop && (
           <div className="thread-stub thread-stub--child">
