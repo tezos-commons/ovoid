@@ -92,6 +92,18 @@ const shellRoutes: RouteObject[] = [
     element: lazyEl(() => import('@/features/thread/ThreadScreen')),
   },
   {
+    path: 'profile/:actor/post/:rkey/liked-by',
+    element: lazyEl(() => import('@/features/post/PostLikedBy')),
+  },
+  {
+    path: 'profile/:actor/post/:rkey/reposted-by',
+    element: lazyEl(() => import('@/features/post/PostRepostedBy')),
+  },
+  {
+    path: 'profile/:actor/post/:rkey/quotes',
+    element: lazyEl(() => import('@/features/post/PostQuotes')),
+  },
+  {
     path: 'profile/:actor/edit',
     element: protectedEl(() => import('@/features/profile/EditProfileModal')),
   },

@@ -1,46 +1,24 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
-import { patchPostInAllFeeds } from '@/lib/optimistic'
+import { setPostShadow } from '@/store/post-shadow'
 
 /**
  * Optimistic like + repost for any post, anywhere it is rendered.
  *
- * Invariant: the existence of a like/repost *record* (its AT-URI lives in
- * post.viewer.like / .repost) must stay consistent with the displayed count.
- * We patch the cached PostView immutably via patchPostInAllFeeds — never
- * invalidating the patched feed, which would refetch and jitter the virtualized
- * scroll position.
+ * Optimism lives in the post-shadow overlay (src/store/post-shadow.ts), NOT the
+ * query cache: a cache patch loses to the next background/thread refetch, which
+ * returns AppView data that hasn't indexed the write yet. The shadow is merged
+ * on top of cache data at render time, so the viewer's action survives refetches
+ * and stays consistent across every surface the post appears in.
  *
  * Undo needs the record URI (viewer.like/viewer.repost), NOT the post URI;
- * agent.like/repost want post uri + cid. We optimistically stamp a sentinel URI
- * so the toggle reads active immediately, then reconcile with the real URI from
- * the create call so a subsequent undo deletes the right record.
+ * agent.like/repost want post uri + cid. We stamp a sentinel URI so the toggle
+ * reads active immediately, then reconcile with the real URI from the create
+ * call so a subsequent undo deletes the right record.
  */
 
 const OPTIMISTIC_URI = 'optimistic://pending'
-
-function applyLike(active: boolean, recordUri?: string) {
-  return (post: AppBskyFeedDefs.PostView): AppBskyFeedDefs.PostView => {
-    const count = post.likeCount ?? 0
-    return {
-      ...post,
-      likeCount: Math.max(0, count + (active ? 1 : -1)),
-      viewer: { ...post.viewer, like: active ? (recordUri ?? OPTIMISTIC_URI) : undefined },
-    }
-  }
-}
-
-function applyRepost(active: boolean, recordUri?: string) {
-  return (post: AppBskyFeedDefs.PostView): AppBskyFeedDefs.PostView => {
-    const count = post.repostCount ?? 0
-    return {
-      ...post,
-      repostCount: Math.max(0, count + (active ? 1 : -1)),
-      viewer: { ...post.viewer, repost: active ? (recordUri ?? OPTIMISTIC_URI) : undefined },
-    }
-  }
-}
 
 interface ActOnPostArgs {
   uri: string
@@ -49,8 +27,7 @@ interface ActOnPostArgs {
 }
 
 export function usePostMutations() {
-  const { agent, did } = useAgent()
-  const qc = useQueryClient()
+  const { agent } = useAgent()
 
   const like = useMutation({
     mutationFn: async ({ uri, cid, recordUri }: ActOnPostArgs) => {
@@ -61,21 +38,17 @@ export function usePostMutations() {
       const res = await agent.like(uri, cid)
       return { recordUri: res.uri }
     },
-    onMutate: async ({ uri, recordUri }) => {
+    onMutate: ({ uri, recordUri }) => {
       const becomingActive = !recordUri || recordUri === OPTIMISTIC_URI
-      await qc.cancelQueries({ queryKey: ['bsky', did, 'feed'] })
-      patchPostInAllFeeds(qc, did, uri, applyLike(becomingActive))
+      setPostShadow(uri, { likeUri: becomingActive ? OPTIMISTIC_URI : null })
       return { uri, becomingActive }
     },
     onSuccess: (result, { uri }) => {
-      patchPostInAllFeeds(qc, did, uri, (post) => ({
-        ...post,
-        viewer: { ...post.viewer, like: result.recordUri },
-      }))
+      setPostShadow(uri, { likeUri: result.recordUri ?? null })
     },
-    onError: (_e, { uri }, ctx) => {
-      if (!ctx) return
-      patchPostInAllFeeds(qc, did, uri, applyLike(!ctx.becomingActive))
+    onError: (_e, { uri }) => {
+      // Drop the override so the base (server) state shows again.
+      setPostShadow(uri, { likeUri: undefined })
     },
   })
 
@@ -88,21 +61,16 @@ export function usePostMutations() {
       const res = await agent.repost(uri, cid)
       return { recordUri: res.uri }
     },
-    onMutate: async ({ uri, recordUri }) => {
+    onMutate: ({ uri, recordUri }) => {
       const becomingActive = !recordUri || recordUri === OPTIMISTIC_URI
-      await qc.cancelQueries({ queryKey: ['bsky', did, 'feed'] })
-      patchPostInAllFeeds(qc, did, uri, applyRepost(becomingActive))
+      setPostShadow(uri, { repostUri: becomingActive ? OPTIMISTIC_URI : null })
       return { uri, becomingActive }
     },
     onSuccess: (result, { uri }) => {
-      patchPostInAllFeeds(qc, did, uri, (post) => ({
-        ...post,
-        viewer: { ...post.viewer, repost: result.recordUri },
-      }))
+      setPostShadow(uri, { repostUri: result.recordUri ?? null })
     },
-    onError: (_e, { uri }, ctx) => {
-      if (!ctx) return
-      patchPostInAllFeeds(qc, did, uri, applyRepost(!ctx.becomingActive))
+    onError: (_e, { uri }) => {
+      setPostShadow(uri, { repostUri: undefined })
     },
   })
 

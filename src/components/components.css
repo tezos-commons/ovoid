@@ -348,6 +348,72 @@
   padding: var(--space-1);
   z-index: var(--z-modal);
 }
+/* Left-aligned variant: the popover's left edge sits under the trigger's left
+   edge (for mid-row triggers like the repost button). Clamp the width so a
+   left-anchored panel near the right edge still can't spill off-screen. */
+.menu__pop--start {
+  left: 0;
+  right: auto;
+  max-width: calc(100vw - 2 * var(--space-3));
+}
+/* ---------- Shared person row ---------- */
+/* Generic account row: avatar + name/handle/bio (+ optional trailing control).
+   Used by search results, follower/following lists, and the post liked-by /
+   reposted-by screens, plus its loading skeleton (PersonRowSkeleton). Lives here
+   (not in a feature css) so every consumer gets it regardless of which route
+   bundle is loaded. */
+.personrow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+  text-decoration: none;
+}
+.personrow:hover {
+  background: var(--bg-contrast-25);
+}
+.personrow--compact {
+  align-items: center;
+  border-bottom: none;
+  padding: var(--space-2) var(--space-4);
+}
+.personrow__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.personrow__name {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-base);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.personrow__handle {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.personrow__bio {
+  margin-top: var(--space-1);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.personrow__follow {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: var(--space-2);
+}
+
 .menu__item {
   display: flex;
   width: 100%;
@@ -1598,7 +1664,16 @@ video.nftb__backdrop {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.embed-quote__text { font-size: var(--fs-sm); }
+/* Break long unbroken tokens (URLs/handles) so they wrap inside the card instead
+   of forcing it wider / spilling past its edge — visible in the narrow chat
+   embed, but correct for quotes everywhere. min-width:0 lets the text shrink
+   within the quote's flex column. */
+.embed-quote__text {
+  font-size: var(--fs-sm);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 
 /* ---------- PostCard ---------- */
 .postcard {

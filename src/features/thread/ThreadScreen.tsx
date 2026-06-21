@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import type { AppBskyFeedDefs } from '@atproto/api'
 import { PostCard, ThreadSkeleton, FeedSkeleton, ErrorState, Tabs } from '@/components'
 import { PageAside, useHideMobileTopBar } from '@/components/layout'
@@ -14,6 +14,7 @@ import {
 } from './use-thread'
 import { ThreadAuthors } from './ThreadAuthors'
 import { useThreadHover } from './thread-hover-store'
+import { usePostShadow } from '@/store/post-shadow'
 import { ReplyTree } from './ReplyTree'
 import { ReplyBar } from './ReplyBar'
 import './thread.css'
@@ -143,6 +144,10 @@ export default function ThreadScreen() {
           <PostCard post={node.post} variant="focused" />
         </div>
 
+        {/* Engagement counts → the reposted-by / quotes / liked-by lists. Only
+            shown for the focused post, matching Bluesky (feed rows stay terse). */}
+        <ThreadStats post={node.post} actor={actor} rkey={rkey} />
+
         {/* Tappable reply bar → opens the compose sheet (or sign-in prompt). */}
         <ReplyBar parent={node.post} />
 
@@ -167,6 +172,49 @@ export default function ThreadScreen() {
         )}
       </div>
     </>
+  )
+}
+
+/**
+ * Tappable engagement counts under the focused post. Each non-zero count links
+ * to its actor / quote list. Quotes are hidden when the author disabled
+ * embedding (postgate) — there can be none to list. Renders nothing when the
+ * post has no engagement at all.
+ */
+function ThreadStats({
+  post: postProp,
+  actor,
+  rkey,
+}: {
+  post: AppBskyFeedDefs.PostView
+  actor: string
+  rkey: string
+}) {
+  const post = usePostShadow(postProp)
+  const base = `/profile/${actor}/post/${rkey}`
+  const reposts = post.repostCount ?? 0
+  const quotes = post.quoteCount ?? 0
+  const likes = post.likeCount ?? 0
+  const showQuotes = quotes > 0 && !post.viewer?.embeddingDisabled
+  if (!reposts && !showQuotes && !likes) return null
+  return (
+    <div className="thread__stats">
+      {reposts > 0 && (
+        <Link to={`${base}/reposted-by`} className="thread__stat">
+          <strong>{reposts.toLocaleString()}</strong> {reposts === 1 ? 'repost' : 'reposts'}
+        </Link>
+      )}
+      {showQuotes && (
+        <Link to={`${base}/quotes`} className="thread__stat">
+          <strong>{quotes.toLocaleString()}</strong> {quotes === 1 ? 'quote' : 'quotes'}
+        </Link>
+      )}
+      {likes > 0 && (
+        <Link to={`${base}/liked-by`} className="thread__stat">
+          <strong>{likes.toLocaleString()}</strong> {likes === 1 ? 'like' : 'likes'}
+        </Link>
+      )}
+    </div>
   )
 }
 

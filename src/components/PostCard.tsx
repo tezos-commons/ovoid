@@ -14,6 +14,7 @@ import {
 } from './embeds/LinkPreviews'
 import { LabelChips, hasBotLabel } from './LabelChips'
 import { RichText } from '@/lib/rich-text'
+import { usePostShadow } from '@/store/post-shadow'
 import { relativeTime, absoluteTime } from '@/lib/time'
 import { RepostIcon, BotIcon } from './Icon'
 import { useAgent } from '@/lib/api/agent'
@@ -71,7 +72,7 @@ function postRecord(post: AppBskyFeedDefs.PostView): AppBskyFeedPost.Record | nu
  * card (rich-text walk, embeds) for untouched rows.
  */
 export const PostCard = memo(function PostCard({
-  post,
+  post: postProp,
   reason,
   reply,
   variant = 'feed',
@@ -81,6 +82,9 @@ export const PostCard = memo(function PostCard({
 }: PostCardProps) {
   const navigate = useNavigate()
   const actions = usePostActions()
+  // Overlay optimistic like/repost state so the card reflects the viewer's own
+  // action regardless of what the (possibly stale) cache holds.
+  const post = usePostShadow(postProp)
   const record = postRecord(post)
   const author = post.author
   const focused = variant === 'focused'
@@ -234,6 +238,7 @@ export const PostCard = memo(function PostCard({
             post={post}
             onLike={actions ? () => actions.toggleLike(post) : undefined}
             onRepost={actions ? () => actions.toggleRepost(post) : undefined}
+            onQuote={actions ? () => actions.quote(post) : undefined}
             onReply={actions ? () => actions.reply(post) : undefined}
             onShare={actions ? () => actions.share(post) : undefined}
           />

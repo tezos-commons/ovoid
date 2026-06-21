@@ -1,16 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
 import type { AppBskyActorDefs } from '@atproto/api'
-import { Avatar, Button, Dialog, Spinner, PeopleSkeleton, ErrorState, EmptyState } from '@/components'
-import { RichText } from '@/lib/rich-text'
-import { useAgent } from '@/lib/api/agent'
-import { queryClient } from '@/lib/query-client'
-import { schedulePrefetch } from '@/lib/prefetch'
-import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { Dialog, Spinner, PeopleSkeleton, ErrorState, EmptyState } from '@/components'
 import { useCloseOnBack } from '@/lib/use-close-on-back'
 import { useFollows, useFollowers } from './use-follow-list'
-import { useFollow } from './use-follow'
-import { profileOptions } from './use-profile'
+import { PersonRow } from './PersonRow'
 
 export interface FollowListModalProps {
   actor: string
@@ -63,7 +56,7 @@ export function FollowListModal({ actor, mode, open, onClose }: FollowListModalP
         )}
 
         {people.map((p) => (
-          <FollowListRow key={p.did} person={p} onNavigate={onClose} />
+          <PersonRow key={p.did} person={p} onNavigate={onClose} />
         ))}
 
         <div ref={sentinel} className="followlist__sentinel">
@@ -71,75 +64,5 @@ export function FollowListModal({ actor, mode, open, onClose }: FollowListModalP
         </div>
       </div>
     </Dialog>
-  )
-}
-
-/** One person row; warms their profile once the row dwells in the scroll view. */
-function FollowListRow({
-  person: p,
-  onNavigate,
-}: {
-  person: AppBskyActorDefs.ProfileView
-  onNavigate: () => void
-}) {
-  const { agent } = useAgent()
-  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
-    const opts = profileOptions(agent, p.handle || p.did)
-    schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
-  })
-  return (
-    <Link
-      ref={prefetchRef}
-      to={`/profile/${p.handle || p.did}`}
-      className="followlist__row"
-      onClick={onNavigate}
-    >
-      <Avatar src={p.avatar} alt={p.displayName || p.handle} size="md" />
-      <div className="followlist__meta">
-        <span className="followlist__name">{p.displayName || p.handle}</span>
-        <span className="followlist__handle">@{p.handle}</span>
-        {p.description && (
-          <span className="followlist__bio">
-            <RichText text={p.description} />
-          </span>
-        )}
-      </div>
-      <FollowButton person={p} />
-    </Link>
-  )
-}
-
-/**
- * Per-row follow / unfollow control. Hidden for the viewer's own row and when
- * signed out. Keeps the follow-record uri in local state (seeded from the list
- * data) so the label flips immediately and a repeat tap toggles correctly —
- * the list query itself isn't patched by the mutation. Stops the click from
- * reaching the row Link (which would navigate + close the modal).
- */
-function FollowButton({ person }: { person: AppBskyActorDefs.ProfileView }) {
-  const { did, isAuthed } = useAgent()
-  const follow = useFollow(person.handle || person.did)
-  const [followUri, setFollowUri] = useState<string | undefined>(person.viewer?.following)
-
-  if (!isAuthed || person.did === did) return null
-
-  const following = !!followUri
-  return (
-    <Button
-      variant={following ? 'secondary' : 'primary'}
-      size="sm"
-      loading={follow.isPending}
-      className="followlist__follow"
-      onClick={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        follow.mutate(
-          { ...person, viewer: { ...person.viewer, following: followUri } },
-          { onSuccess: (res) => setFollowUri(res.following) },
-        )
-      }}
-    >
-      {following ? 'Following' : 'Follow'}
-    </Button>
   )
 }

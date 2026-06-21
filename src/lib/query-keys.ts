@@ -34,6 +34,18 @@ export const qk = {
 
   thread: (uri: string) => ['bsky', 'thread', { uri }] as const,
 
+  // Actors who liked / reposted a post, and posts quoting it. Viewer-dependent:
+  // the actor rows carry viewer.following and the quote posts carry like/repost
+  // state, so an account switch must not bleed across — they include `did`.
+  postLikedBy: (did: string | undefined, uri: string) =>
+    ['bsky', did, 'post', 'likedBy', { uri }] as const,
+
+  postRepostedBy: (did: string | undefined, uri: string) =>
+    ['bsky', did, 'post', 'repostedBy', { uri }] as const,
+
+  postQuotes: (did: string | undefined, uri: string) =>
+    ['bsky', did, 'post', 'quotes', { uri }] as const,
+
   /** Prefix for the whole thread domain (invalidate when reply structure changes). */
   threads: ['bsky', 'thread'] as const,
 
@@ -101,6 +113,10 @@ export const qk = {
 
   listUri: (actor: string, rkey: string) =>
     ['bsky', 'list', 'uri', { actor, rkey }] as const,
+
+  // actor(+rkey) -> canonical at:// post uri (handle resolved to DID). Immutable.
+  postUri: (actor: string, rkey: string) =>
+    ['bsky', 'post', 'uri', { actor, rkey }] as const,
 
   // Labelers.
   labelerService: (did: string) => ['bsky', 'labeler', 'service', { did }] as const,
@@ -196,11 +212,6 @@ export const qk = {
   // The caller's own subdomain→publication registrations (data.ovoid.at).
   publications: (viewerDid: string | undefined) => ['data', 'publications', viewerDid] as const,
   publicationSubdomain: (sub: string) => ['data', 'publications', 'check', { sub }] as const,
-
-  // Ovoid Graph service (graph.ovoid.at). Separate `graph` root. Follow state is
-  // per-caller, so the key carries the viewer DID (account switch must not bleed).
-  graphFollowingTezos: (viewerDid: string | undefined, address: string) =>
-    ['graph', viewerDid, 'following', 'tezos', { address }] as const,
 
   // standard.site long-form document (public reader). Pure public read — same
   // for every viewer, so no DID in the key. `authority` is whatever the URL

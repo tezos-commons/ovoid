@@ -1,7 +1,6 @@
 import { Img } from '@/components'
 import { shortAddr } from '@/components/embeds/providers/objkt-data'
 import type { TezosAccount } from '@/features/profile/objkt'
-import { FollowAddressButton } from './FollowAddressButton'
 
 /**
  * Identity card for the address profile — the objkt avatar, name and address.
@@ -29,7 +28,6 @@ export function AddressCard({
           {shortAddr(address)}
         </span>
       </div>
-      <FollowAddressButton address={address} />
     </div>
   )
 }

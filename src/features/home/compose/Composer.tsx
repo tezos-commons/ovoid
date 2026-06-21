@@ -38,7 +38,10 @@ export function Composer({ target, onPosted }: ComposerProps) {
     taRef.current?.focus()
   }, [])
 
-  const empty = isEmptyText && images.length === 0
+  // A quote embed alone is a valid post (text-less quote-repost), mirroring
+  // Bluesky — so an empty quote is postable; only a bare text+image-less draft is
+  // "empty".
+  const empty = isEmptyText && images.length === 0 && !target.quote
   const canPost = !empty && !over && !create.isPending
 
   const addFiles = (files: FileList | null) => {

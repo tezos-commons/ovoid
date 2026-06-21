@@ -394,20 +394,25 @@
 
 /* ---------- Rich link/post previews under a bubble ---------- */
 /* Cards reuse the post-embed components (.embed--quote/--token/--external).
-   The min-width keeps a card readable below a tiny bubble; the upper bound is
-   the row's 78% max-width, which reaches the cards through normal flex
-   shrinking on .msg-bubble-wrap (min-width: 0). */
-.msg-embeds .embed {
-  min-width: min(300px, 70vw);
-  max-width: 100%;
+
+   The width is bounded by a DEFINITE max-width, not a percentage. A percentage
+   cap (max-width: 100%) is useless here: the embed sits in a shrink-to-fit flex
+   chain (msg-row is content-sized, clamped only by its 78% max-width), so its
+   containing block has no definite width for the percentage to resolve against,
+   and the card grew to its content's intrinsic width — a shared post with media
+   ran ~2× the screen.
+
+   So reconstruct the bubble column in absolute units: the scroller is the
+   viewport minus its left+right padding (2 × --space-4), and a row is 78% of
+   that (.msg-row max-width). 340px then caps it on wide desktop panes (where
+   78%-of-viewport would balloon past the narrower detail column). min-width:0
+   lets it shrink below that for short content. Keep 0.78 in sync with .msg-row. */
+.msg-embeds {
+  min-width: 0;
 }
-/* Desktop: the detail pane is wide, so a 100%-of-row card balloons. Cap it to
-   roughly the mobile size (where it's already right) instead of letting it fill
-   the bubble's 78% column. */
-@media (min-width: 1001px) {
-  .msg-embeds .embed {
-    max-width: 340px;
-  }
+.msg-embeds .embed {
+  min-width: 0;
+  max-width: min(340px, calc((100vw - 2 * var(--space-4)) * 0.78));
 }
 
 /* Quick-reaction picker popover. */

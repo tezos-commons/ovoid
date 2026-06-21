@@ -122,6 +122,13 @@ export const RepostIcon: IconFC = ({ size, ...rest }) => (
   </svg>
 )
 
+export const QuoteIcon: IconFC = ({ size, ...rest }) => (
+  <svg {...svg(size, rest)}>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
+    <path d="M9 10h.01M13 10h.01M17 10h.01" />
+  </svg>
+)
+
 export const ReplyIcon: IconFC = ({ size, ...rest }) => (
   <svg {...svg(size, rest)}>
     <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z" />

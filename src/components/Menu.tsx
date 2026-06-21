@@ -17,10 +17,17 @@ export interface MenuProps {
   items: MenuItem[]
   /** 'grid' lays items out as an icon grid (3 per row); default is a list. */
   variant?: 'list' | 'grid'
+  /**
+   * Horizontal anchor of the popover to its trigger. 'end' (default) right-aligns
+   * it — correct for triggers near the right edge (overflow "…" buttons). 'start'
+   * left-aligns it under the trigger — for triggers mid-row (e.g. the repost
+   * button) where a right-aligned panel would extend left and run off-screen.
+   */
+  align?: 'start' | 'end'
 }
 
 /** Dropdown for the post/profile overflow menus. Closes on outside click, Escape, or selection. */
-export function Menu({ trigger, items, variant = 'list' }: MenuProps) {
+export function Menu({ trigger, items, variant = 'list', align = 'end' }: MenuProps) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -44,7 +51,14 @@ export function Menu({ trigger, items, variant = 'list' }: MenuProps) {
     <div className="menu__wrap" ref={wrapRef}>
       <span onClick={() => setOpen((v) => !v)}>{trigger}</span>
       {open && (
-        <div className={clsx('menu__pop', variant === 'grid' && 'menu__pop--grid')} role="menu">
+        <div
+          className={clsx(
+            'menu__pop',
+            variant === 'grid' && 'menu__pop--grid',
+            align === 'start' && 'menu__pop--start',
+          )}
+          role="menu"
+        >
           {items.map((item) =>
             variant === 'grid' ? (
               <button
