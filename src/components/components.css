@@ -250,7 +250,12 @@
   border-bottom: 1px solid var(--border);
 }
 .dialog__title { font-size: var(--fs-md); font-weight: var(--fw-bold); flex: 1; }
-.dialog__body { padding: var(--space-4); overflow-y: auto; overscroll-behavior: contain; }
+/* flex:1 + min-height:0 make the body the panel's grow-and-scroll flex child:
+   it takes the available height below the (fixed) header and, when content is
+   tall (e.g. a multi-image compose thread), shrinks below its content size so
+   its own overflow-y:auto actually scrolls — otherwise the panel's
+   overflow:hidden clips it and the wheel does nothing. */
+.dialog__body { padding: var(--space-4); flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 
 /* Fit-sheet variant (ModalSheet): on desktop a normal, narrower modal; on
    mobile a content-height bottom sheet instead of the full-screen one. */
