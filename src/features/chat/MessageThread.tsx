@@ -46,6 +46,13 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
   // Whether the view is stuck to the bottom (start true so first paint pins).
   const stick = useRef(true)
 
+  // Jump-to-message: tapping a reply quote sets the target message id here.
+  // The resolver effect below locates it in the rendered list (scrolling to it +
+  // flashing) and pages older history in if it isn't loaded yet. Active for the
+  // whole seek so the bottom-pinning logic knows to stand down.
+  const [jumpToId, setJumpToId] = useState<string | null>(null)
+  const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // Pin to bottom on first load and when a new newest message appears, but only
   // while the user is stuck to the bottom (don't yank them up from history).
   // scrollTop = scrollHeight (not scrollIntoView) reaches the true bottom past
@@ -112,18 +119,64 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
   }, [])
 
   // When loading OLDER history (fetchNextPage), preserve the scroll position by
-  // compensating for the height the prepended page added at the top.
+  // compensating for the height the prepended page added at the top — UNLESS a
+  // jump-to-message is in flight, in which case we're intentionally relocating
+  // the viewport and must not counter-adjust.
   useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el) return
     if (q.isFetchingNextPage) {
       prevScrollHeight.current = el.scrollHeight
-    } else if (prevScrollHeight.current) {
+    } else if (prevScrollHeight.current && !jumpToId) {
       const delta = el.scrollHeight - prevScrollHeight.current
       if (delta > 0) el.scrollTop += delta
       prevScrollHeight.current = 0
+    } else if (prevScrollHeight.current && jumpToId) {
+      // A jumped-to fetch settled: drop the saved height (we won't restore it);
+      // the resolver effect finds the target in the newly loaded rows.
+      prevScrollHeight.current = 0
     }
-  }, [q.isFetchingNextPage, messages.length])
+  }, [q.isFetchingNextPage, messages.length, jumpToId])
+
+  // Resolve a jump-to-message: locate the target row by id and scroll it into
+  // view + flash it. If it isn't in the loaded window yet, page older history
+  // in and retry when it arrives (the effect re-runs as `messages` grows).
+  useEffect(() => {
+    if (!jumpToId) return
+    // Disarm bottom-pinning for the seek: the ResizeObserver / visualViewport
+    // repin would otherwise yank back to the newest message after we scroll up
+    // (or as a paged page settles). We've navigated away from the bottom — that
+    // is the truthful state until the user scrolls back down.
+    stick.current = false
+    const list = listRef.current
+    const target = list?.querySelector<HTMLElement>(`[data-msg-id="${CSS.escape(jumpToId)}"]`)
+    if (!target) {
+      // Not yet loaded: fetch older history and let the effect re-run when it
+      // arrives. If there's no more history, the target is unavailable (purged,
+      // or the reply predates cached history) — give up so the seek doesn't loop.
+      if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage()
+      else if (!q.hasNextPage) setJumpToId(null)
+      return
+    }
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    target.classList.remove('msg-line--jump')
+    // Reflow so a back-to-back jump to the same message re-triggers the animation.
+    void target.offsetWidth
+    target.classList.add('msg-line--jump')
+    if (jumpTimer.current) clearTimeout(jumpTimer.current)
+    jumpTimer.current = setTimeout(() => {
+      target.classList.remove('msg-line--jump')
+      jumpTimer.current = null
+    }, 1700)
+    setJumpToId(null)
+  }, [jumpToId, messages, q.hasNextPage, q.isFetchingNextPage, q])
+
+  // Clear a pending jump timer on unmount so it can't touch a detached node.
+  useEffect(() => {
+    return () => {
+      if (jumpTimer.current) clearTimeout(jumpTimer.current)
+    }
+  }, [])
 
   // Trigger older-history load when the scroll container hits the top.
   useEffect(() => {
@@ -270,8 +323,15 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
                 )
               }
               const sd = 'sender' in item.msg ? item.msg.sender?.did : undefined
+              // Stamp the message id so the jump-to-message resolver can locate
+              // this row by id (querySelector). Only message views carry replies.
+              const msgId = 'id' in item.msg ? item.msg.id : undefined
               return (
-                <div key={item.key} className={clsx('msg-line', item.sameAuthorPrev && 'msg-grouped')}>
+                <div
+                  key={item.key}
+                  className={clsx('msg-line', item.sameAuthorPrev && 'msg-grouped')}
+                  {...(msgId ? { 'data-msg-id': msgId } : {})}
+                >
                   <MessageBubble
                     message={item.msg}
                     viewerDid={viewerDid}
@@ -283,6 +343,7 @@ export function MessageThread({ convoId, convo, viewerDid }: MessageThreadProps)
                     senderAvatar={sd ? avatarFor(sd) : undefined}
                     onReact={onReact}
                     onReply={onReply}
+                    onJumpToMessage={setJumpToId}
                     nameFor={nameFor}
                   />
                 </div>

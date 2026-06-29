@@ -210,3 +210,9 @@ export const WalletIcon: IconFC = ({ size, ...rest }) => (
     <path d="M16 12.5h.01" />
   </svg>
 )
+
+export const PlusIcon: IconFC = ({ size, ...rest }) => (
+  <svg {...svg(size, rest)}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+)

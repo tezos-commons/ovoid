@@ -70,6 +70,8 @@ export interface MessageBubbleProps {
    *  switches long-press / right-click from the reaction picker to the Reply/Copy
    *  context menu. */
   onReply?: (message: ChatBskyConvoDefs.MessageView) => void
+  /** Jump the thread scroll to a message by id (used by the replied-to quote). */
+  onJumpToMessage?: (id: string) => void
   /** Resolve a sender DID to a display name (for the replied-to quote preview). */
   nameFor?: (did: string) => string
 }
@@ -92,6 +94,7 @@ export const MessageBubble = memo(function MessageBubble({
   senderAvatar,
   onReact,
   onReply,
+  onJumpToMessage,
   nameFor,
 }: MessageBubbleProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -172,13 +175,14 @@ export const MessageBubble = memo(function MessageBubble({
 
   // The message this one replies to (group replies), hydrated by the server as
   // the referenced message or a tombstone. Rendered as a small quote atop the
-  // bubble so the reply has visible context.
+  // bubble so the reply has visible context — tappable to jump to the original.
   const replyTo = message.replyTo
   const replyPreview = ChatBskyConvoDefs.isDeletedMessageView(replyTo)
-    ? { deleted: true as const }
+    ? { deleted: true as const, id: replyTo.id }
     : ChatBskyConvoDefs.isMessageView(replyTo)
       ? {
           deleted: false as const,
+          id: replyTo.id,
           name: replyTo.sender?.did && nameFor ? nameFor(replyTo.sender.did) : '',
           text: replyTo.text,
         }
@@ -226,7 +230,16 @@ export const MessageBubble = memo(function MessageBubble({
               {...(interactive ? longPress.handlers : {})}
             >
               {replyPreview && (
-                <div className="msg-reply-quote">
+                <button
+                  type="button"
+                  className="msg-reply-quote"
+                  aria-label="Jump to message"
+                  // Stop propagation so a touch on the quote doesn't arm the
+                  // bubble's long-press (Reply/Copy menu) — a tap should jump.
+                  onClick={() => replyPreview.id && onJumpToMessage?.(replyPreview.id)}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onContextMenu={(e) => e.stopPropagation()}
+                >
                   {replyPreview.deleted ? (
                     <span className="msg-reply-quote__text msg-reply-quote__text--muted">
                       Deleted message
@@ -239,7 +252,7 @@ export const MessageBubble = memo(function MessageBubble({
                       <span className="msg-reply-quote__text">{replyPreview.text}</span>
                     </>
                   )}
-                </div>
+                </button>
               )}
               {displayText && (
                 <RichText

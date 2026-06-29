@@ -11,6 +11,90 @@
   gap: var(--space-3);
   min-width: min(540px, 86vw);
 }
+
+/* ---------- Thread (one or more drafts) ----------
+   Each draft is a .composer__row; stacked with a connector tick so a multi-post
+   thread reads as a connected chain, mirroring X/Twitter. */
+.composer__thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* On mobile sheets the thread may exceed the available height; let it scroll
+   inside the sheet body instead of blowing past the footer. */
+.dialog--sheet .composer__thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* The connector tick stands in for the avatar on continuation drafts, aligned to
+   the first draft's avatar column so the stack stays flush on the left. The tick
+   is a column flex so the ::before line keeps its 2px width and grows to fill the
+   height — a row flex would stretch it to the full 42px column width. */
+.composer__thread-tick {
+  width: 42px;
+  flex: 0 0 42px;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.composer__thread-tick::before {
+  content: '';
+  width: 2px;
+  /* flex: 1 0 auto: grow to fill the tick's height, never shrink below min, and
+     don't collapse the cross-axis (width stays the declared 2px). */
+  flex: 1 0 auto;
+  margin-top: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+/* Per-draft meta row: index + counter + remove, sitting under the editor. */
+.composer__draft-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 2px;
+  min-height: 28px;
+}
+.composer__draft-index {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+.composer__draft-remove {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  background: none;
+}
+.composer__draft-remove:hover {
+  background: var(--bg-contrast-25);
+  color: var(--color-danger);
+}
+/* The "+ add post" affordance in the footer. */
+.composer__add-thread {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  background: none;
+}
+.composer__add-thread:hover {
+  background: var(--blue-25);
+}
+.composer__add-thread:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
 .composer__context {
   color: var(--text-muted);
   font-size: var(--fs-sm);
@@ -93,6 +177,10 @@
 .composer__highlight {
   position: absolute;
   inset: 0;
+  /* overflow:hidden makes this a scroll container so we can mirror the
+     textarea's scrollTop/scrollLeft from JS; otherwise inset:0 pins the
+     colored text at offset 0 while the textarea scrolls beneath it. */
+  overflow: hidden;
   pointer-events: none;
   color: var(--text);
 }

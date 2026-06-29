@@ -315,7 +315,10 @@
     min-height: 0;
     min-width: 0;
   }
-  .dialog--sheet .composer__row {
+  /* Single draft fills the sheet (reply textarea gets the whole screen); a
+     multi-draft thread uses natural-height rows that scroll inside the sheet —
+     so the stretch is scoped to the one-draft case via data-draft-count. */
+  .dialog--sheet .composer[data-draft-count='1'] .composer__row {
     flex: 1;
     min-height: 0;
   }
@@ -324,11 +327,11 @@
     flex-direction: column;
     min-height: 0;
   }
-  .dialog--sheet .composer__editor {
+  .dialog--sheet .composer[data-draft-count='1'] .composer__editor {
     flex: 1;
     min-height: 0;
   }
-  .dialog--sheet .composer__textarea {
+  .dialog--sheet .composer[data-draft-count='1'] .composer__textarea {
     height: 100%;
     resize: none;
   }

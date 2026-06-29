@@ -210,6 +210,17 @@
 .msg-line {
   display: flex;
   flex-direction: column;
+  border-radius: 18px;
+}
+/* Flash a message jumped to via its reply quote. The container carries the
+   radius so the highlight hugs the bubble, not the full-width row. */
+.msg-line--jump {
+  animation: msg-jump-flash 1.6s ease-out;
+}
+@keyframes msg-jump-flash {
+  0% { background: var(--blue-25); }
+  60% { background: var(--blue-25); }
+  100% { background: transparent; }
 }
 
 /* Tighten vertical spacing when the previous bubble is the same author. */
@@ -515,16 +526,35 @@
 }
 
 /* ---------- Replied-to quote (atop a reply bubble) ---------- */
+/* Rendered as a <button> so it's keyboard-focusable and a tap jumps the thread
+   to the original message. Reset button chrome so it reads as the quote. */
 .msg-reply-quote {
   display: flex;
   flex-direction: column;
   gap: 1px;
+  width: 100%;
   margin-bottom: var(--space-1);
   padding: 2px var(--space-2);
+  border: none;
   border-left: 2px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   opacity: 0.85;
   font-size: var(--fs-xs);
   line-height: 1.3;
+  cursor: pointer;
+}
+.msg-reply-quote:hover {
+  opacity: 1;
+}
+.msg-reply-quote:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+  opacity: 1;
 }
 .msg-reply-quote__name {
   font-weight: 600;
