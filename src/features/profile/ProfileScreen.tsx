@@ -33,6 +33,7 @@ import { ProfileCard } from './ProfileCard'
 import { ProfileNav } from './ProfileNav'
 import { LabelerCard } from './LabelerCard'
 import { ProfileFeed } from './ProfileFeed'
+import { ProfilePublicationCard } from './ProfilePublicationCard'
 import { ProfileFeedsTab, ProfileListsTab } from './ProfileFeedsTab'
 import { NftTab } from './NftTab'
 import { LinkTezosSection } from './LinkTezosSection'
@@ -306,6 +307,7 @@ export default function ProfileScreen() {
           <ProfileTabContent
             activeKey={activeKey}
             actor={actor!}
+            profileDid={profile.did}
             posts={posts}
             replies={replies}
             media={media}
@@ -323,6 +325,7 @@ export default function ProfileScreen() {
 function ProfileTabContent({
   activeKey,
   actor,
+  profileDid,
   posts,
   replies,
   media,
@@ -333,6 +336,7 @@ function ProfileTabContent({
 }: {
   activeKey: TabKey
   actor: string
+  profileDid: string
   posts: ReturnType<typeof useAuthorFeed>
   replies: ReturnType<typeof useAuthorFeed>
   media: ReturnType<typeof useAuthorFeed>
@@ -401,13 +405,16 @@ function ProfileTabContent({
     case 'posts':
     default:
       return (
-        <ProfileFeed
-          key={scrollKey}
-          query={posts}
-          emptyTitle="No posts yet"
-          emptyMessage="When they post, it will show up here."
-          scrollKey={scrollKey}
-        />
+        <>
+          <ProfilePublicationCard did={profileDid} />
+          <ProfileFeed
+            key={scrollKey}
+            query={posts}
+            emptyTitle="No posts yet"
+            emptyMessage="When they post, it will show up here."
+            scrollKey={scrollKey}
+          />
+        </>
       )
   }
 }

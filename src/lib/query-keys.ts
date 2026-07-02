@@ -224,6 +224,10 @@ export const qk = {
   publicationDocs: (pubUri: string) => ['standard', 'publication-docs', { pubUri }] as const,
   publicationRecord: (pubUri: string) => ['standard', 'publication', { pubUri }] as const,
 
+  // Every site.standard.publication record in an author's repo (public read,
+  // no viewer). Scans the repo to surface a publication card on the profile.
+  authorPublications: (did: string) => ['standard', 'author-publications', { did }] as const,
+
   // Resolve an arbitrary web URL to its site.standard.document at-uri, if it is
   // one (via the site's /.well-known + publication doc list). Used for chat
   // links, which carry no AppView associatedRefs. Cached per URL.

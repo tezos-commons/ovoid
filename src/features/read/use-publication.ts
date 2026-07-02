@@ -113,3 +113,42 @@ export function usePublicationDocs(pubUri: string | undefined) {
     enabled: !!pubUri && pubUri.startsWith('at://'),
   })
 }
+
+const PUB = 'site.standard.publication'
+
+export interface ProfilePublication {
+  did: string
+  pds: string
+  uri: string
+  record: StandardPublication
+}
+
+/**
+ * Every `site.standard.publication` record in an author's repo — a public read
+ * (no viewer). Used to surface a publication card on the profile; there is no
+ * Bluesky `associated.publications` count to gate on, so the repo is scanned.
+ */
+export function profilePublicationsOptions(did: string) {
+  return queryOptions<ProfilePublication[]>({
+    queryKey: qk.authorPublications(did),
+    enabled: !!did,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const pds = await pdsForDid(did)
+      const pubs: ProfilePublication[] = []
+      let cursor: string | undefined
+      do {
+        const page = await listRecordsRaw<StandardPublication>(pds, did, PUB, { cursor, limit: 100 })
+        for (const r of page.records) {
+          pubs.push({ did, pds, uri: r.uri, record: r.value })
+        }
+        cursor = page.cursor
+      } while (cursor)
+      return pubs
+    },
+  })
+}
+
+export function useProfilePublications(did: string | undefined) {
+  return useQuery({ ...profilePublicationsOptions(did ?? ''), enabled: !!did })
+}
