@@ -16,6 +16,7 @@
   "dependencies": {
     "@atproto/api": "0.20.16",
     "@atproto/oauth-client-browser": "0.4.1",
+    "@fontsource-variable/inter": "^5.2.8",
     "@google/model-viewer": "^4.2.0",
     "@milkdown/crepe": "^7.21.2",
     "@milkdown/kit": "^7.21.2",

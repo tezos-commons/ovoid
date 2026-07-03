@@ -15,6 +15,7 @@ import { clearAllCaches } from '../query-client'
 import { bootstrap } from '../auth-bootstrap'
 import { withChatProxy } from './proxy'
 import { getPrefs, selectLabelerDids } from '../prefs'
+import { getCachedLabelerDids, setCachedLabelerDids } from '../auth/labeler-cache'
 import {
   getAccounts,
   upsertAccount,
@@ -93,6 +94,29 @@ function buildSignedIn(session: OAuthSession): Extract<AuthState, { status: 'sig
   return { status: 'signedIn', agent, chatAgent, session, did, handle }
 }
 
+/**
+ * Subscribe the agent to the user's labelers WITHOUT blocking sign-in on the
+ * network: apply the DIDs cached from the previous session synchronously, then
+ * refresh from preferences in the background. configureLabelers mutates the
+ * agent in place, so requests issued before the refresh lands carry the cached
+ * set — missing only on a DID's very first sign-in on this device (that first
+ * session runs on the default labeler until the refresh completes, instead of
+ * costing every boot a full XRPC round trip before first render).
+ */
+function configureAgentLabelers(signedIn: Extract<AuthState, { status: 'signedIn' }>) {
+  const cached = getCachedLabelerDids(signedIn.did)
+  if (cached?.length) signedIn.agent.configureLabelers(cached)
+  void getPrefs(signedIn.agent)
+    .then((prefs) => {
+      const dids = selectLabelerDids(prefs)
+      setCachedLabelerDids(signedIn.did, dids)
+      signedIn.agent.configureLabelers(dids)
+    })
+    .catch(() => {
+      /* prefs fetch failed — keep the cached (or default) set; non-fatal */
+    })
+}
+
 /* ============================================================
    Provider
    ============================================================ */
@@ -118,17 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelled) return
         if (result?.session) {
           const signedIn = buildSignedIn(result.session)
-          // Subscribe the agent to the user's labelers BEFORE marking signed-in,
-          // so the first feed/profile query already carries the accept-labelers
-          // header and the AppView returns those labelers' labels. configureLabelers
-          // mutates the instance in place; the same agent ref backs every hook.
-          try {
-            const dids = selectLabelerDids(await getPrefs(signedIn.agent))
-            if (dids.length) signedIn.agent.configureLabelers(dids)
-          } catch {
-            /* prefs fetch failed — fall back to default labeler only; non-fatal */
-          }
-          if (cancelled) return
+          // Labelers apply synchronously from the per-DID cache (background
+          // refresh follows), so the first feed/profile query already carries
+          // the accept-labelers header without waiting a preferences round
+          // trip before first render.
+          configureAgentLabelers(signedIn)
           // The add-account OAuth callback boots as a DIFFERENT viewer than the
           // one that filled the persisted caches. Same invariant as signOut:
           // no cache entry may outlive the viewer whose session filled it
@@ -136,7 +154,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Nothing has rendered yet (state is 'loading'), so awaiting the
           // purge here cannot race live queries.
           const prevDid = getActiveDid()
-          if (prevDid && prevDid !== signedIn.did) await clearAllCaches()
+          if (prevDid && prevDid !== signedIn.did) {
+            await clearAllCaches()
+            if (cancelled) return
+          }
           setActiveDid(signedIn.did)
           setAccounts(upsertAccount({ did: signedIn.did, handle: signedIn.handle }))
           setState(signedIn)
@@ -210,12 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const activateSession = useCallback(async (session: OAuthSession) => {
     const signedIn = buildSignedIn(session)
-    try {
-      const dids = selectLabelerDids(await getPrefs(signedIn.agent))
-      if (dids.length) signedIn.agent.configureLabelers(dids)
-    } catch {
-      /* default labeler only; non-fatal */
-    }
+    configureAgentLabelers(signedIn)
     setActiveDid(signedIn.did)
     setAccounts(upsertAccount({ did: signedIn.did, handle: signedIn.handle }))
     setState(signedIn)

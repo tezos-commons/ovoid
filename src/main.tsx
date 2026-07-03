@@ -17,6 +17,7 @@ import '@/styles'
 import '@/components/components.css'
 import '@/components/layout/layout.css'
 import { App } from './App'
+import { getActiveDid } from '@/lib/auth/accounts'
 
 // The app owns scroll restoration (RootLayout resets on forward nav; InfiniteList
 // restores virtualized feeds on back). Turn off the browser's own restoration so
@@ -53,6 +54,16 @@ else {
       </Sentry.ErrorBoundary>
     </StrictMode>,
   )
+
+  // Fetch the landing route's lazy chunk in parallel with the OAuth session
+  // restore instead of serialized after it: a registered account means
+  // RequireAuth resolves '/' into HomeScreen; with none, '/' redirects to
+  // /login. Same import specifiers as router.tsx, so Rollup reuses the chunks.
+  if (getActiveDid()) {
+    void import('@/features/home/HomeScreen').catch(() => {})
+  } else if (window.location.pathname === '/') {
+    void import('@/features/auth/Login').catch(() => {})
+  }
 
   // Register the service worker so Ovoid is installable (add-to-home-screen) and
   // opens offline as an app shell. The SW is passthrough except for a navigation

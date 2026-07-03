@@ -1,10 +1,7 @@
 /* ============================================================
-   Reset + base. Inter is loaded from Google Fonts by default;
-   drop woff2 files into public/fonts and swap the @font-face
-   src to self-host.
+   Reset + base. Inter is self-hosted via @fontsource-variable/inter
+   (imported in styles/index.ts; family name 'Inter Variable').
    ============================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:slnt,wght@-10,100..900&display=swap');
 
 *,
 *::before,

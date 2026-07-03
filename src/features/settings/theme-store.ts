@@ -44,7 +44,7 @@ const GLASS_VALUE: Record<GlassOpacity, string> = {
 const SYSTEM_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
 const INTER_STACK =
-  "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+  "'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 
 function readScale(): FontScale {
   if (typeof localStorage === 'undefined') return 'default'
