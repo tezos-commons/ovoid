@@ -914,16 +914,18 @@ a.msg-row__name:hover {
     display: none;
   }
 
-  /* The convo list clears the floating top bar (like the other list screens).
-     The message thread keeps content to the top edge — it's bottom-anchored, so
-     the newest messages sit above the composer and older ones scroll up behind
-     the translucent bar (the immersive chat look). Both clear the bottom bar. */
+  /* Both scroll areas clear the floating bars. On the message thread the top
+     clearance is PADDING on the scroller, so it belongs to the scrollable
+     content: mid-scroll, older messages still slide up behind the translucent
+     bar (the immersive chat look), but at scroll-top — and in short convos
+     that don't scroll at all — the first message sits below the bar instead
+     of behind it. */
   .convo-list {
     padding-top: var(--mbar-top-zone);
     padding-bottom: var(--mbar-bottom-zone);
   }
   .msg-thread__scroll {
-    padding-top: 0;
+    padding-top: var(--mbar-top-zone);
     padding-bottom: var(--mbar-bottom-zone);
   }
 }
