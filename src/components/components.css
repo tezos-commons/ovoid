@@ -1089,14 +1089,22 @@
   inset: 0;
   z-index: 1000;
   display: flex;
-  /* Details panel on the left, artwork on the right. */
-  flex-direction: row-reverse;
+  /* Column: an optional in-flow top bar (showcase), then the stage. */
+  flex-direction: column;
   overflow: hidden;
   background: #070708;
   color: #fff;
   animation: nftb-fade 0.2s ease;
 }
 @keyframes nftb-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* The art + details row. Details panel on the left, artwork on the right. */
+.nftb__stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: row-reverse;
+}
 
 /* Blurred wash of the artwork for depth and colour. */
 .nftb__backdrop {
@@ -1242,13 +1250,16 @@ video.nftb__backdrop {
   border-radius: 10px;
   background: #000;
 }
+/* Sized by its poster, NOT the full wrap: only the artwork itself (plus the
+   pill) is the launch target — a tap on the surrounding black must never
+   launch, and in showcase mode it belongs to the story tap-zones. */
 .nftb__launch {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   padding: 0;
   border: none;
   background: transparent;
@@ -1256,10 +1267,18 @@ video.nftb__backdrop {
 }
 .nftb__launch img {
   max-width: 100%;
-  max-height: 100%;
+  /* Viewport-based cap (like the audio cover): the button is content-sized,
+     so a percentage max-height would resolve against auto and not constrain. */
+  max-height: 70vh;
   object-fit: contain;
   border-radius: 10px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+/* The stretched wrap centers the (poster-sized) launch button. */
+.nftb__modelwrap--launch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .nftb__launch-btn {
   position: absolute;
@@ -1514,6 +1533,14 @@ video.nftb__backdrop {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+  }
+  /* The overlay itself is the scroller; the stage just stacks art over panel
+     (art stays sticky against the .nftb scroll container). */
+  .nftb__stage {
+    flex: none;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     /* The overlay itself scrolls here; hide its own scrollbar so the global 8px
        webkit scrollbar doesn't inset the artwork/panel from the right edge on
        this fullscreen sheet. (The document scrollbar/gutter is handled in JS by
@@ -1809,4 +1836,380 @@ video.nftb__backdrop {
 }
 .action--more .menu__wrap {
   display: inline-flex;
+}
+
+/* ================= Token showcase (stories mode of the NFT browser) ========= */
+
+/* Showcase top bar. Desktop: a slim row pinned across the top of the ART
+   COLUMN only (absolute, starting past the side panel), so the panel keeps
+   its full height and the strip never spans the whole viewport; the close
+   button rides in the same row where it always sat. Mobile swaps this for an
+   in-flow, full-width row (media query below). */
+.nftb__topbar {
+  position: absolute;
+  top: 0;
+  left: var(--nftb-panel);
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) 0;
+  /* The empty band passes clicks through to the art/backdrop below … */
+  pointer-events: none;
+}
+/* … while the strip and button stay interactive. */
+.nftb__topbar > * {
+  pointer-events: auto;
+}
+.nftb__close.nftb__close--bar {
+  position: static;
+  flex: 0 0 auto;
+}
+/* Keep the artwork and the objkt bubble clear of the strip band. */
+.nftb--showcase .nftb__art {
+  padding-top: calc(var(--space-4) + 48px);
+}
+.nftb--showcase .nftb__source {
+  top: calc(var(--space-4) + 52px);
+}
+/* Progress strip: one segment per token, filled through the current index. */
+.nftb__progress {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 4px;
+}
+.nftb__progress-seg {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.nftb__progress-seg--done {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Activity pane (why the token is recommended). */
+.nftb__reach {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-3);
+}
+.nftb__row--event {
+  align-items: center;
+  justify-content: flex-start;
+}
+.nftb__row--event .nftb__row-meta {
+  margin-left: auto;
+}
+.nftb__actor {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: #fff;
+  font-weight: var(--fw-semibold);
+}
+.nftb__actor-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Golden ring on actors with a linked atproto/Bluesky identity. */
+.nftb__actor-av {
+  flex: 0 0 auto;
+  display: flex;
+  border-radius: var(--radius-pill);
+}
+.nftb__actor-av--atproto {
+  box-shadow:
+    0 0 0 1.5px rgba(255, 200, 80, 0.95),
+    0 0 6px rgba(255, 185, 60, 0.4);
+}
+.nftb__actor:hover .nftb__actor-name {
+  text-decoration: underline;
+}
+.nftb__degree {
+  flex: 0 0 auto;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Story tap zones + pull-up sheet exist only on the mobile showcase (below). */
+.nftb__tapzone {
+  display: none;
+}
+.nftb__sheet {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  /* Showcase on mobile = immersive story: the art fills the viewport, the
+     panel (Activity/Details) is dropped, navigation is tap left/right. */
+  .nftb--showcase {
+    overflow: hidden;
+  }
+  /* The top bar becomes a real in-flow row: progress fills the width up to
+     the close button, and the bar owns the safe-area inset. */
+  .nftb--showcase .nftb__topbar {
+    position: static;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--space-3)) var(--space-4) var(--space-3);
+    pointer-events: auto;
+  }
+  .nftb--showcase .nftb__stage {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .nftb--showcase .nftb__art {
+    position: relative;
+    top: auto;
+    flex: 1 1 auto;
+    height: auto;
+    /* Topbar owns the safe-area; the bottom clears the collapsed sheet. */
+    padding: var(--space-2) var(--space-3) calc(env(safe-area-inset-bottom, 0px) + 116px);
+    cursor: default;
+  }
+  .nftb--showcase .nftb__panel {
+    display: none;
+  }
+  /* Chevrons + marketplace link are desktop chrome; taps own the stepping. */
+  .nftb--showcase .nftb__nav,
+  .nftb--showcase .nftb__source {
+    display: none;
+  }
+  .nftb--showcase .nftb__tapzone {
+    display: block;
+    position: absolute;
+    /* The topbar is outside the art now, so the zones can span it fully. */
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+  }
+  /* Instagram convention: small left zone back, the rest forward. */
+  .nftb__tapzone--prev {
+    left: 0;
+    width: 33%;
+  }
+  .nftb__tapzone--next {
+    right: 0;
+    width: 67%;
+  }
+  /* Pull-up sheet pinned to the bottom, above the tap zones. Collapsed shows
+     the grab handle, title and creator; the fold (grid 0fr↔1fr, same trick as
+     the rail wallet) reveals the activity list without measuring heights. */
+  .nftb--showcase .nftb__sheet {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    background: rgba(12, 12, 14, 0.82);
+    backdrop-filter: blur(24px) saturate(1.2);
+    border-radius: 16px 16px 0 0;
+    padding: 0 var(--space-4) calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
+  }
+  .nftb__sheet-head {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+    padding: var(--space-2) 0 0;
+    color: #fff;
+    text-align: left;
+  }
+  .nftb__sheet-grab {
+    align-self: center;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.3);
+  }
+  .nftb__sheet-titlerow {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+  }
+  .nftb__sheet-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: var(--fw-bold);
+    font-size: var(--fs-lg);
+  }
+  .nftb__sheet-hint {
+    flex: 0 0 auto;
+    font-size: var(--fs-xs);
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .nftb__sheet-creator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: var(--fs-sm);
+  }
+  .nftb__sheet-creator:disabled {
+    cursor: default;
+  }
+  .nftb__sheet-creatorname {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .nftb__sheet-fold {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+  }
+  .nftb__sheet--open .nftb__sheet-fold {
+    grid-template-rows: 1fr;
+  }
+  .nftb__sheet-foldinner {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .nftb__sheet-body {
+    max-height: 55dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-2) 0;
+  }
+}
+
+/* ---------------- Custom audio transport (AudioPlayer) ---------------- */
+.audiop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  color: #fff;
+}
+.audiop__btn {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: #000;
+  transition: transform 0.12s ease;
+}
+.audiop__btn:active {
+  transform: scale(0.92);
+}
+.audiop__time {
+  flex: 0 0 auto;
+  min-width: 36px;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: rgba(255, 255, 255, 0.8);
+  font-variant-numeric: tabular-nums;
+}
+/* Track paints the played fraction via an inline two-stop gradient. */
+.audiop__seek {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.audiop__seek::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.audiop__seek::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* The art region's zoom-out cursor means "click closes" — inside the media
+   wrappers clicks are stopped (they do NOT close), so the cursor resets to
+   default there instead of lying. */
+.nftb__videowrap,
+.nftb__audio,
+.nftb__modelwrap {
+  cursor: default;
+}
+
+/* Video artifact: media with the transport bar beneath, like audio. */
+.nftb__videowrap {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+.nftb__videowrap .nftb__img {
+  min-height: 0;
+  cursor: pointer;
+}
+.nftb__video-ctl {
+  flex: 0 0 auto;
+  width: min(420px, 80vw);
+}
+.audiop__mute {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  color: rgba(255, 255, 255, 0.85);
+}
+.audiop__mute:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Artifacts with real controls (audio/video transport, model orbit) must win
+   taps over the story tap-zones (z-index 2) — the zones keep working in the
+   space around the media box. The interactive variant of the modelwrap is
+   excluded: it stretches over the whole art area, so raising it would hand
+   every tap to the launch surface — only its (poster-sized) button rises. */
+.nftb--showcase .nftb__audio,
+.nftb--showcase .nftb__modelwrap:not(.nftb__modelwrap--launch),
+.nftb--showcase .nftb__videowrap {
+  position: relative;
+  z-index: 3;
+}
+/* The launch wrap must NOT form a stacking context (its base z-index: 1
+   would trap the button's z-index below the sibling tap-zones); the button
+   then rises above the zones on its own. */
+.nftb--showcase .nftb__modelwrap--launch {
+  z-index: auto;
+}
+.nftb--showcase .nftb__launch {
+  z-index: 3;
 }

@@ -173,10 +173,11 @@ interface BasicRow {
   creators?: Array<{ creator_address?: string; holder?: { alias?: string; address?: string } }>
 }
 
-export function useTezosToken(fa: string | undefined, tokenId: string | undefined) {
-  return useQuery<TokenPreview | null>({
-    queryKey: qk.embedTezosToken(fa ?? '', tokenId ?? ''),
-    enabled: !!fa && !!tokenId,
+/** Basic preview by fa+tokenId — shared by the hook and prefetchers (NftBrowser
+ *  neighbours, the home Token Showcase warm). */
+export function tezosTokenOptions(fa: string, tokenId: string) {
+  return queryOptions<TokenPreview | null>({
+    queryKey: qk.embedTezosToken(fa, tokenId),
     staleTime: 60 * 60_000,
     retry: 1,
     queryFn: async () => {
@@ -201,6 +202,13 @@ export function useTezosToken(fa: string | undefined, tokenId: string | undefine
           dim?.width && dim?.height ? { width: dim.width, height: dim.height } : undefined,
       }
     },
+  })
+}
+
+export function useTezosToken(fa: string | undefined, tokenId: string | undefined) {
+  return useQuery({
+    ...tezosTokenOptions(fa ?? '', tokenId ?? ''),
+    enabled: !!fa && !!tokenId,
   })
 }
 

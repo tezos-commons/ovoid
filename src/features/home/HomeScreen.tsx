@@ -3,13 +3,17 @@ import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
 import { ErrorState, Spinner, IconButton } from '@/components'
 import { PageAside, MobileTopLeft, MobileTopRight, MobileSelect } from '@/components/layout'
-import { GearIcon, BskyIcon } from '@/components/Icon'
+import { GearIcon, BskyIcon, StarIcon } from '@/components/Icon'
 import { useAuth, useAgent } from '@/lib/api/agent'
 import { useDragScroll } from '@/lib/use-drag-scroll'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { runWhenIdle } from '@/lib/idle'
+import { useNftBrowserStore, takeShowcaseReturn } from '@/store/nft-browser-store'
+import { isPopNavigation } from '@/lib/nav-tracking'
+import { tezosTokenOptions } from '@/components/embeds/providers/objkt-data'
+import { useInterestingTokens } from '@/features/onchain/use-interesting-tokens'
 import { FeedView } from './FeedView'
 import { FeedRefreshButton } from './FeedRefreshButton'
 import { usePinnedFeeds, type HomeTab } from './use-pinned-feeds'
@@ -139,6 +143,37 @@ export function HomeScreen() {
   const navRef = useDragScroll<HTMLElement>()
   const isMobile = useIsMobile()
 
+  // On-chain recommendations (indexer). One request per server-side 5-min TTL;
+  // arrives async, and the entry points below appear only once it has tokens.
+  const interesting = useInterestingTokens()
+  const showcaseTokens = interesting.data
+  const openShowcaseStore = useNftBrowserStore((s) => s.openShowcase)
+  const openShowcase = () => {
+    if (!showcaseTokens?.length) return
+    openShowcaseStore(showcaseTokens.map((t) => ({ fa: t.contract, tokenId: t.token_id })))
+  }
+
+  // Returning via Back from a profile opened inside the Token Showcase: the
+  // overlay isn't a route, so restore the story from its stashed marker instead
+  // of landing on a bare homepage. The marker is consumed on every Home mount
+  // (a forward navigation here just clears it), restored only on POP.
+  useEffect(() => {
+    const ret = takeShowcaseReturn()
+    if (ret && isPopNavigation()) openShowcaseStore(ret.list, ret.index)
+  }, [openShowcaseStore])
+
+  // Warm the first few tokens' objkt previews on idle so opening the showcase
+  // paints instantly (rule 2: the entry links are on screen → warm the target).
+  useEffect(() => {
+    if (!showcaseTokens?.length) return
+    return runWhenIdle(() => {
+      for (const t of showcaseTokens.slice(0, 6)) {
+        const opts = tezosTokenOptions(t.contract, t.token_id)
+        schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
+      }
+    })
+  }, [showcaseTokens])
+
   const feedNav = (
     <nav ref={navRef} className="feednav" aria-label="Feeds">
       <div className="feednav__head">
@@ -167,6 +202,19 @@ export function HomeScreen() {
     </nav>
   )
 
+  // Second aside section: on-chain surfaces. Appears once recommendations
+  // exist (an account with no linked wallet / follows gets an empty list).
+  const onChainNav = !!showcaseTokens?.length && (
+    <nav className="feednav feednav--onchain" aria-label="On-Chain">
+      <div className="feednav__head">
+        <span className="feednav__title">On-Chain</span>
+      </div>
+      <button type="button" className="feednav__item" onClick={openShowcase}>
+        Token Showcase
+      </button>
+    </nav>
+  )
+
   // Mobile chrome: the feed selector + settings live in the floating top bar, and
   // a compose entry pill in the bottom bar. The inline feed strip is dropped.
   const mobileChrome = isMobile && (
@@ -187,6 +235,16 @@ export function HomeScreen() {
               icon: <BskyIcon size={16} />,
               onSelect: () => setActiveKey(t.key),
             })),
+            ...(showcaseTokens?.length
+              ? [
+                  {
+                    key: '__showcase',
+                    label: 'Token Showcase',
+                    icon: <StarIcon size={16} />,
+                    onSelect: openShowcase,
+                  },
+                ]
+              : []),
           ]}
         />
       </MobileTopRight>
@@ -197,7 +255,14 @@ export function HomeScreen() {
     <>
       {/* Desktop: feed menu in the aside. Mobile: feed selection moves to the
           floating top bar (see mobileChrome). */}
-      <PageAside>{!isMobile && feedNav}</PageAside>
+      <PageAside>
+        {!isMobile && (
+          <>
+            {feedNav}
+            {onChainNav}
+          </>
+        )}
+      </PageAside>
       {mobileChrome}
 
       <div className="home">

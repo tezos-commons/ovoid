@@ -87,6 +87,10 @@
   display: flex;
   flex-direction: column;
 }
+/* Second aside section (On-Chain) sits below the feeds menu. */
+.feednav--onchain {
+  margin-top: var(--space-5);
+}
 .feednav__head {
   display: flex;
   align-items: center;

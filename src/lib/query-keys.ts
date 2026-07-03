@@ -197,6 +197,11 @@ export const qk = {
   // independent; separate root so bsky prefix-invalidation never touches it.
   linkMeta: (url: string) => ['external', 'linkMeta', { url }] as const,
 
+  // Ovoid indexer (indexer.ovoid.at — external first-party service, atproto
+  // service-auth). Separate `indexer` root so bsky prefix-invalidation never
+  // touches it. Recommendations are per-caller, so the viewer DID keys them.
+  interestingTokens: (did?: string) => ['indexer', did, 'interestingTokens'] as const,
+
   // Tezos-token embed previews (objkt reads keyed under their own `embed` root;
   // public and viewer-independent).
   embedTezosToken: (fa: string, tokenId: string) =>
