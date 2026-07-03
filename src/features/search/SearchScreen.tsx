@@ -4,11 +4,17 @@ import { tezosEntityPath } from '@/features/contract/contract-route'
 import { Tabs, Icons, type TabItem, type MenuItem } from '@/components'
 import { MobileTopBarFill, MobileSelect, useFadeTopBarOnScroll } from '@/components/layout'
 import { useIsMobile } from '@/lib/use-is-mobile'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { runWhenIdle } from '@/lib/idle'
 import './search.css'
 import { TypeaheadDropdown } from './TypeaheadDropdown'
 import { DiscoverState } from './DiscoverState'
 import { PostResults, PeopleResults, FeedResults } from './SearchResults'
-import type { PostSort } from './use-search-posts'
+import { searchPostsOptions, type PostSort } from './use-search-posts'
+import { searchActorsOptions } from './use-search-actors'
+import { popularFeedsOptions } from './use-discover'
 
 type TabKey = 'top' | 'latest' | 'people' | 'feeds'
 
@@ -53,6 +59,27 @@ export default function SearchScreen() {
   useEffect(() => {
     setDraft(committed)
   }, [committed])
+
+  // Warm every sibling result tab for the committed query on idle, so
+  // switching Top/Latest/People/Feeds renders from cache. RQ dedupes the
+  // active tab's key against its live query; a new committed term re-runs this.
+  const { agent, isAuthed } = useAgent()
+  useEffect(() => {
+    if (!committed) return
+    return runWhenIdle(() => {
+      const warmInfinite = (opts: { queryKey: readonly unknown[] }) =>
+        schedulePrefetch(opts.queryKey, () =>
+          queryClient.prefetchInfiniteQuery(
+            opts as Parameters<typeof queryClient.prefetchInfiniteQuery>[0],
+          ),
+        )
+      warmInfinite(searchPostsOptions(agent, committed, 'top', isAuthed))
+      warmInfinite(searchPostsOptions(agent, committed, 'latest', isAuthed))
+      warmInfinite(searchActorsOptions(agent, committed))
+      const feeds = popularFeedsOptions(agent, committed)
+      schedulePrefetch(feeds.queryKey, () => queryClient.prefetchQuery(feeds))
+    })
+  }, [agent, committed, isAuthed])
 
   // Close the typeahead on outside click.
   useEffect(() => {

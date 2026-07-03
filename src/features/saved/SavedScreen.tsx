@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ScreenHeader } from '@/components/layout'
 import {
@@ -11,13 +12,18 @@ import {
   Tabs,
 } from '@/components'
 import { BookmarkIcon, HashIcon } from '@/components/Icon'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { runWhenIdle } from '@/lib/idle'
 import {
   useBookmarks,
   useBookmarkMode,
   useRemoveBookmark,
+  prefetchBookmarks,
   type BookmarkEntry,
 } from './use-bookmarks'
-import { useSavedFeeds, useSavedFeedActions } from './use-saved-feeds'
+import { useSavedFeeds, useSavedFeedActions, savedFeedsOptions } from './use-saved-feeds'
 import { SavedFeedRow } from './SavedFeedRow'
 import './saved.css'
 
@@ -39,6 +45,19 @@ const TABS = [
 export default function SavedScreen() {
   const [params, setParams] = useSearchParams()
   const tab: SubTab = params.get('tab') === 'feeds' ? 'feeds' : 'bookmarks'
+
+  // Warm both sub-tabs on idle so switching is an in-place fill. Deep links /
+  // the `b` shortcut can land here without the nav-level warm having run;
+  // schedulePrefetch dedupes the overlap when it has.
+  const { agent, did, isAuthed } = useAgent()
+  useEffect(() => {
+    if (!isAuthed) return
+    return runWhenIdle(() => {
+      prefetchBookmarks(agent, did)
+      const feeds = savedFeedsOptions(agent, did)
+      schedulePrefetch(feeds.queryKey, () => queryClient.prefetchQuery(feeds))
+    })
+  }, [agent, did, isAuthed])
 
   const setTab = (key: string) => {
     const next = new URLSearchParams(params)

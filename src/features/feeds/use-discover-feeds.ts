@@ -1,4 +1,9 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query'
 import type { Agent, AppBskyFeedDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
@@ -33,14 +38,13 @@ async function fetchPopular(
 }
 
 /**
- * Popular / searchable feed generators for the Discover section.
+ * Popular / searchable feed generators for the Discover section — shared by
+ * the hook and the FeedsScreen sibling-tab warmer.
  * Paginated; `query` filters server-side (the search-within-feeds input).
  */
-export function useDiscoverFeeds(query: string) {
-  const { agent } = useAgent()
+export function discoverFeedsOptions(agent: Agent, query: string) {
   const q = query.trim()
-
-  return useInfiniteQuery({
+  return infiniteQueryOptions({
     // Not a viewer-scoped resource; this list is public and identical per query.
     queryKey: qk.discoverFeeds(q),
     queryFn: ({ pageParam }) =>
@@ -51,19 +55,27 @@ export function useDiscoverFeeds(query: string) {
   })
 }
 
+export function useDiscoverFeeds(query: string) {
+  const { agent } = useAgent()
+  return useInfiniteQuery(discoverFeedsOptions(agent, query))
+}
+
 /**
  * app.bsky.feed.getSuggestedFeeds — personalized suggestions for the signed-in
  * viewer (a short, non-paginated strip shown above Discover when authed).
  */
-export function useSuggestedFeeds() {
-  const { agent, did, isAuthed } = useAgent()
-  return useQuery<GeneratorView[]>({
+export function suggestedFeedsOptions(agent: Agent, did: string | undefined) {
+  return queryOptions<GeneratorView[]>({
     queryKey: qk.suggestedFeeds(did),
-    enabled: isAuthed,
     staleTime: 5 * 60_000,
     queryFn: async () => {
       const res = await agent.app.bsky.feed.getSuggestedFeeds({ limit: 10 })
       return res.data.feeds
     },
   })
+}
+
+export function useSuggestedFeeds() {
+  const { agent, did, isAuthed } = useAgent()
+  return useQuery({ ...suggestedFeedsOptions(agent, did), enabled: isAuthed })
 }

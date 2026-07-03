@@ -1,12 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { ScreenHeader, PageAside, MobileTopRight, MobileSelect, useMobileTitle } from '@/components/layout'
 import { type TabItem } from '@/components'
 import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { runWhenIdle } from '@/lib/idle'
 import { useDragScroll } from '@/lib/use-drag-scroll'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import { MyFeedsTab } from './MyFeedsTab'
 import { DiscoverTab } from './DiscoverTab'
+import { myFeedsOptions } from './use-my-feeds'
+import { discoverFeedsOptions, suggestedFeedsOptions } from './use-discover-feeds'
 import './feeds.css'
 
 type TabKey = 'mine' | 'discover'
@@ -29,11 +34,30 @@ const TABS: TabItem[] = [
  * tab is empty/guarded when signed out since saved feeds are viewer state.
  */
 export default function FeedsScreen() {
-  const { isAuthed } = useAgent()
+  const { agent, did, isAuthed } = useAgent()
   const [tab, setTab] = useState<TabKey>(isAuthed ? 'mine' : 'discover')
   const navRef = useDragScroll<HTMLElement>()
   const isMobile = useIsMobile()
   useMobileTitle(isMobile ? 'Feeds' : null)
+
+  // Warm the inactive sibling tab on idle (My Feeds is also nav-warmed; the
+  // dedupe in schedulePrefetch makes the overlap free).
+  useEffect(() => {
+    return runWhenIdle(() => {
+      const discover = discoverFeedsOptions(agent, '')
+      schedulePrefetch(discover.queryKey, () =>
+        queryClient.prefetchInfiniteQuery(
+          discover as Parameters<typeof queryClient.prefetchInfiniteQuery>[0],
+        ),
+      )
+      if (isAuthed) {
+        const suggested = suggestedFeedsOptions(agent, did)
+        schedulePrefetch(suggested.queryKey, () => queryClient.prefetchQuery(suggested))
+        const mine = myFeedsOptions(agent, did)
+        schedulePrefetch(mine.queryKey, () => queryClient.prefetchQuery(mine))
+      }
+    })
+  }, [agent, did, isAuthed])
 
   const feedsNav = (
     <nav ref={navRef} className="feedsnav" aria-label="Feeds">

@@ -1,5 +1,6 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { infiniteQueryOptions, useInfiniteQuery } from '@tanstack/react-query'
 import type {
+  Agent,
   AppBskyFeedGetActorFeeds,
   AppBskyGraphGetLists,
 } from '@atproto/api'
@@ -7,15 +8,14 @@ import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
 
 /**
- * Feed generators authored by an actor (the profile "Feeds" tab). Distinct from
- * the viewer's saved feeds — these are records the actor created. Keyed under
+ * Feed generators authored by an actor (the profile "Feeds" tab) — shared by
+ * the hook and ProfileScreen's sibling-tab warmer. Distinct from the viewer's
+ * saved feeds — these are records the actor created. Keyed under
  * myFeeds(actor) so it doesn't collide with the viewer's pinned-feed cache.
  */
-export function useAuthorFeeds(actor: string | undefined, opts?: { enabled?: boolean }) {
-  const { agent } = useAgent()
-  return useInfiniteQuery<AppBskyFeedGetActorFeeds.OutputSchema>({
+export function authorFeedsOptions(agent: Agent, actor: string | undefined) {
+  return infiniteQueryOptions<AppBskyFeedGetActorFeeds.OutputSchema>({
     queryKey: [...qk.myFeeds(actor), 'authored'] as const,
-    enabled: !!actor && opts?.enabled !== false,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const res = await agent.app.bsky.feed.getActorFeeds({
@@ -29,15 +29,21 @@ export function useAuthorFeeds(actor: string | undefined, opts?: { enabled?: boo
   })
 }
 
+export function useAuthorFeeds(actor: string | undefined, opts?: { enabled?: boolean }) {
+  const { agent } = useAgent()
+  return useInfiniteQuery({
+    ...authorFeedsOptions(agent, actor),
+    enabled: !!actor && opts?.enabled !== false,
+  })
+}
+
 /**
  * Lists owned by an actor (the profile "Lists" tab). getLists returns curate /
  * mod / reference lists; the screen renders them all with their purpose chip.
  */
-export function useAuthorLists(actor: string | undefined, opts?: { enabled?: boolean }) {
-  const { agent } = useAgent()
-  return useInfiniteQuery<AppBskyGraphGetLists.OutputSchema>({
+export function authorListsOptions(agent: Agent, actor: string | undefined) {
+  return infiniteQueryOptions<AppBskyGraphGetLists.OutputSchema>({
     queryKey: qk.lists(actor ?? ''),
-    enabled: !!actor && opts?.enabled !== false,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const res = await agent.app.bsky.graph.getLists({
@@ -48,5 +54,13 @@ export function useAuthorLists(actor: string | undefined, opts?: { enabled?: boo
       return res.data
     },
     getNextPageParam: (last) => last.cursor || undefined,
+  })
+}
+
+export function useAuthorLists(actor: string | undefined, opts?: { enabled?: boolean }) {
+  const { agent } = useAgent()
+  return useInfiniteQuery({
+    ...authorListsOptions(agent, actor),
+    enabled: !!actor && opts?.enabled !== false,
   })
 }

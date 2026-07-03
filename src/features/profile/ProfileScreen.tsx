@@ -29,6 +29,7 @@ import { runWhenIdle } from '@/lib/idle'
 import { useProfile } from './use-profile'
 import { useAuthorFeed, authorFeedOptions } from './use-author-feed'
 import { useActorLikes, actorLikesOptions } from './use-actor-likes'
+import { authorFeedsOptions, authorListsOptions } from './use-author-feeds'
 import { ProfileCard } from './ProfileCard'
 import { ProfileNav } from './ProfileNav'
 import { LabelerCard } from './LabelerCard'
@@ -174,6 +175,9 @@ export default function ProfileScreen() {
       warm(authorFeedOptions(agent, did, actor, 'posts_with_replies'))
       warm(authorFeedOptions(agent, did, actor, 'posts_with_media'))
       if (isSelf) warm(actorLikesOptions(agent, did, actor))
+      // Feeds/Lists tabs exist only when the profile has authored any.
+      if (hasFeeds) warm(authorFeedsOptions(agent, actor))
+      if (hasLists) warm(authorListsOptions(agent, actor))
       if (tezosAddr) {
         warm(objktCollectionsOptions(tezosAddr, 'created'))
         warm(objktCollectionsOptions(tezosAddr, 'owned'))
@@ -186,7 +190,7 @@ export default function ProfileScreen() {
       // cold fetch on tab-switch (same authed/other-account condition as the read).
       if (checkVisibility && profile?.did) warmQuery(walletVisibilityOptions(agent, profile.did))
     })
-  }, [actor, agent, did, isSelf, tezosAddr, checkVisibility, profile?.did])
+  }, [actor, agent, did, isSelf, tezosAddr, checkVisibility, profile?.did, hasFeeds, hasLists])
 
   const setTab = (key: string) => {
     const next = new URLSearchParams(params)
