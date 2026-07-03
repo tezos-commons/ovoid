@@ -66,7 +66,11 @@ export function suppressImageEmbed(
   record: AppBskyFeedPost.Record | null,
   embed: AppBskyFeedDefs.PostView['embed'],
 ): boolean {
-  return !!embed && AppBskyEmbedImages.isView(embed) && collectProviderLinks(record, embed).length > 0
+  return (
+    !!embed &&
+    AppBskyEmbedImages.isView(embed) &&
+    collectProviderLinks(record, embed).some((x) => !x.matcher.preservesImageEmbed)
+  )
 }
 
 /**

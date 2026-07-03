@@ -1677,6 +1677,12 @@ video.nftb__backdrop {
   pointer-events: none;
 }
 
+/* GIF link cards (tenor/giphy) rendered as inline media. The playing state
+   has no click action, so no pointer cursor (the paused state is a button
+   and keeps .embed--video's pointer). */
+div.embed--gif { cursor: default; }
+.embed-gif__img { width: 100%; height: auto; display: block; }
+
 /* Quoted post */
 .embed--quote {
   display: flex;

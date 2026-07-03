@@ -5,6 +5,7 @@ import { objktMatcher } from './providers/objkt'
 import { objktCollectionMatcher } from './providers/objkt-collection'
 import { teiaMatcher } from './providers/teia'
 import { pollMatcher } from './providers/poll'
+import { gifMatcher } from './providers/gif'
 
 /**
  * A special renderer for external links whose URL matches `test`. This is the
@@ -18,9 +19,14 @@ export interface ExternalEmbedMatcher {
   id: string
   test: (url: URL) => boolean
   Component: ComponentType<ExternalEmbedProps>
+  /** True when this preview is standalone media that does NOT stand in for the
+   * post's image embed, so PostCard keeps the images (see suppressImageEmbed).
+   * Token previews render the post's artwork themselves and leave this unset. */
+  preservesImageEmbed?: boolean
 }
 
 const EXTERNAL_MATCHERS: ExternalEmbedMatcher[] = [
+  gifMatcher,
   pollMatcher,
   objktMatcher,
   objktCollectionMatcher,
