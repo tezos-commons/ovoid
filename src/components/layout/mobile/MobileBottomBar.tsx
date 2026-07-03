@@ -3,11 +3,14 @@ import clsx from 'clsx'
 import { NavLink, useLocation } from 'react-router-dom'
 import { NAV_ITEMS } from '../navItems'
 import { PencilIcon } from '../../Icon'
+import { Avatar } from '../../Avatar'
 import { useAuth } from '@/lib/api/agent'
+import { useLongPress } from '@/lib/use-long-press'
 import { useComposer } from '@/store/compose-store'
 import { useNavBadges } from '@/features/notifications/use-nav-badges'
 import { NavBadge } from '../NavBadge'
 import { useMobileChromeCtx } from './MobileChrome'
+import { AccountSheet } from '@/features/auth/AccountSheet'
 
 /** Nav shown when the multi button is toggled (and the default on screens with no
  *  contextual bottom content). Order/selection per the mobile spec. */
@@ -128,13 +131,19 @@ export function MobileBottomBar() {
 }
 
 function MobileNavRow() {
-  const { did, isAuthed } = useAuth()
+  const { did, isAuthed, handle, displayName, avatar } = useAuth()
   const badges = useNavBadges()
   const items = MOBILE_NAV_KEYS.map((k) => NAV_ITEMS.find((i) => i.key === k)!).filter(Boolean)
+
+  // Profile tab: tap goes to the signed-in profile as before; a long press
+  // opens the account switcher sheet instead of navigating.
+  const [acctOpen, setAcctOpen] = useState(false)
+  const acctPress = useLongPress(() => setAcctOpen(true))
 
   return (
     <div className="mbar__nav">
       {items.map((item) => {
+        const me = item.key === 'profile' && isAuthed
         const to =
           item.authed && !isAuthed
             ? '/login'
@@ -146,12 +155,22 @@ function MobileNavRow() {
             key={item.key}
             to={to}
             end={item.to === '/'}
-            className={({ isActive }) => clsx('mbar__navitem', isActive && 'mbar__navitem--active')}
+            className={({ isActive }) =>
+              clsx('mbar__navitem', isActive && 'mbar__navitem--active', me && 'mbar__navitem--me')
+            }
             aria-label={item.label}
+            {...(me ? acctPress.handlers : null)}
+            onClick={me ? (e) => acctPress.didLongPress() && e.preventDefault() : undefined}
           >
             {({ isActive }) => (
               <>
-                {item.icon(isActive)}
+                {me ? (
+                  <span className={clsx('mbar__me', isActive && 'mbar__me--active')}>
+                    <Avatar size="xs" src={avatar} alt={handle} fallback={displayName || handle} />
+                  </span>
+                ) : (
+                  item.icon(isActive)
+                )}
                 {item.key === 'notifications' && <NavBadge count={badges.notifications} />}
                 {item.key === 'chat' && <NavBadge count={badges.chat} />}
               </>
@@ -159,6 +178,7 @@ function MobileNavRow() {
           </NavLink>
         )
       })}
+      <AccountSheet open={acctOpen} onClose={() => setAcctOpen(false)} />
     </div>
   )
 }

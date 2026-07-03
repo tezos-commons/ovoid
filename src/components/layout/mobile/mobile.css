@@ -236,6 +236,21 @@
 .mbar__navitem:hover {
   text-decoration: none;
 }
+/* Profile tab (signed in): the avatar replaces the person glyph; long-press
+   opens the account sheet, so suppress the OS link callout / text selection. */
+.mbar__navitem--me {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.mbar__me {
+  display: flex;
+  border-radius: var(--radius-pill);
+  line-height: 0;
+}
+.mbar__me--active {
+  box-shadow: 0 0 0 2px var(--text);
+}
 
 /* Keep the document ALWAYS scrollable (1px over the viewport). iOS standalone
    only renders content behind the status bar / camera island while the document

@@ -5,6 +5,7 @@ import { Avatar, Button, Spinner } from '@/components'
 import { useLogin } from './use-login'
 import { ACCESS_LIST_URL } from './use-beta-access'
 import { getLastAccount } from './last-account'
+import { HandleSuggest } from './HandleSuggest'
 import './auth.css'
 
 /* Where to send the user after a successful sign-in. RequireAuth stashes the
@@ -33,6 +34,9 @@ export default function Login() {
   // just hits Continue; editing the field hides the hint (read once on mount).
   const [last] = useState(getLastAccount)
   const [handle, setHandle] = useState(last?.handle ?? '')
+  // Suggestions collapse after a pick — and stay closed for the untouched
+  // last-account prefill, which would otherwise open a dropdown on mount.
+  const [picked, setPicked] = useState(!!last)
 
   // While the session restores on first paint, don't flash the form.
   if (auth.isLoading) {
@@ -50,6 +54,7 @@ export default function Login() {
 
   function onHandleChange(value: string) {
     setHandle(value)
+    setPicked(false)
     if (error) clearError()
   }
 
@@ -109,6 +114,15 @@ export default function Login() {
                 onChange={(e) => onHandleChange(e.target.value)}
                 autoFocus
               />
+              {!picked && !submitting && (
+                <HandleSuggest
+                  query={handle}
+                  onPick={(h) => {
+                    setHandle(h)
+                    setPicked(true)
+                  }}
+                />
+              )}
             </div>
 
             <Button

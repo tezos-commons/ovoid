@@ -7,6 +7,7 @@ import { useAuth, getAuthSnapshot, type AuthContextValue } from './auth-context'
 // surface — features import useAgent/useAuth/AuthProvider from one place.
 export { AuthProvider, useAuth } from './auth-context'
 export type { AuthState, AuthContextValue } from './auth-context'
+export type { StoredAccount } from '../auth/accounts'
 
 /* ============================================================
    Agent bundle — the ONLY way features touch the network.

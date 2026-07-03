@@ -198,18 +198,49 @@
   justify-self: end;
 }
 
-/* ---------------- Account avatar (bottom-left, divorced from the rail) -------- */
-.user-fab {
+/* ---------------- Account switcher (bottom-left, divorced from the rail) ------
+   A vertical stack: + (add account) on top, then one avatar per registered
+   account; the active one is larger with a primary ring. */
+.user-fab-stack {
   position: fixed;
   left: var(--layout-gap);
   bottom: var(--layout-gap);
   z-index: var(--z-nav);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.user-fab {
   border-radius: var(--radius-pill);
   line-height: 0;
   box-shadow: var(--shadow-menu);
 }
 .user-fab:hover {
   opacity: 0.9;
+}
+.user-fab:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.user-fab--active {
+  box-shadow: var(--shadow-menu), 0 0 0 2px var(--color-primary);
+}
+.user-fab--add {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed var(--text-faint);
+  color: var(--text-muted);
+  background: var(--bg-overlay);
+  box-shadow: none;
+}
+.user-fab--add:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+  opacity: 1;
 }
 
 /* ---------------- Compose FAB (mobile, feed surfaces only) ----------------
@@ -303,7 +334,7 @@
     padding: 0;
   }
   .topbar,
-  .user-fab { display: none; }
+  .user-fab-stack { display: none; }
   .page {
     /* No nav rail on mobile, so there's nothing to align to — go full-bleed. */
     --page-top-gap: 0px;

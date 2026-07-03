@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -14,6 +15,14 @@ import { clearAllCaches } from '../query-client'
 import { bootstrap } from '../auth-bootstrap'
 import { withChatProxy } from './proxy'
 import { getPrefs, selectLabelerDids } from '../prefs'
+import {
+  getAccounts,
+  upsertAccount,
+  removeAccount as removeStoredAccount,
+  getActiveDid,
+  setActiveDid,
+  type StoredAccount,
+} from '../auth/accounts'
 
 /* ============================================================
    Auth context — the single source of session truth. The agent
@@ -44,11 +53,25 @@ export interface AuthContextValue {
   avatar: string | undefined
   isLoading: boolean
   isAuthed: boolean
+  /** Accounts registered on this device, in insertion order (switcher UI). */
+  accounts: StoredAccount[]
   /** Redirects the browser to the PDS authorize endpoint (Promise<never> on success). */
   signIn: (handle: string, opts?: { state?: string }) => Promise<void>
   /** Legacy app-password fallback. Optional; not all builds wire it. */
   signInWithAppPassword?: (identifier: string, appPassword: string) => Promise<void>
+  /**
+   * Sign out of the CURRENT account only: revoke it, forget it, then fall
+   * through to the next registered account (or the signed-out state).
+   */
   signOut: () => Promise<void>
+  /**
+   * Restore another registered account's persisted session and make it the
+   * active viewer. Rejects (and forgets the account) if the session is no
+   * longer usable — the caller should offer the add-account flow.
+   */
+  switchAccount: (did: string) => Promise<void>
+  /** Revoke + forget an account. For the active account this is signOut(). */
+  removeAccount: (did: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -76,6 +99,12 @@ function buildSignedIn(session: OAuthSession): Extract<AuthState, { status: 'sig
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading' })
+  const [accounts, setAccounts] = useState<StoredAccount[]>(getAccounts)
+
+  // Current state for the imperative methods below (signOut/switchAccount are
+  // stable callbacks; reading `state` from a closure would go stale).
+  const stateRef = useRef(state)
+  stateRef.current = state
 
   useEffect(() => {
     let cancelled = false
@@ -100,6 +129,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             /* prefs fetch failed — fall back to default labeler only; non-fatal */
           }
           if (cancelled) return
+          // The add-account OAuth callback boots as a DIFFERENT viewer than the
+          // one that filled the persisted caches. Same invariant as signOut:
+          // no cache entry may outlive the viewer whose session filled it
+          // (profile/thread keys omit the viewer DID but carry viewer state).
+          // Nothing has rendered yet (state is 'loading'), so awaiting the
+          // purge here cannot race live queries.
+          const prevDid = getActiveDid()
+          if (prevDid && prevDid !== signedIn.did) await clearAllCaches()
+          setActiveDid(signedIn.did)
+          setAccounts(upsertAccount({ did: signedIn.did, handle: signedIn.handle }))
           setState(signedIn)
         } else {
           setState({ status: 'signedOut' })
@@ -137,6 +176,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
             : prev,
         )
+        // Authoritative registry entry: real handle + avatar for the switcher.
+        setAccounts(
+          upsertAccount({
+            did: res.data.did,
+            handle: res.data.handle,
+            displayName: res.data.displayName,
+            avatar: res.data.avatar,
+          }),
+        )
       })
       .catch(() => {
         /* leave the DID-seeded handle; non-fatal */
@@ -153,19 +201,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await client.signIn(handle, { state: opts?.state })
   }, [])
 
-  const signOut = useCallback(async () => {
-    const client = getOAuthClient()
-    setState((prev) => {
-      if (prev.status === 'signedIn') {
-        void client.revoke(prev.did).catch(() => {})
-      }
-      return { status: 'signedOut' }
-    })
-    // Neither cache layer may outlive the session that filled it: profiles and
-    // threads are keyed without the viewer DID but carry viewer state, so a
-    // later account would inherit the previous viewer's data.
+  /**
+   * Make a restored session the active viewer. Ordering mirrors the original
+   * signOut: setState first, then purge both cache layers in the same tick —
+   * the memory clear is synchronous, so the next render under the new viewer
+   * starts from an empty cache. (Profiles and threads are keyed without the
+   * viewer DID but carry viewer state, so no entry may survive the change.)
+   */
+  const activateSession = useCallback(async (session: OAuthSession) => {
+    const signedIn = buildSignedIn(session)
+    try {
+      const dids = selectLabelerDids(await getPrefs(signedIn.agent))
+      if (dids.length) signedIn.agent.configureLabelers(dids)
+    } catch {
+      /* default labeler only; non-fatal */
+    }
+    setActiveDid(signedIn.did)
+    setAccounts(upsertAccount({ did: signedIn.did, handle: signedIn.handle }))
+    setState(signedIn)
     void clearAllCaches()
   }, [])
+
+  const switchAccount = useCallback(
+    async (did: string) => {
+      const cur = stateRef.current
+      if (cur.status === 'signedIn' && cur.did === did) return
+      const client = getOAuthClient()
+      let session: OAuthSession
+      try {
+        // restore() also re-points the client's persisted current-sub marker,
+        // so a reload after the switch boots into this account.
+        session = await client.restore(did)
+      } catch (err) {
+        // Session no longer usable (refresh token expired / revoked upstream):
+        // forget the account so the switcher stops offering it.
+        setAccounts(removeStoredAccount(did))
+        throw err
+      }
+      await activateSession(session)
+    },
+    [activateSession],
+  )
+
+  const signOut = useCallback(async () => {
+    const cur = stateRef.current
+    if (cur.status !== 'signedIn') return
+    const client = getOAuthClient()
+    void client.revoke(cur.did).catch(() => {})
+    let remaining = removeStoredAccount(cur.did)
+    setAccounts(remaining)
+    // Fall through to the next registered account; skip any whose persisted
+    // session turns out to be dead.
+    for (const acc of remaining) {
+      try {
+        const session = await client.restore(acc.did)
+        await activateSession(session)
+        return
+      } catch {
+        remaining = removeStoredAccount(acc.did)
+        setAccounts(remaining)
+      }
+    }
+    setActiveDid(null)
+    setState({ status: 'signedOut' })
+    void clearAllCaches()
+  }, [activateSession])
+
+  const removeAccount = useCallback(
+    async (did: string) => {
+      const cur = stateRef.current
+      if (cur.status === 'signedIn' && cur.did === did) return signOut()
+      const client = getOAuthClient()
+      void client.revoke(did).catch(() => {})
+      setAccounts(removeStoredAccount(did))
+      // The client's revoke() unconditionally clears its current-sub marker,
+      // even when revoking a non-active account — re-point it at the active
+      // session so a reload still restores it (refresh=false: store read only).
+      if (cur.status === 'signedIn') void client.restore(cur.did, false).catch(() => {})
+    },
+    [signOut],
+  )
 
   const value = useMemo<AuthContextValue>(() => {
     const isSignedIn = state.status === 'signedIn'
@@ -178,10 +293,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       avatar: isSignedIn ? state.avatar : undefined,
       isLoading: state.status === 'loading',
       isAuthed: isSignedIn,
+      accounts,
       signIn,
       signOut,
+      switchAccount,
+      removeAccount,
     }
-  }, [state, signIn, signOut])
+  }, [state, accounts, signIn, signOut, switchAccount, removeAccount])
 
   // Keep a module-level snapshot for getAgent() (loaders / imperative calls).
   _authSnapshot = value

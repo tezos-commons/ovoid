@@ -305,3 +305,154 @@
   font-size: var(--fs-sm);
   color: var(--text-muted);
 }
+
+/* --- account switcher sheet (AccountSheet) --- */
+.acct-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.acct-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.acct-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-card);
+}
+
+.acct-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-card);
+  text-align: left;
+  color: var(--text);
+}
+
+.acct-row__main:not(:disabled):hover {
+  background: var(--bg-contrast-25);
+}
+
+.acct-row--active .acct-row__main {
+  cursor: default;
+}
+
+.acct-row__names {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.acct-row__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.acct-row__handle {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.acct-row__state {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  color: var(--color-primary);
+}
+
+.acct-row__remove {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+}
+
+.acct-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+/* --- add-account form (inside the sheet) --- */
+.acct-add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.acct-add__note {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.acct-add__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* --- handle suggestions (login + add-account) --- */
+.handle-suggest {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.handle-suggest__loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3);
+}
+
+.handle-suggest__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  color: var(--text);
+}
+
+.handle-suggest__row:hover {
+  background: var(--bg-contrast-25);
+}
+
+.handle-suggest__names {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.handle-suggest__name {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.handle-suggest__handle {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
