@@ -14,9 +14,9 @@ import { useEntityProfile } from '@/features/address/use-address'
 import { profileOptions } from '@/features/profile/use-profile'
 import {
   useInterestingTokens,
-  indexerFileUrl,
   type ShowcaseEvent,
 } from '@/features/onchain/use-interesting-tokens'
+import { indexerFileUrl } from '@/features/onchain/indexer'
 import { useCloseOnBack } from '@/lib/use-close-on-back'
 import { ModelViewer } from './ModelViewer'
 import { AudioPlayer, TransportBar, useMediaTransport } from './AudioPlayer'

@@ -159,6 +159,12 @@
   word-break: break-word;
 }
 
+/* Common-tokens strip aligns with the padded profhead content column. */
+.profhead .ctr {
+  margin: 0;
+  padding: var(--space-3) var(--space-4) 0;
+}
+
 .profhead__counts {
   display: flex;
   flex-wrap: wrap;

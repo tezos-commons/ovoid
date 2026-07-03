@@ -9,6 +9,7 @@ import { useAgent } from '@/lib/api/agent'
 import { profileOptions } from '@/features/profile/use-profile'
 import { useFollow } from '@/features/profile/use-follow'
 import { formatCount } from '@/features/profile/ProfileCard'
+import { CommonTokensRow } from '@/features/onchain/CommonTokensRow'
 
 const OPEN_DELAY = 380
 const CLOSE_DELAY = 250
@@ -62,7 +63,10 @@ export function ProfileHoverCard({ actor, children }: { actor: string; children:
   const show = () => {
     const el = hostRef.current
     if (!el) return
-    const r = el.getBoundingClientRect()
+    // Anchor on the wrapped link itself: the host span is display:inline, and
+    // an inline box around a block/flex child (chat avatars) reports a
+    // degenerate rect — the child's box is the real geometry either way.
+    const r = (el.firstElementChild ?? el).getBoundingClientRect()
     const left = Math.min(Math.max(r.left, EDGE), window.innerWidth - CARD_W - EDGE)
     // Below the anchor unless the viewport lacks room there; the card is
     // content-sized, so a fixed budget stands in for pre-render measurement.
@@ -155,6 +159,7 @@ function HoverCardContent({ actor, onNavigate }: { actor: string; onNavigate: ()
         {p.displayName || p.handle}
       </Link>
       <div className="phc__handle">@{p.handle}</div>
+      <CommonTokensRow other={p.did} onOpen={onNavigate} />
       <div className="phc__stats">
         <span>
           <b>{formatCount(p.followersCount)}</b> followers

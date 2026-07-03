@@ -202,6 +202,10 @@ export const qk = {
   // touches it. Recommendations are per-caller, so the viewer DID keys them.
   interestingTokens: (did?: string) => ['indexer', did, 'interestingTokens'] as const,
 
+  /** NFTs connecting the viewer to `other` (a DID or Tezos address). */
+  commonTokens: (did: string | undefined, other: string) =>
+    ['indexer', did, 'commonTokens', { other }] as const,
+
   // Tezos-token embed previews (objkt reads keyed under their own `embed` root;
   // public and viewer-independent).
   embedTezosToken: (fa: string, tokenId: string) =>

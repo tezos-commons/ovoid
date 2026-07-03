@@ -2,6 +2,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { Agent } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
+import { indexerGet } from './indexer'
 
 /**
  * app.ovoid.indexer.getInterestingTokens — personalized NFT recommendations
@@ -10,15 +11,7 @@ import { qk } from '@/lib/query-keys'
  * contributing marketplace / balance events inlined.
  */
 
-export const INDEXER_SERVICE_DID = 'did:web:indexer.ovoid.at'
-const INDEXER_URL =
-  (import.meta.env.VITE_INDEXER_URL as string | undefined) ?? 'https://indexer.ovoid.at'
 const NSID = 'app.ovoid.indexer.getInterestingTokens'
-
-/** Absolute URL for an indexer-relative file path (e.g. an event's actor_avatar). */
-export function indexerFileUrl(path: string | null | undefined): string | undefined {
-  return path ? `${INDEXER_URL}${path}` : undefined
-}
 
 export interface ShowcaseEvent {
   kind: 'objkt' | 'balance_change'
@@ -59,18 +52,7 @@ export interface ShowcaseToken {
 }
 
 async function fetchInterestingTokens(agent: Agent): Promise<ShowcaseToken[]> {
-  // Service-auth: a short-lived JWT minted by the caller's own PDS, bound to
-  // this exact audience + endpoint (lxm). Minted fresh per fetch; the query's
-  // staleTime bounds the rate.
-  const auth = await agent.com.atproto.server.getServiceAuth({
-    aud: INDEXER_SERVICE_DID,
-    lxm: NSID,
-  })
-  const res = await fetch(`${INDEXER_URL}/xrpc/${NSID}`, {
-    headers: { Authorization: `Bearer ${auth.data.token}` },
-  })
-  if (!res.ok) throw new Error(`indexer: HTTP ${res.status}`)
-  const body = (await res.json()) as { tokens?: ShowcaseToken[] }
+  const body = await indexerGet<{ tokens?: ShowcaseToken[] }>(agent, NSID)
   return body.tokens ?? []
 }
 

@@ -18,6 +18,7 @@ import { useFollow } from './use-follow'
 import { useMuteBlock } from './use-mute-block'
 import { useTezosAddress } from './use-nfts'
 import { FollowListModal } from './FollowListModal'
+import { CommonTokensRow } from '@/features/onchain/CommonTokensRow'
 import './profile.css'
 
 export interface ProfileCardProps {
@@ -262,6 +263,10 @@ export function ProfileCard({ profile, actor, isSelf, isAuthed }: ProfileCardPro
           <BioText text={profile.description} />
         </div>
       )}
+
+      {/* NFTs connecting the viewer to this account (viewer-held first, golden
+          ring). Self-hides on own profile / no connection / signed out. */}
+      <CommonTokensRow other={profile.did} />
 
       <div className="profhead__counts">
         <button className="profhead__count" onClick={() => setListMode('following')}>

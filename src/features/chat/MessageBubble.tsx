@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Link } from 'react-router-dom'
 import { ChatBskyConvoDefs } from '@atproto/api'
 import type { ChatBskyGroupDefs } from '@atproto/api'
-import { Avatar } from '@/components'
+import { Avatar, ProfileHoverCard } from '@/components'
 import { RichText, textWithoutLinkUris } from '@/lib/rich-text'
 import { absoluteTime, clockTime } from '@/lib/time'
 import { haptic } from '@/lib/haptics'
@@ -131,14 +131,16 @@ export const MessageBubble = memo(function MessageBubble({
   // once and reused by the deleted + normal branches.
   const avatarNode = showAvatar ? (
     senderDid ? (
-      <Link
-        ref={prefetchRef}
-        to={`/profile/${senderDid}`}
-        className="msg-row__avatar-link"
-        aria-label={senderName ? `View ${senderName}'s profile` : 'View profile'}
-      >
-        <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="sm" />
-      </Link>
+      <ProfileHoverCard actor={senderDid}>
+        <Link
+          ref={prefetchRef}
+          to={`/profile/${senderDid}`}
+          className="msg-row__avatar-link"
+          aria-label={senderName ? `View ${senderName}'s profile` : 'View profile'}
+        >
+          <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="sm" />
+        </Link>
+      </ProfileHoverCard>
     ) : (
       <Avatar src={senderAvatar} alt={senderName} fallback={senderName} size="sm" />
     )
@@ -212,9 +214,11 @@ export const MessageBubble = memo(function MessageBubble({
     >
       {showName && attributed && senderName && (
         senderDid ? (
-          <Link to={`/profile/${senderDid}`} className="msg-row__name" ref={namePrefetchRef}>
-            {senderName}
-          </Link>
+          <ProfileHoverCard actor={senderDid}>
+            <Link to={`/profile/${senderDid}`} className="msg-row__name" ref={namePrefetchRef}>
+              {senderName}
+            </Link>
+          </ProfileHoverCard>
         ) : (
           <span className="msg-row__name">{senderName}</span>
         )
