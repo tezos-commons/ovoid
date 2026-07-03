@@ -2,7 +2,12 @@ import { Fragment, useMemo, type ReactNode } from 'react'
 import { Agent, RichText as AtpRichText, type AppBskyFeedPost } from '@atproto/api'
 import { Link } from 'react-router-dom'
 import { MentionChip } from '@/components/MentionChip'
+import { profileOptions } from '@/features/profile/use-profile'
 import { bskyUrlToInternalPath, rewriteSelfLinksToBsky } from './bsky-links'
+import { useAgent } from './api/agent'
+import { queryClient } from './query-client'
+import { schedulePrefetch } from './prefetch'
+import { usePrefetchOnVisible } from './use-prefetch-on-visible'
 
 export interface RichTextProps {
   text: string
@@ -94,9 +99,7 @@ function renderSegs(segs: Seg[], mentionChips?: boolean): ReactNode[] {
         mentionChips ? (
           <MentionChip key={k} actor={segment.mentionDid} text={segment.text} />
         ) : (
-          <Link key={k} to={`/profile/${segment.mentionDid}`} className="rt-link">
-            {segment.text}
-          </Link>
+          <MentionLink key={k} did={segment.mentionDid} text={segment.text} />
         ),
       )
     } else if (segment.tag) {
@@ -114,6 +117,23 @@ function renderSegs(segs: Seg[], mentionChips?: boolean): ReactNode[] {
     }
   }
   return out
+}
+
+/**
+ * @-mention link with the standard link-surface warm: prefetch the profile
+ * once the mention dwells in view (same rule as PostCard's author link).
+ */
+function MentionLink({ did, text }: { did: string; text: string }) {
+  const { agent } = useAgent()
+  const ref = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    const profile = profileOptions(agent, did)
+    schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+  })
+  return (
+    <Link ref={ref} to={`/profile/${did}`} className="rt-link">
+      {text}
+    </Link>
+  )
 }
 
 /**

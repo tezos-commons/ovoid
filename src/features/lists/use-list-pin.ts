@@ -33,7 +33,7 @@ function newId(): string {
 export function useListSaved(listUri: string | undefined) {
   const { agent, did } = useAgent()
   return useQuery({
-    queryKey: [...qk.preferences(did), 'savedList', listUri],
+    queryKey: qk.savedListState(did, listUri),
     enabled: !!listUri,
     queryFn: async () => {
       const prefs = await getPrefs(agent)
@@ -86,7 +86,7 @@ export function useToggleListPin() {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: qk.preferences(did) })
       qc.invalidateQueries({
-        queryKey: [...qk.preferences(did), 'savedList', vars.listUri],
+        queryKey: qk.savedListState(did, vars.listUri),
       })
       if (did) qc.invalidateQueries({ queryKey: qk.myFeeds(did) })
     },

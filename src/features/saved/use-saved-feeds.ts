@@ -50,7 +50,7 @@ function tid(): string {
 /** Shared query config for the hydrated saved-feeds list (hook + nav prefetch). */
 export function savedFeedsOptions(agent: Agent, did: string | undefined) {
   return queryOptions({
-    queryKey: [...qk.preferences(did), 'savedFeeds'] as const,
+    queryKey: qk.savedFeeds(did),
     queryFn: async (): Promise<HydratedSavedFeed[]> => {
       const prefs = await getPrefs(agent)
       const items = collectSavedFeeds(prefs)

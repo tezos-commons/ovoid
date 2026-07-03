@@ -6,7 +6,12 @@ import {
   isThreadViewPost,
   isBlockedPost,
   isNotFoundPost,
+  threadOptions,
 } from './use-thread'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
 
 export interface ReplyTreeProps {
   /** Replies array off a threadViewPost node. */
@@ -58,6 +63,16 @@ function ReplyNode({
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
+  // "Continue thread →" navigates to this post's own thread view — warm it on
+  // dwell. Hook precedes the early returns (unconditional); the guard inside
+  // covers the stub branches, whose nodes never render the link anyway.
+  const { agent } = useAgent()
+  const moreRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    if (!isThreadViewPost(node)) return
+    const thread = threadOptions(agent, node.post.uri)
+    schedulePrefetch(thread.queryKey, () => queryClient.prefetchQuery(thread))
+  })
+
   if (isNotFoundPost(node)) {
     return <div className="thread-stub thread-stub--child">Post not found.</div>
   }
@@ -94,7 +109,7 @@ function ReplyNode({
       )}
 
       {hasChildren && !collapsed && tooDeep && (
-        <Link to={permalink} className="replytree__more">
+        <Link to={permalink} className="replytree__more" ref={moreRef}>
           Continue thread →
         </Link>
       )}

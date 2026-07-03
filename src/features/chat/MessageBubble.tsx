@@ -112,17 +112,20 @@ export const MessageBubble = memo(function MessageBubble({
     else if (onReact) setPickerOpen(true)
   })
 
-  // Warm the sender's profile (+ its default Posts tab) when their avatar dwells
-  // in view, so tapping through to a group member's profile renders from cache.
-  // schedulePrefetch dedupes by key, so repeated senders warm once.
+  // Warm the sender's profile (+ its default Posts tab) when their avatar OR
+  // name link dwells in view — the name shows on a run's first message, the
+  // avatar on its last, so on a long run the name is tappable well before the
+  // avatar mounts. schedulePrefetch dedupes by key, so repeated senders warm once.
   const { agent, did } = useAgent()
-  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+  const warmSender = () => {
     if (!senderDid) return
     const opts = profileOptions(agent, senderDid)
     schedulePrefetch(opts.queryKey, () => queryClient.prefetchQuery(opts))
     const posts = authorFeedOptions(agent, did, senderDid, 'posts_no_replies')
     schedulePrefetch(posts.queryKey, () => queryClient.prefetchInfiniteQuery(posts))
-  })
+  }
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(warmSender)
+  const namePrefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(warmSender)
 
   // The attributed avatar links to the sender's profile (group chats). Computed
   // once and reused by the deleted + normal branches.
@@ -209,7 +212,7 @@ export const MessageBubble = memo(function MessageBubble({
     >
       {showName && attributed && senderName && (
         senderDid ? (
-          <Link to={`/profile/${senderDid}`} className="msg-row__name">
+          <Link to={`/profile/${senderDid}`} className="msg-row__name" ref={namePrefetchRef}>
             {senderName}
           </Link>
         ) : (

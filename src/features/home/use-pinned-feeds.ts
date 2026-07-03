@@ -56,7 +56,7 @@ export function usePinnedFeeds() {
   const { agent, did, isAuthed } = useAgent()
 
   return useQuery({
-    queryKey: [...qk.preferences(did), 'pinned-tabs'],
+    queryKey: qk.pinnedTabs(did),
     enabled: isAuthed,
     staleTime: 60_000,
     queryFn: async (): Promise<HomeTab[]> => {

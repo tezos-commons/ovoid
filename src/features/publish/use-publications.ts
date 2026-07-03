@@ -136,7 +136,7 @@ export function useUpdatePublication() {
       return { uri: input.uri }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['standard', 'publication'] })
+      qc.invalidateQueries({ queryKey: qk.publicationRecordsAll })
       qc.invalidateQueries({ queryKey: qk.publications(did) })
     },
   })

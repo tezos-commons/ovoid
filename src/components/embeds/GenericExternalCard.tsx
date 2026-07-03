@@ -1,6 +1,11 @@
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
 import type { AppBskyEmbedExternal } from '@atproto/api'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { documentOptions } from '@/features/read/use-document'
+import { publicationRecordOptions, publicationDocsOptions } from '@/features/read/use-publication'
 
 export interface ExternalEmbedProps {
   external: AppBskyEmbedExternal.ViewExternal
@@ -18,20 +23,32 @@ function cssRgb(c?: { r: number; g: number; b: number }): string | undefined {
   return c ? `rgb(${c.r} ${c.g} ${c.b})` : undefined
 }
 
+interface ReaderTarget {
+  path: string
+  /** Set for document links — the params documentOptions keys on. */
+  doc?: { authority: string; rkey: string }
+  /** Set for bare publication links — the at-uri the pub screen keys on. */
+  pubUri?: string
+}
+
 /**
  * If the AppView backed this external link with a standard.site record (carried
- * in `associatedRefs`), return the in-app reader path so the card opens in
+ * in `associatedRefs`), return the in-app reader target so the card opens in
  * Ovoid's reader instead of the external site. A document wins over a bare
  * publication link. Null when there's no standard.site record (e.g. chat link
  * cards, which only have cardyb OG metadata) — caller falls back to the URL.
  */
-function readerPath(refs: { uri: string }[] | undefined): string | null {
-  let pub: string | null = null
+function readerTarget(refs: { uri: string }[] | undefined): ReaderTarget | null {
+  let pub: ReaderTarget | null = null
   for (const ref of refs ?? []) {
     const doc = /^at:\/\/([^/]+)\/site\.standard\.document\/(.+)$/.exec(ref.uri)
-    if (doc) return `/read/${doc[1]}/${doc[2]}`
+    if (doc) {
+      return { path: `/read/${doc[1]}/${doc[2]}`, doc: { authority: doc[1], rkey: doc[2] } }
+    }
     const p = /^at:\/\/([^/]+)\/site\.standard\.publication\/(.+)$/.exec(ref.uri)
-    if (p && !pub) pub = `/pub/${p[1]}/site.standard.publication/${p[2]}`
+    if (p && !pub) {
+      pub = { path: `/pub/${p[1]}/site.standard.publication/${p[2]}`, pubUri: ref.uri }
+    }
   }
   return pub
 }
@@ -55,7 +72,21 @@ export function GenericExternalCard({ external }: ExternalEmbedProps) {
   const readingTime = external.readingTime
   const enhanced = !!source || !!author || !!readingTime
   const accent = cssRgb(source?.theme?.accentRGB)
-  const internalPath = readerPath(external.associatedRefs)
+  const target = readerTarget(external.associatedRefs)
+
+  // In-app reader destinations warm on dwell like any other link card.
+  const prefetchRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    if (!target) return
+    if (target.doc) {
+      const doc = documentOptions(target.doc.authority, target.doc.rkey)
+      schedulePrefetch(doc.queryKey, () => queryClient.prefetchQuery(doc))
+    } else if (target.pubUri) {
+      const rec = publicationRecordOptions(target.pubUri)
+      schedulePrefetch(rec.queryKey, () => queryClient.prefetchQuery(rec))
+      const docs = publicationDocsOptions(target.pubUri)
+      schedulePrefetch(docs.queryKey, () => queryClient.prefetchQuery(docs))
+    }
+  })
 
   const className = clsx('embed embed--external', enhanced && 'embed--standard')
   const style = accent ? { borderLeftColor: accent } : undefined
@@ -99,9 +130,15 @@ export function GenericExternalCard({ external }: ExternalEmbedProps) {
   )
 
   // standard.site → open in our reader (in-app navigation).
-  if (internalPath) {
+  if (target) {
     return (
-      <Link to={internalPath} className={className} style={style} onClick={(e) => e.stopPropagation()}>
+      <Link
+        to={target.path}
+        className={className}
+        style={style}
+        onClick={(e) => e.stopPropagation()}
+        ref={prefetchRef}
+      >
         {inner}
       </Link>
     )

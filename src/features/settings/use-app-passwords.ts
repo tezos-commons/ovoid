@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ComAtprotoServerListAppPasswords } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
+import { qk } from '@/lib/query-keys'
 
 type AppPassword = ComAtprotoServerListAppPasswords.AppPassword
 
-const KEY = ['bsky', 'settings', 'appPasswords'] as const
+const KEY = qk.appPasswords
 
 /**
  * List the account's app passwords.

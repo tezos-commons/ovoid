@@ -6,6 +6,11 @@ import { shareArticle } from './embeddable-url'
 import { useWindowScrollRestoration } from '@/lib/scroll-restoration'
 import { absoluteTime } from '@/lib/time'
 import { blobUrl } from '@/lib/api/repo-read'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { profileOptions } from '@/features/profile/use-profile'
 import { useDocument, type DocumentView } from './use-document'
 import { isLeafletContent } from './leaflet'
 import { LeafletContent } from './LeafletContent'
@@ -84,8 +89,17 @@ function Article({ view }: { view: DocumentView }) {
   const authorName = author?.displayName || author?.handle
   // The author's own profile (handle preferred), which for an org publication is
   // the credited contributor, not the repo owner — only fall back to the repo did.
-  const profilePath = `/profile/${author?.handle || author?.did || did}`
+  const profileActor = author?.handle || author?.did || did
+  const profilePath = `/profile/${profileActor}`
   const minutes = readingMinutes(view)
+
+  // Byline links → warm the author's profile on dwell (public read; useAgent
+  // yields the public agent when signed out, same as the destination screen).
+  const { agent } = useAgent()
+  const bylineRef = usePrefetchOnVisible<HTMLDivElement>(() => {
+    const profile = profileOptions(agent, profileActor)
+    schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+  })
 
   const bodyRef = useRef<HTMLDivElement>(null)
   const headings = useTocHeadings(bodyRef, view.uri)
@@ -104,7 +118,7 @@ function Article({ view }: { view: DocumentView }) {
 
         <h1 className="rdr-title">{doc.title}</h1>
 
-        <div className="rdr-byline">
+        <div className="rdr-byline" ref={bylineRef}>
           {author && (
             <Link to={profilePath} className="rdr-byline__avatar">
               <Avatar src={author.avatar} alt={authorName ?? ''} size="sm" fallback={authorName} />

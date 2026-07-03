@@ -43,9 +43,7 @@ export function useFeedRefresh(params: {
 }): { hasNew: boolean; refresh: () => void } {
   const { agent, did, tab, enabled, visibleTopUri, dataUpdatedAt } = params
 
-  // Kept off the ['bsky', did, 'feed', …] prefix so feed-wide cache ops never
-  // touch this scalar head value.
-  const headKey = ['bsky', did, 'feed-head', { feed: tab ? tab.value : 'none' }] as const
+  const headKey = qk.feedHead(did, tab ? tab.value : 'none')
 
   const head = useQuery({
     queryKey: headKey,

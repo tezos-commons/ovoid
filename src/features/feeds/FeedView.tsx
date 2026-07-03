@@ -16,6 +16,10 @@ import {
   Icons,
 } from '@/components'
 import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { profileOptions } from '@/features/profile/use-profile'
 import {
   flattenFeed,
   useFeedGenerator,
@@ -134,6 +138,12 @@ function FeedHeader({
   feed: AppBskyFeedDefs.GeneratorView
   authed: boolean
 }) {
+  // Creator link → warm their profile on dwell.
+  const { agent } = useAgent()
+  const creatorRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    const profile = profileOptions(agent, feed.creator.handle || feed.creator.did)
+    schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+  })
   return (
     <div className="feedview__header">
       <div className="feedview__top">
@@ -151,6 +161,7 @@ function FeedHeader({
           <Link
             to={`/profile/${feed.creator.handle || feed.creator.did}`}
             className="feedview__creator"
+            ref={creatorRef}
           >
             <Text size="sm" tone="muted">
               Feed by @{feed.creator.handle}

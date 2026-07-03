@@ -90,7 +90,7 @@ function extractPost(raw: unknown): AppBskyFeedDefs.PostView | null {
 /** Shared infinite-query config for native bookmarks (hook + nav prefetch). */
 export function nativeBookmarksOptions(agent: Agent, did: string | undefined) {
   return infiniteQueryOptions({
-    queryKey: [...qk.bookmarks(did), 'native'] as const,
+    queryKey: qk.bookmarksNative(did),
     queryFn: async ({ pageParam }): Promise<BookmarkPage> => {
       const ns = bookmarkNs(agent)!
       const res = await ns.getBookmarks!({ limit: PAGE_LIMIT, cursor: pageParam })
@@ -110,7 +110,7 @@ export function nativeBookmarksOptions(agent: Agent, did: string | undefined) {
 /** Shared query config for localStorage-fallback bookmarks (hook + nav prefetch). */
 export function localBookmarksOptions(agent: Agent, did: string | undefined) {
   return queryOptions({
-    queryKey: [...qk.bookmarks(did), 'local'] as const,
+    queryKey: qk.bookmarksLocal(did),
     queryFn: async (): Promise<BookmarkPage> => {
       const refs = listLocalBookmarks(did)
       const posts = await hydratePosts(agent, refs)
@@ -229,8 +229,8 @@ export function useRemoveBookmark() {
       }
     },
     onMutate: async ({ uri }) => {
-      const nativeKey = [...qk.bookmarks(did), 'native'] as const
-      const localKey = [...qk.bookmarks(did), 'local'] as const
+      const nativeKey = qk.bookmarksNative(did)
+      const localKey = qk.bookmarksLocal(did)
       await qc.cancelQueries({ queryKey: qk.bookmarks(did) })
 
       const prevNative = qc.getQueryData<InfiniteData<BookmarkPage>>(nativeKey)

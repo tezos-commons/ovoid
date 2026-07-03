@@ -120,7 +120,7 @@ export function useListFeed(listUri: string | undefined, enabled = true) {
 export function useListHeader(listUri: string | undefined) {
   const { agent } = useAgent()
   return useQuery({
-    queryKey: [...qk.list(listUri ?? ''), 'header'],
+    queryKey: qk.listHeader(listUri ?? ''),
     enabled: !!listUri,
     queryFn: () =>
       agent.app.bsky.graph

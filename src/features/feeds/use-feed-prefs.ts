@@ -20,7 +20,7 @@ const PREF_TYPE = 'app.bsky.actor.defs#savedFeedsPrefV2' as const
 export function useSavedFeedsState() {
   const { agent, did, isAuthed } = useAgent()
   return useQuery({
-    queryKey: [...qk.preferences(did), 'savedFeedsState'] as const,
+    queryKey: qk.savedFeedsState(did),
     enabled: isAuthed,
     queryFn: async () => {
       const prefs = await getPrefs(agent)

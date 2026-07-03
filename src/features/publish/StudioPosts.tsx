@@ -1,6 +1,10 @@
 import { Link, useParams } from 'react-router-dom'
 import { Spinner, EmptyState, Button } from '@/components'
 import { absoluteTime } from '@/lib/time'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { documentOptions } from '@/features/read/use-document'
 import { usePublicationStudio, useDeletePost } from './use-documents'
 
 /** Posts overview pane — list of the publication's documents with actions. */
@@ -42,11 +46,7 @@ export default function StudioPosts() {
                 </time>
               </Link>
               <div className="studio-post__actions">
-                {studio.did && (
-                  <Link to={`/read/${studio.did}/${p.rkey}`} className="btn btn--ghost btn--sm">
-                    View
-                  </Link>
-                )}
+                {studio.did && <ViewLink did={studio.did} rkey={p.rkey} />}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -63,5 +63,19 @@ export default function StudioPosts() {
         </ul>
       )}
     </div>
+  )
+}
+
+/** "View" opens the public reader — warm the document on dwell (per-row hook,
+ *  so it lives in its own component rather than the map callback). */
+function ViewLink({ did, rkey }: { did: string; rkey: string }) {
+  const ref = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    const doc = documentOptions(did, rkey)
+    schedulePrefetch(doc.queryKey, () => queryClient.prefetchQuery(doc))
+  })
+  return (
+    <Link to={`/read/${did}/${rkey}`} className="btn btn--ghost btn--sm" ref={ref}>
+      View
+    </Link>
   )
 }

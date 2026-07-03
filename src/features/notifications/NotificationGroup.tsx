@@ -98,9 +98,10 @@ export function ClusterRow({
   // Clusters with a subject (likes/reposts) open that post when the row is tapped.
   const rowTo = subject ? subjectPermalink(subject) : undefined
 
-  // Warm the row's tap targets: the subject post's thread (likes/reposts), or —
-  // for subject-less clusters like follows — the leading actors' profiles. The
-  // subject's author is the viewer, whose profile the nav warm already covers.
+  // Warm the row's tap targets: the subject post's thread (likes/reposts) when
+  // there is one, plus the leading actors' profiles — their avatars are links
+  // in every cluster variant. The subject's author is the viewer, whose
+  // profile the nav warm already covers.
   const { agent } = useAgent()
   const prefetchRef = usePrefetchOnVisible<HTMLElement>(() => {
     if (subject) {
@@ -110,7 +111,6 @@ export function ClusterRow({
       const actor = subject.author.handle || subject.author.did
       const thread = threadOptions(agent, buildPostUri(actor, rkey))
       schedulePrefetch(thread.queryKey, () => queryClient.prefetchQuery(thread))
-      return
     }
     for (const a of group.authors.slice(0, 3)) {
       const profile = profileOptions(agent, a.handle || a.did)

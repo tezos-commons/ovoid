@@ -175,7 +175,7 @@ interface BasicRow {
 
 export function useTezosToken(fa: string | undefined, tokenId: string | undefined) {
   return useQuery<TokenPreview | null>({
-    queryKey: ['embed', 'tezos-token', fa ?? '', tokenId ?? ''],
+    queryKey: qk.embedTezosToken(fa ?? '', tokenId ?? ''),
     enabled: !!fa && !!tokenId,
     staleTime: 60 * 60_000,
     retry: 1,
@@ -296,7 +296,7 @@ export function useTezosTokenDetails(
   enabled: boolean,
 ) {
   return useQuery<TokenDetails | null>({
-    queryKey: ['embed', 'tezos-token-details', fa ?? '', tokenId ?? ''],
+    queryKey: qk.embedTezosTokenDetails(fa ?? '', tokenId ?? ''),
     enabled: enabled && !!fa && !!tokenId,
     staleTime: 60_000,
     retry: 1,
@@ -351,7 +351,7 @@ interface ArtistRow {
 /** Other tokens minted by a creator address (newest first), for the gallery tab. */
 export function useArtistTokens(address: string | undefined, enabled: boolean) {
   return useQuery<ArtistToken[]>({
-    queryKey: ['embed', 'artist-tokens', address ?? ''],
+    queryKey: qk.embedArtistTokens(address ?? ''),
     enabled: enabled && !!address,
     staleTime: 5 * 60_000,
     retry: 1,

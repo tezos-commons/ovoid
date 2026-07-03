@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { AppBskyGraphDefs } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { profileOptions } from '@/features/profile/use-profile'
 import { Avatar, Button, Icons } from '@/components'
 import { PurposeChip, isCurate, isModlist, purposeMeta } from './PurposeChip'
 import { EditListModal } from './EditListModal'
@@ -21,6 +25,13 @@ export function ListHeader({ list, owned }: { list: ListView; owned: boolean }) 
   const mod = isModlist(list.purpose)
   const meta = purposeMeta(list.purpose)
 
+  // Creator link → warm their profile on dwell.
+  const { agent } = useAgent()
+  const creatorRef = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    const profile = profileOptions(agent, list.creator.handle || list.creator.did)
+    schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+  })
+
   return (
     <div className="list-detail__header">
       <div className="list-detail__top">
@@ -35,7 +46,7 @@ export function ListHeader({ list, owned }: { list: ListView; owned: boolean }) 
           <div className="list-detail__name">{list.name}</div>
           <div className="list-detail__by">
             <PurposeChip purpose={list.purpose} /> by{' '}
-            <Link to={`/profile/${list.creator.handle || list.creator.did}`}>
+            <Link to={`/profile/${list.creator.handle || list.creator.did}`} ref={creatorRef}>
               @{list.creator.handle || list.creator.did}
             </Link>
           </div>

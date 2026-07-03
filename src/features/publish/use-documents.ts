@@ -5,6 +5,7 @@ import {
   usePublicationDocs,
   publicationDocsOptions,
 } from '@/features/read/use-publication'
+import { qk } from '@/lib/query-keys'
 import { useDocument, type StandardDocument } from '@/features/read/use-document'
 import { usePublications } from './use-publications'
 
@@ -153,7 +154,7 @@ export function useSavePost(pubUri: string | undefined, did: string | undefined)
     onSuccess: () => {
       if (pubUri) qc.invalidateQueries({ queryKey: publicationDocsOptions(pubUri).queryKey })
       // Refresh any open reader copy (prefix-invalidate the document family).
-      qc.invalidateQueries({ queryKey: ['standard', 'document'] })
+      qc.invalidateQueries({ queryKey: qk.standardDocsAll })
     },
   })
 }

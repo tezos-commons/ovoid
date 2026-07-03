@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { AppBskyFeedDefs } from '@atproto/api'
+import { qk } from './query-keys'
 
 export type PostPatcher = (post: AppBskyFeedDefs.PostView) => AppBskyFeedDefs.PostView
 
@@ -35,12 +36,12 @@ export function patchPostInAllFeeds(
   patch: PostPatcher,
 ): void {
   // Infinite feed caches (timeline, custom, author, likes).
-  qc.setQueriesData<InfiniteShape>({ queryKey: ['bsky', did, 'feed'] }, (data) =>
+  qc.setQueriesData<InfiniteShape>({ queryKey: qk.feedFamily(did) }, (data) =>
     patchInfinite(data, postUri, patch),
   )
 
   // Thread cache is public-keyed (no did).
-  qc.setQueriesData<unknown>({ queryKey: ['bsky', 'thread'] }, (data: unknown) =>
+  qc.setQueriesData<unknown>({ queryKey: qk.threads }, (data: unknown) =>
     patchThread(data, postUri, patch),
   )
 }
@@ -84,7 +85,7 @@ export function insertReplyInThreads(
   parentUri: string,
   replyPost: AppBskyFeedDefs.PostView,
 ): void {
-  qc.setQueriesData<unknown>({ queryKey: ['bsky', 'thread'] }, (data: unknown) =>
+  qc.setQueriesData<unknown>({ queryKey: qk.threads }, (data: unknown) =>
     insertReplyNode(data, parentUri, replyPost),
   )
 }

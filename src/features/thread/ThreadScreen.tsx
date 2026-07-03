@@ -17,6 +17,16 @@ import { useThreadHover } from './thread-hover-store'
 import { usePostShadow } from '@/store/post-shadow'
 import { ReplyTree } from './ReplyTree'
 import { ReplyBar } from './ReplyBar'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { qk } from '@/lib/query-keys'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import {
+  postLikedByOptions,
+  postRepostedByOptions,
+  postQuotesOptions,
+} from '@/features/post/use-post-interactions'
 import './thread.css'
 
 type SortKey = 'top' | 'newest' | 'oldest'
@@ -214,14 +224,30 @@ function ThreadStats({
   rkey: string
 }) {
   const post = usePostShadow(postProp)
+  const { agent, did } = useAgent()
   const base = `/profile/${actor}/post/${rkey}`
   const reposts = post.repostCount ?? 0
   const quotes = post.quoteCount ?? 0
   const likes = post.likeCount ?? 0
   const showQuotes = quotes > 0 && !post.viewer?.embeddingDisabled
+  // One dwell on the stats row warms every list it links to, and seeds the
+  // actor+rkey→uri resolution the destination screens perform (post.uri is
+  // already the canonical DID-authority form those endpoints require).
+  const statsRef = usePrefetchOnVisible<HTMLDivElement>(() => {
+    queryClient.setQueryData(qk.postUri(actor, rkey), post.uri)
+    const warm = (opts: { queryKey: readonly unknown[] }) =>
+      schedulePrefetch(opts.queryKey, () =>
+        queryClient.prefetchInfiniteQuery(
+          opts as Parameters<typeof queryClient.prefetchInfiniteQuery>[0],
+        ),
+      )
+    if (reposts > 0) warm(postRepostedByOptions(agent, did, post.uri))
+    if (showQuotes) warm(postQuotesOptions(agent, did, post.uri))
+    if (likes > 0) warm(postLikedByOptions(agent, did, post.uri))
+  })
   if (!reposts && !showQuotes && !likes) return null
   return (
-    <div className="thread__stats">
+    <div className="thread__stats" ref={statsRef}>
       {reposts > 0 && (
         <Link to={`${base}/reposted-by`} className="thread__stat">
           <strong>{reposts.toLocaleString()}</strong> {reposts === 1 ? 'repost' : 'reposts'}

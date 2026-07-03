@@ -13,6 +13,11 @@ import {
   LabelChips,
 } from '@/components'
 import { useMutes, useBlocks, useUnmute, useUnblock } from './use-moderation-lists'
+import { useAgent } from '@/lib/api/agent'
+import { queryClient } from '@/lib/query-client'
+import { schedulePrefetch } from '@/lib/prefetch'
+import { usePrefetchOnVisible } from '@/lib/use-prefetch-on-visible'
+import { profileOptions } from '@/features/profile/use-profile'
 
 type Kind = 'muted' | 'blocked'
 
@@ -78,14 +83,14 @@ export default function ModerationListScreen({ kind }: { kind: Kind }) {
         }
         renderItem={(p) => (
           <div className="modlist-row">
-            <Link to={`/profile/${p.handle || p.did}`} className="modlist-row__main">
+            <ProfileLink actor={p}>
               <Avatar src={p.avatar} alt={p.displayName || p.handle} size="md" />
               <div className="modlist-row__meta">
                 <span className="modlist-row__name">{p.displayName || p.handle}</span>
                 <span className="modlist-row__handle">@{p.handle}</span>
                 <LabelChips labels={p.labels} className="modlist-row__labels" />
               </div>
-            </Link>
+            </ProfileLink>
             <Button
               variant="secondary"
               size="sm"
@@ -98,5 +103,26 @@ export default function ModerationListScreen({ kind }: { kind: Kind }) {
         )}
       />
     </Screen>
+  )
+}
+
+/** Row link component so the prefetch hook can live per-row (renderItem is a
+ *  plain render prop, not a component). Warms the profile on dwell. */
+function ProfileLink({
+  actor,
+  children,
+}: {
+  actor: AppBskyActorDefs.ProfileView
+  children: React.ReactNode
+}) {
+  const { agent } = useAgent()
+  const ref = usePrefetchOnVisible<HTMLAnchorElement>(() => {
+    const profile = profileOptions(agent, actor.handle || actor.did)
+    schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
+  })
+  return (
+    <Link to={`/profile/${actor.handle || actor.did}`} className="modlist-row__main" ref={ref}>
+      {children}
+    </Link>
   )
 }

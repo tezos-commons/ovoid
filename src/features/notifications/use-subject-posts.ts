@@ -18,7 +18,7 @@ export function useSubjectPosts(uris: string[]) {
   // Stable, order-independent key so reordering the visible set doesn't refetch.
   const sorted = [...uris].sort()
   return useQuery({
-    queryKey: [...qk.notifications(did), 'subjects', sorted] as const,
+    queryKey: qk.notificationSubjects(did, sorted),
     enabled: isAuthed && sorted.length > 0,
     staleTime: 60_000,
     queryFn: async () => {

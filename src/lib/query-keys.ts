@@ -14,6 +14,19 @@ export const qk = {
 
   timeline: (did?: string) => ['bsky', did, 'feed', 'timeline'] as const,
 
+  /**
+   * Prefix matching every feed-family read for a viewer (timeline / custom /
+   * author / likes) — the setQueriesData patch surface in lib/optimistic.
+   */
+  feedFamily: (did?: string) => ['bsky', did, 'feed'] as const,
+
+  /**
+   * Scalar newest-post-uri probe per home tab (feed-refresh affordance).
+   * Deliberately OFF the feedFamily prefix so feed-wide cache ops never touch it.
+   */
+  feedHead: (did: string | undefined, feed: string) =>
+    ['bsky', did, 'feed-head', { feed }] as const,
+
   feed: (did: string | undefined, uri: string) =>
     ['bsky', did, 'feed', 'custom', { uri }] as const,
 
@@ -56,6 +69,10 @@ export const qk = {
 
   notifications: (did?: string) => ['bsky', did, 'notifications', 'list'] as const,
 
+  /** Hydrated subject posts for a batch of notification uris (sorted array). */
+  notificationSubjects: (did: string | undefined, sorted: string[]) =>
+    [...qk.notifications(did), 'subjects', sorted] as const,
+
   unreadCount: (did?: string) => ['bsky', did, 'notifications', 'unread'] as const,
 
   profile: (actor: string) => ['bsky', 'profile', { actor }] as const,
@@ -69,6 +86,17 @@ export const qk = {
 
   preferences: (did?: string) => ['bsky', did, 'preferences'] as const,
 
+  // Derived preference reads (each transforms getPreferences differently, so
+  // they cache separately under the preferences prefix and invalidate with it).
+  pinnedTabs: (did?: string) => [...qk.preferences(did), 'pinned-tabs'] as const,
+
+  savedFeedsState: (did?: string) => [...qk.preferences(did), 'savedFeedsState'] as const,
+
+  savedFeeds: (did?: string) => [...qk.preferences(did), 'savedFeeds'] as const,
+
+  savedListState: (did: string | undefined, listUri: string | undefined) =>
+    [...qk.preferences(did), 'savedList', listUri] as const,
+
   mutes: (did?: string) => ['bsky', did, 'graph', 'mutes'] as const,
 
   blocks: (did?: string) => ['bsky', did, 'graph', 'blocks'] as const,
@@ -79,9 +107,18 @@ export const qk = {
 
   bookmarks: (did?: string) => ['bsky', did, 'bookmarks'] as const,
 
+  // The two bookmark backends (AppView-native vs localStorage fallback) cache
+  // separately under the bookmarks prefix.
+  bookmarksNative: (did?: string) => [...qk.bookmarks(did), 'native'] as const,
+
+  bookmarksLocal: (did?: string) => [...qk.bookmarks(did), 'local'] as const,
+
   lists: (actor: string) => ['bsky', 'lists', { actor }] as const,
 
   list: (uri: string) => ['bsky', 'list', { uri }] as const,
+
+  /** getList's header slice (list view without members), under the list prefix. */
+  listHeader: (uri: string) => [...qk.list(uri), 'header'] as const,
 
   convos: (did?: string) => ['bsky', did, 'chat', 'convos'] as const,
 
@@ -136,6 +173,9 @@ export const qk = {
 
   searchTypeahead: (q: string) => ['bsky', 'search', 'typeahead', { q }] as const,
 
+  /** The account's app passwords (com.atproto.server.listAppPasswords). */
+  appPasswords: ['bsky', 'settings', 'appPasswords'] as const,
+
   // Ovoid notify service (our own push backend, not bsky). Separate `notify`
   // root so bsky prefix-invalidation never touches it. All reads are
   // viewer-scoped — the backend resolves state by the authed DID.
@@ -156,6 +196,16 @@ export const qk = {
   // External-link unfurl metadata (cardyb extractor). Public and viewer-
   // independent; separate root so bsky prefix-invalidation never touches it.
   linkMeta: (url: string) => ['external', 'linkMeta', { url }] as const,
+
+  // Tezos-token embed previews (objkt reads keyed under their own `embed` root;
+  // public and viewer-independent).
+  embedTezosToken: (fa: string, tokenId: string) =>
+    ['embed', 'tezos-token', fa, tokenId] as const,
+
+  embedTezosTokenDetails: (fa: string, tokenId: string) =>
+    ['embed', 'tezos-token-details', fa, tokenId] as const,
+
+  embedArtistTokens: (address: string) => ['embed', 'artist-tokens', address] as const,
 
   // Tezos / objkt integration (external services, not bsky). Keyed under a
   // separate `tezos` root so the bsky prefix-invalidation never touches them.
@@ -223,6 +273,10 @@ export const qk = {
   // publications by listing the owner repo; cross-repo authorship needs an index.
   publicationDocs: (pubUri: string) => ['standard', 'publication-docs', { pubUri }] as const,
   publicationRecord: (pubUri: string) => ['standard', 'publication', { pubUri }] as const,
+
+  /** Prefixes for family-wide invalidation of publicationRecord / standardDoc entries. */
+  publicationRecordsAll: ['standard', 'publication'] as const,
+  standardDocsAll: ['standard', 'document'] as const,
 
   // Every site.standard.publication record in an author's repo (public read,
   // no viewer). Scans the repo to surface a publication card on the profile.
