@@ -2213,3 +2213,75 @@ video.nftb__backdrop {
 .nftb--showcase .nftb__launch {
   z-index: 3;
 }
+
+/* ---------------- Profile hover card (@mention hover preview) ---------------- */
+.phc-host {
+  display: inline;
+}
+.phc {
+  position: fixed;
+  z-index: var(--z-modal);
+  width: 300px;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: var(--bg-overlay);
+  color: var(--text);
+  box-shadow: var(--shadow-menu);
+  animation: phc-in 0.15s ease;
+}
+@keyframes phc-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.phc__loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+}
+.phc__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.phc__name {
+  display: block;
+  font-weight: var(--fw-bold);
+  color: var(--text);
+}
+.phc__name:hover {
+  text-decoration: underline;
+}
+.phc__handle {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-2);
+}
+.phc__stats {
+  display: flex;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.phc__stats b {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+}
+.phc__bio {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

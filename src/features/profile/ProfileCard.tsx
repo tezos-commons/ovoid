@@ -34,7 +34,7 @@ export interface ProfileCardProps {
   isAuthed: boolean
 }
 
-function formatCount(n: number | undefined): string {
+export function formatCount(n: number | undefined): string {
   const v = n ?? 0
   if (v < 1000) return String(v)
   if (v < 1_000_000) return `${(v / 1000).toFixed(v < 10_000 ? 1 : 0)}K`.replace('.0', '')

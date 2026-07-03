@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Avatar } from './Avatar'
+import { ProfileHoverCard } from './ProfileHoverCard'
 import { useAgent } from '@/lib/api/agent'
 import { profileOptions } from '@/features/profile/use-profile'
 
@@ -25,15 +26,19 @@ export function MentionChip({ actor, text }: MentionChipProps) {
 
   if (!data) {
     return (
-      <Link to={to} className="rt-link">
-        {text}
-      </Link>
+      <ProfileHoverCard actor={actor}>
+        <Link to={to} className="rt-link">
+          {text}
+        </Link>
+      </ProfileHoverCard>
     )
   }
   return (
-    <Link to={to} className="mention-chip">
-      <Avatar src={data.avatar} alt="" fallback={data.displayName || data.handle} size="xs" />
-      <span className="mention-chip__name">{data.displayName || `@${data.handle}`}</span>
-    </Link>
+    <ProfileHoverCard actor={actor}>
+      <Link to={to} className="mention-chip">
+        <Avatar src={data.avatar} alt="" fallback={data.displayName || data.handle} size="xs" />
+        <span className="mention-chip__name">{data.displayName || `@${data.handle}`}</span>
+      </Link>
+    </ProfileHoverCard>
   )
 }

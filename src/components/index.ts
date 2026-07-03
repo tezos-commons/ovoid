@@ -34,6 +34,7 @@ export { ErrorState, type ErrorStateProps } from './ErrorState'
 export { EmptyState, type EmptyStateProps } from './EmptyState'
 export { CountPill, type CountPillProps } from './CountPill'
 export { PostCard, type PostCardProps } from './PostCard'
+export { ProfileHoverCard } from './ProfileHoverCard'
 export { PostEmbed } from './PostEmbed'
 export { LabelChips, hasBotLabel } from './LabelChips'
 export {

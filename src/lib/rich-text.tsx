@@ -2,6 +2,7 @@ import { Fragment, useMemo, type ReactNode } from 'react'
 import { Agent, RichText as AtpRichText, type AppBskyFeedPost } from '@atproto/api'
 import { Link } from 'react-router-dom'
 import { MentionChip } from '@/components/MentionChip'
+import { ProfileHoverCard } from '@/components/ProfileHoverCard'
 import { profileOptions } from '@/features/profile/use-profile'
 import { bskyUrlToInternalPath, rewriteSelfLinksToBsky } from './bsky-links'
 import { useAgent } from './api/agent'
@@ -122,6 +123,8 @@ function renderSegs(segs: Seg[], mentionChips?: boolean): ReactNode[] {
 /**
  * @-mention link with the standard link-surface warm: prefetch the profile
  * once the mention dwells in view (same rule as PostCard's author link).
+ * Hover (pointer devices) shows the profile card — served from that same
+ * prefetched cache entry.
  */
 function MentionLink({ did, text }: { did: string; text: string }) {
   const { agent } = useAgent()
@@ -130,9 +133,11 @@ function MentionLink({ did, text }: { did: string; text: string }) {
     schedulePrefetch(profile.queryKey, () => queryClient.prefetchQuery(profile))
   })
   return (
-    <Link ref={ref} to={`/profile/${did}`} className="rt-link">
-      {text}
-    </Link>
+    <ProfileHoverCard actor={did}>
+      <Link ref={ref} to={`/profile/${did}`} className="rt-link">
+        {text}
+      </Link>
+    </ProfileHoverCard>
   )
 }
 
