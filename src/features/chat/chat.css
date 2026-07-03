@@ -425,6 +425,12 @@
   min-width: 0;
   max-width: min(340px, calc((100vw - 2 * var(--space-4)) * 0.78));
 }
+/* A wide bubble (long text) makes the wrap wider than the 340px card cap;
+   keep the card on the sender's edge: right for own messages, left (the
+   block default) for others. */
+.msg-row--mine .msg-embeds .embed {
+  margin-left: auto;
+}
 
 /* Quick-reaction picker popover. */
 .reaction-picker {

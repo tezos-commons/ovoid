@@ -103,15 +103,20 @@ export function MessageComposer({
     e?.preventDefault()
     const value = text.trim()
     if (!value || send.isPending || disabled) return
+    // Clear synchronously, not in onSuccess: mutate-scoped callbacks only fire
+    // for the LATEST mutate() call, so a second submit racing in (Enter key
+    // repeat) silently drops the first one's clear — message sent, text stuck
+    // in the box. Clearing here also makes that second Enter a no-op (empty
+    // text) instead of a duplicate send. On failure the draft is restored,
+    // unless a newer one was already typed.
+    setText('')
+    setToken(null)
+    onClearReply?.()
     send.mutate(
       { text: value, replyToId: replyTo?.id },
       {
-        onSuccess: () => {
-          haptic('success')
-          setText('')
-          setToken(null)
-          onClearReply?.()
-        },
+        onSuccess: () => haptic('success'),
+        onError: () => setText((cur) => (cur ? cur : value)),
       },
     )
   }
