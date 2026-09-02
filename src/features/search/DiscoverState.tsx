@@ -35,7 +35,7 @@ export function DiscoverState() {
           <div className="discover__chips">
             {trends.map((t) => (
               <Link key={t.topic} to={t.link} className="chip">
-                {t.topic}
+                {t.displayName}
               </Link>
             ))}
           </div>

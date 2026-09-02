@@ -17,7 +17,13 @@ import { qk } from '@/lib/query-keys'
  */
 
 export interface TrendingTopic {
+  /**
+   * Opaque identifier — a feed rkey on getTrends, a human phrase on the older
+   * getTrendingTopics. Never render it; use it as a React key only.
+   */
   topic: string
+  /** Human-readable label. This is the only field safe to display. */
+  displayName: string
   /** Pre-built link target (a /search?q=... path or a feed/topic link). */
   link: string
 }
@@ -37,26 +43,26 @@ export function trendingOptions(agent: Agent) {
     staleTime: 5 * 60_000,
     queryFn: () =>
       safe<TrendingTopic[]>(async () => {
-        // getTrends is the newer endpoint; fall through to getTrendingTopics.
-        const api = agent.app.bsky.unspecced as unknown as {
-          getTrends?: (i: { limit: number }) => Promise<{ data: { trends: Array<{ topic: string; link?: string }> } }>
-          getTrendingTopics?: (i: { limit: number }) => Promise<{ data: { topics: Array<{ topic: string; link?: string }> } }>
-        }
-        if (api.getTrends) {
-          const res = await api.getTrends({ limit: 14 })
+        // getTrends is the newer endpoint. Both are typed on the agent, so the
+        // fallback has to key off the *call* failing (an AppView that doesn't
+        // serve getTrends yet), not off method presence — the method always
+        // exists client-side.
+        try {
+          const res = await agent.app.bsky.unspecced.getTrends({ limit: 14 })
           return res.data.trends.map((t) => ({
             topic: t.topic,
-            link: t.link ?? `/search?q=${encodeURIComponent(t.topic)}`,
+            displayName: t.displayName,
+            link: t.link || `/search?q=${encodeURIComponent(t.displayName)}`,
           }))
-        }
-        if (api.getTrendingTopics) {
-          const res = await api.getTrendingTopics({ limit: 14 })
+        } catch {
+          const res = await agent.app.bsky.unspecced.getTrendingTopics({ limit: 14 })
           return res.data.topics.map((t) => ({
             topic: t.topic,
-            link: t.link ?? `/search?q=${encodeURIComponent(t.topic)}`,
+            // Optional on this lexicon, where `topic` is itself the phrase.
+            displayName: t.displayName || t.topic,
+            link: t.link || `/search?q=${encodeURIComponent(t.displayName || t.topic)}`,
           }))
         }
-        return []
       }, []),
   })
 }

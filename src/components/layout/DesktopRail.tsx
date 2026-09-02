@@ -74,7 +74,7 @@ function TrendingPanel() {
       <div className="rail-topics">
         {topics.slice(0, 8).map((t) => (
           <Link key={t.link} to={t.link} className="rail-topic">
-            {t.topic}
+            {t.displayName}
           </Link>
         ))}
       </div>

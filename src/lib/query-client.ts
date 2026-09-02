@@ -60,9 +60,10 @@ const persister = experimental_createQueryPersister<PersistedQuery>({
   }),
   deserialize: (pq) => pq,
   maxAge: 24 * 60 * 60 * 1000,
-  // v3: collection metadata gained a `creator` field (and v2 proxied the
-  // ipfs:// logo); drop older entries so both populate on next load.
-  buster: 'v3',
+  // v4: trending entries gained a required `displayName` (v3 added `creator` to
+  // collection metadata, v2 proxied the ipfs:// logo); drop older entries so
+  // they repopulate on next load rather than rendering a missing field.
+  buster: 'v4',
   prefix: 'ovoid',
   filters: { predicate: (query) => shouldPersist(query.queryKey) },
 })
