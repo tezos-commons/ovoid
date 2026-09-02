@@ -1,6 +1,3 @@
-// Must run before anything else so Sentry instruments errors from the first tick.
-import './instrument'
-
 // beforeinstallprompt fires once, early — the capture must live in the entry
 // chunk, not a lazy route (see lib/install.ts).
 import '@/lib/install'
@@ -10,14 +7,35 @@ import '@/lib/install'
 // without this the saved appearance wouldn't apply until that screen is opened.
 import '@/features/settings/theme-store'
 
-import { StrictMode } from 'react'
+import { Component, StrictMode, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
-import * as Sentry from '@sentry/react'
 import '@/styles'
 import '@/components/components.css'
 import '@/components/layout/layout.css'
 import { App } from './App'
 import { getActiveDid } from '@/lib/auth/accounts'
+
+/**
+ * App-wide error boundary. React only surfaces render errors through a class
+ * component's componentDidCatch/getDerivedStateFromError, so this stays a class
+ * even though everything else is hooks. Route-level errors are caught earlier by
+ * RouteErrorBoundary; this only fires for throws outside the data router.
+ */
+class AppErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
+  state = { crashed: false }
+
+  static getDerivedStateFromError() {
+    return { crashed: true }
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error('Uncaught render error:', error)
+  }
+
+  render() {
+    return this.state.crashed ? <AppCrash /> : this.props.children
+  }
+}
 
 // The app owns scroll restoration (RootLayout resets on forward nav; InfiniteList
 // restores virtualized feeds on back). Turn off the browser's own restoration so
@@ -49,9 +67,9 @@ else {
 
   createRoot(rootEl).render(
     <StrictMode>
-      <Sentry.ErrorBoundary fallback={<AppCrash />} showDialog>
+      <AppErrorBoundary>
         <App />
-      </Sentry.ErrorBoundary>
+      </AppErrorBoundary>
     </StrictMode>,
   )
 
@@ -75,13 +93,13 @@ else {
   }
 }
 
-/** Last-resort fallback shown by the Sentry error boundary on an uncaught render error. */
+/** Last-resort fallback shown on an uncaught render error. */
 function AppCrash() {
   return (
     <div style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh', padding: 24, textAlign: 'center', gap: 12 }}>
       <div>
         <h1 style={{ fontSize: 18, marginBottom: 8 }}>Something went wrong</h1>
-        <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>The error was reported. Try reloading.</p>
+        <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>Try reloading.</p>
         <button
           onClick={() => window.location.reload()}
           style={{ padding: '8px 16px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-contrast-25)', color: 'inherit', cursor: 'pointer' }}

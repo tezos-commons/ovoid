@@ -9,8 +9,6 @@ import { useAgent } from '@/lib/api/agent'
 import { queryClient } from '@/lib/query-client'
 import { schedulePrefetch } from '@/lib/prefetch'
 import { runWhenIdle } from '@/lib/idle'
-import { notifyConfigured } from '@/lib/notify/client'
-import { useNotifyConvoMutes, usePutConvoMute } from '@/lib/notify/use-notify'
 import { convoTitle, groupKind, otherMember, viewerOwnsGroup } from './group'
 import { convoMembersOptions } from './use-convo-members'
 import { joinRequestsOptions } from './use-join-requests'
@@ -62,21 +60,6 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
     </span>
   )
 
-  // Per-convo push mute (Ovoid's notify backend — not chat.bsky.convo.muteConvo,
-  // which would also mute the convo in the official app).
-  const { data: convoMutes } = useNotifyConvoMutes(notifyConfigured())
-  const putConvoMute = usePutConvoMute()
-  const convoMuted = !!convoMutes?.includes(convoId)
-  const muteItem = notifyConfigured()
-    ? [
-        {
-          key: 'notify-mute',
-          label: convoMuted ? 'Unmute notifications' : 'Mute notifications',
-          onSelect: () => putConvoMute.mutate({ convoId, muted: !convoMuted }),
-        },
-      ]
-    : []
-
   // Build the title + overflow menu per convo kind, then render either the
   // desktop ScreenHeader or the mobile top-bar slots from the same nodes.
   let title: ReactNode
@@ -97,7 +80,6 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
     menuLabel = 'Group options'
     menuItems = [
       { key: 'settings', label: 'Group settings', onSelect: () => navigate(`/messages/${convoId}/settings`) },
-      ...muteItem,
       { key: 'leave', label: 'Leave group', danger: true, onSelect: onLeave },
     ]
   } else {
@@ -115,7 +97,7 @@ export function ThreadHeader({ convo, convoId, viewerDid }: ThreadHeaderProps) {
     ) : (
       'Conversation'
     )
-    menuItems = muteItem
+    // DMs have no overflow actions of their own — `menu` renders nothing.
   }
 
   const menu = menuItems.length ? (

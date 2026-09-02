@@ -2,10 +2,10 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import type { Agent } from '@atproto/api'
 import { useAgent } from '@/lib/api/agent'
 import { qk } from '@/lib/query-keys'
-import { getPublic, putPublic } from '@/lib/data/client'
+import { getPublic, putPublic } from '@/lib/backend/client'
 
 /**
- * Per-account wallet visibility, stored in the data.ovoid.at PUBLIC namespace.
+ * Per-account wallet visibility, stored in the backend.ovoid.at PUBLIC namespace.
  *
  * The wallet data itself is public (a published Tezos address read through public
  * block explorers), so this is a comfort control, not a security boundary: it

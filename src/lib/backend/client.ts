@@ -1,8 +1,9 @@
 import type { Agent } from '@atproto/api'
 
 /**
- * Client for the Ovoid Data service (data.ovoid.at) — a first-party AT Protocol
- * service for per-account JSON blobs (private settings + public profile data).
+ * Client for the Ovoid Backend (backend.ovoid.at) — the consolidated
+ * first-party AT Protocol service; this module covers its per-account JSON
+ * blobs (private settings + public profile data).
  * Like the poll/notify clients it holds NO credentials: every call is
  * authenticated with a single-purpose atproto service-auth JWT minted by the
  * user's PDS (com.atproto.server.getServiceAuth) with aud = the service DID and
@@ -13,12 +14,12 @@ import type { Agent } from '@atproto/api'
  * creator's DID and readable by any authenticated account.
  */
 
-/** Base URL of the data service. */
-export const DATA_URL = 'https://data.ovoid.at'
+/** Base URL of the backend service. */
+export const BACKEND_URL = 'https://backend.ovoid.at'
 /** The service's DID — the `aud` of every minted token. */
-export const DATA_DID = 'did:web:data.ovoid.at'
+export const BACKEND_DID = 'did:web:backend.ovoid.at'
 
-const NS = 'app.ovoid.data'
+const NS = 'app.ovoid.backend'
 
 /** Metadata for one key in a listing. `size` is the compressed byte length. */
 export interface BlobMeta {
@@ -34,13 +35,13 @@ interface ApiError {
 }
 
 /**
- * Mint a single-purpose service-auth token for one data-service operation
+ * Mint a single-purpose service-auth token for one backend operation
  * (aud = the service DID, lxm = the operation NSID, ~60s expiry). Exposed so the
  * publications client — whose POST body is a raw string, not JSON — can reuse
  * the same auth without going through `req`.
  */
-export async function dataServiceToken(agent: Agent, lxm: string): Promise<string> {
-  const { data } = await agent.com.atproto.server.getServiceAuth({ aud: DATA_DID, lxm })
+export async function backendServiceToken(agent: Agent, lxm: string): Promise<string> {
+  const { data } = await agent.com.atproto.server.getServiceAuth({ aud: BACKEND_DID, lxm })
   return data.token
 }
 
@@ -53,8 +54,8 @@ async function req(
   lxm: string,
   body?: unknown,
 ): Promise<Response> {
-  const token = await dataServiceToken(agent, lxm)
-  const res = await fetch(`${DATA_URL}${path}`, {
+  const token = await backendServiceToken(agent, lxm)
+  const res = await fetch(`${BACKEND_URL}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -63,7 +64,7 @@ async function req(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
   if (!res.ok && res.status !== 404) {
-    let message = `data ${path}: ${res.status}`
+    let message = `backend ${path}: ${res.status}`
     try {
       const e = (await res.json()) as ApiError
       if (e?.message) message = e.message

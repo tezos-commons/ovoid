@@ -9,7 +9,7 @@ import { create } from 'zustand'
  * and switching between the app and the reader can't flash the wrong settings.
  *
  * Preloaded at module import (the attributes are set before any reader paints),
- * cached in localStorage, and mirrored to data.ovoid.at via settings-sync (which
+ * cached in localStorage, and mirrored to backend.ovoid.at via settings-sync (which
  * reads/writes this store like the other settings stores).
  */
 export type ReaderTheme = 'light' | 'dim' | 'dark' | 'sepia'

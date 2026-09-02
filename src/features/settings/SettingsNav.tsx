@@ -3,7 +3,6 @@ import { Avatar } from '@/components'
 import {
   PersonIcon,
   GearIcon,
-  BellIcon,
   HashIcon,
   ListIcon,
   WalletIcon,
@@ -115,7 +114,6 @@ export function SettingsNav() {
       <Section title="Settings">
         <Row to="/settings/account" icon={<PersonIcon />} label="Account" />
         <Row to="/settings/privacy" icon={<ShieldIcon />} label="Privacy & Security" />
-        <Row to="/settings/notifications" icon={<BellIcon />} label="Notifications" />
         <Row to="/settings/moderation" icon={<GearIcon />} label="Moderation" />
         <Row to="/settings/appearance" icon={<HashIcon />} label="Appearance" />
         <Row to="/settings/accessibility" icon={<AccessibilityIcon />} label="Accessibility" />

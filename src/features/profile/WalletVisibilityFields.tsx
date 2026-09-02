@@ -20,7 +20,7 @@ export const VISIBILITY_FIELDS: { key: keyof WalletVisibility; label: string; su
 ]
 
 /**
- * The per-section wallet-visibility toggles (data.ovoid.at public record),
+ * The per-section wallet-visibility toggles (backend.ovoid.at public record),
  * without any surrounding section chrome — so both the settings page (wraps it
  * in a <Section>) and onboarding (its own card) can render the same controls.
  *

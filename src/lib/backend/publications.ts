@@ -1,15 +1,15 @@
 import type { Agent } from '@atproto/api'
-import { DATA_URL, dataServiceToken } from './client'
+import { BACKEND_URL, backendServiceToken } from './client'
 
 /**
- * Client for the Ovoid Data Publications API (data.ovoid.at) — a globally-unique
+ * Client for the Ovoid Backend Publications API (backend.ovoid.at) — a globally-unique
  * `subdomain → at-uri` registry the subdomain-routing service resolves. Same
  * service-auth model as the blob client (a single-purpose token per call); the
  * authenticated DID is the registration owner. NOTE: putPublication's body is a
  * RAW `at://` URI string, not JSON.
  */
 
-const NS = 'app.ovoid.data'
+const NS = 'app.ovoid.backend'
 
 export interface PublicationReg {
   subdomain: string
@@ -40,8 +40,8 @@ async function call(
   lxm: string,
   rawBody?: string,
 ): Promise<Response> {
-  const token = await dataServiceToken(agent, lxm)
-  return fetch(`${DATA_URL}${path}`, {
+  const token = await backendServiceToken(agent, lxm)
+  return fetch(`${BACKEND_URL}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,

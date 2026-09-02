@@ -122,7 +122,7 @@ export default function WalletSettings() {
 }
 
 /**
- * Per-section wallet visibility (data.ovoid.at public record). The controls
+ * Per-section wallet visibility (backend.ovoid.at public record). The controls
  * themselves are shared with onboarding via WalletVisibilityFields; this just
  * wraps them in the settings section chrome.
  */

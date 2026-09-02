@@ -14,7 +14,6 @@ import AppearanceSettings from './AppearanceSettings'
 import ModerationSettings from './ModerationSettings'
 import ModerationListScreen from './ModerationListScreen'
 import AppPasswordsSettings from './AppPasswordsSettings'
-import NotificationSettings from './NotificationSettings'
 import WalletSettings from './WalletSettings'
 import PublicationsSettings from './PublicationsSettings'
 import {
@@ -40,7 +39,6 @@ import {
 const DETAIL_ROUTES: Array<{ path: string; title: string; element: ReactNode }> = [
   { path: 'account', title: 'Account', element: <AccountSettings /> },
   { path: 'privacy', title: 'Privacy & Security', element: <PrivacySettings /> },
-  { path: 'notifications', title: 'Notifications', element: <NotificationSettings /> },
   { path: 'moderation', title: 'Moderation', element: <ModerationSettings /> },
   { path: 'moderation/muted', title: 'Muted accounts', element: <ModerationListScreen kind="muted" /> },
   { path: 'moderation/blocked', title: 'Blocked accounts', element: <ModerationListScreen kind="blocked" /> },

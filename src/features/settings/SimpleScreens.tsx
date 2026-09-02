@@ -1,4 +1,6 @@
 import { ScreenHeader } from '@/components/layout/ScreenHeader'
+import { Button } from '@/components'
+import { useCanInstall, promptInstall } from '@/lib/install'
 import { Section, Row, Switch } from './components'
 import { useAccessibilityStore } from './accessibility-store'
 import { useLanguageStore, LANGUAGES } from './language-store'
@@ -147,6 +149,7 @@ export function AboutSettings() {
           <Row label="Terms of Service" />
           <Row label="Privacy Policy" />
         </Section>
+        <InstallSection />
         <Section title="Build">
           <div className="settings-pad">
             <div className="settings-kv">
@@ -159,5 +162,24 @@ export function AboutSettings() {
         </Section>
       </div>
     </>
+  )
+}
+
+/** Android/desktop Chromium banks an install prompt; iOS uses the share sheet. */
+function InstallSection() {
+  const canInstall = useCanInstall()
+  if (!canInstall) return null
+  return (
+    <Section title="App">
+      <Row
+        label="Install Ovoid"
+        sub="Add Ovoid to your home screen and open it as an app."
+        trailing={
+          <Button variant="secondary" size="sm" onClick={() => void promptInstall()}>
+            Install
+          </Button>
+        }
+      />
+    </Section>
   )
 }

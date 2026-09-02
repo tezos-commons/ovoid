@@ -1,5 +1,6 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { qk } from '@/lib/query-keys'
+import { ipfsSubdomainUrl } from '@/lib/ipfs'
 
 const OBJKT_GQL = 'https://data.objkt.com/v3/graphql'
 
@@ -39,14 +40,18 @@ export function ipfsGatewayUrl(uri?: string | null): string | undefined {
 }
 
 /**
- * Gateway URL for an interactive artifact loaded in an iframe. Uses dweb.link,
- * which redirects path requests to a per-CID *subdomain* origin — so each piece
- * runs in its own isolated origin (no shared storage/state between artifacts),
- * which is what makes `allow-same-origin` safe in the sandbox.
+ * Gateway URL for an interactive artifact loaded in an iframe, on a per-CID
+ * *subdomain* origin — each piece runs in its own isolated origin (no shared
+ * storage/state between artifacts), which is what makes `allow-same-origin`
+ * safe in the sandbox. The subdomain URL is built locally when the CID form
+ * allows it (also what lets the interactive bridge pin the frame's origin);
+ * otherwise we fall back to dweb.link's path→subdomain redirect.
  */
 export function ipfsToSubdomain(uri?: string | null): string | undefined {
   if (!uri) return undefined
-  if (uri.startsWith('ipfs://')) return `https://dweb.link/ipfs/${uri.slice('ipfs://'.length)}`
+  if (uri.startsWith('ipfs://')) {
+    return ipfsSubdomainUrl(uri) ?? `https://dweb.link/ipfs/${uri.slice('ipfs://'.length)}`
+  }
   if (uri.startsWith('ipns://')) return `https://dweb.link/ipns/${uri.slice('ipns://'.length)}`
   return uri
 }

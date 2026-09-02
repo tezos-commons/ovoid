@@ -7,10 +7,12 @@ import { usePostSheetStore } from '@/store/post-sheet-store'
 import { useChatStore } from '@/store/chat-store'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
 import { useArtifactStore } from '@/store/artifact-store'
+import { useConsentStore } from '@/features/interactive/consent-store'
+import { useWalletOpStore } from '@/features/interactive/wallet-op-store'
 import { PostActionsBridge } from '@/features/post/PostActionsBridge'
 import { RequireAuth } from './RequireAuth'
 import { RequireAccess } from './RequireAccess'
-import { usePushBoot } from '@/features/notifications/use-push-boot'
+import { useAppBadge } from '@/features/notifications/use-app-badge'
 import { useEscapeBack } from '@/lib/use-escape-back'
 import { useCloseOnBack } from '@/lib/use-close-on-back'
 import { useGlobalShortcuts } from '@/lib/use-global-shortcuts'
@@ -38,6 +40,12 @@ const ArtifactPlayer = lazy(() =>
 )
 const PostSheet = lazy(() =>
   import('@/features/thread/PostSheet').then((m) => ({ default: m.PostSheet })),
+)
+const InteractiveConsentDialog = lazy(() =>
+  import('@/features/interactive/ConsentDialog').then((m) => ({ default: m.ConsentDialog })),
+)
+const InteractiveWalletOpDialog = lazy(() =>
+  import('@/features/interactive/WalletOpDialog').then((m) => ({ default: m.WalletOpDialog })),
 )
 
 /**
@@ -91,6 +99,10 @@ export function RootLayout() {
   // The player stays mounted through mini ⇄ full so audio survives; it only
   // unmounts (stopping playback) when explicitly closed.
   const artifactMode = useArtifactStore((s) => s.mode)
+  // Interactive-artifact consent prompts (bridge viewer/serviceAuth requests).
+  const consentOpen = useConsentStore((s) => s.current !== null)
+  // Interactive-artifact wallet-operation prompt (bridge tezosOperation).
+  const walletOpOpen = useWalletOpStore((s) => s.current !== null)
 
   // Desktop: ESC steps back through overlay layers (mirrors back-swipe).
   useEscapeBack()
@@ -98,8 +110,8 @@ export function RootLayout() {
   // App-wide keyboard shortcuts (⌘K palette, ? help, n compose, g-chord nav).
   useGlobalShortcuts()
 
-  // Push glue: notificationclick → in-app navigation, icon badge, sub re-sync.
-  usePushBoot()
+  // Mirror the unread count onto the installed-app icon badge.
+  useAppBadge()
 
   // Remember the signed-in account (handle/avatar hydrate after sign-in) so the
   // login screen can offer it back after sign-out. Kept across logout on purpose.
@@ -134,6 +146,8 @@ export function RootLayout() {
             {newChatOpen && <NewChatDialog />}
             {nftOpen && <NftBrowser />}
             {artifactMode !== 'closed' && <ArtifactPlayer />}
+            {consentOpen && <InteractiveConsentDialog />}
+            {walletOpOpen && <InteractiveWalletOpDialog />}
           </Suspense>
           <Lightbox />
           <CommandPalette />

@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery, infiniteQueryOptions } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 import { qk } from '@/lib/query-keys'
 import {
   fetchCollectionName,
@@ -28,14 +28,17 @@ export function objktCollectionsOptions(addr: string, kind: NftKind) {
  * change between visits. `null` is a successful result (no linked wallet), not
  * an error, so it caches normally and the NFT tabs simply stay hidden.
  */
-export function useTezosAddress(did: string | undefined) {
-  return useQuery<string | null>({
-    queryKey: qk.tezosAddress(did ?? ''),
-    enabled: !!did,
-    queryFn: () => lookupTezosAddress(did!),
+export function tezosAddressOptions(did: string) {
+  return queryOptions<string | null>({
+    queryKey: qk.tezosAddress(did),
+    queryFn: () => lookupTezosAddress(did),
     staleTime: 60 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   })
+}
+
+export function useTezosAddress(did: string | undefined) {
+  return useQuery({ ...tezosAddressOptions(did ?? ''), enabled: !!did })
 }
 
 /**

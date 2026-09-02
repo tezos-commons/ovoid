@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { CloseIcon } from '../Icon'
 import { useArtifactStore } from '@/store/artifact-store'
 import { useNftBrowserStore } from '@/store/nft-browser-store'
+import { useInteractiveBridge } from '@/features/interactive/bridge'
 
 const MINI_W = 320
 const MINI_H = 240
@@ -21,8 +22,11 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
  * appear on hover.
  *
  * Security: cross-origin (dweb.link per-CID subdomain) so it can't touch this
- * app's origin; sandboxed to scripts only (no popups/forms/top-navigation);
- * no referrer leaked.
+ * app's origin; sandboxed to scripts + forms (no popups/top-navigation) — forms
+ * are allowed because without allow-forms the submit event never fires, which
+ * silently breaks artifacts using form+preventDefault UIs, while form
+ * submission itself adds nothing the artifact can't already do via fetch or
+ * self-navigation; no referrer leaked.
  */
 export function ArtifactPlayer() {
   // Per-field selectors — a whole-store subscription would re-render this (and
@@ -40,6 +44,11 @@ export function ArtifactPlayer() {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const [dragging, setDragging] = useState(false)
   const dragOffset = useRef<{ dx: number; dy: number } | null>(null)
+  const frameRef = useRef<HTMLIFrameElement>(null)
+
+  // Interactive bridge: lets the artifact request viewer info / service-auth
+  // tokens through the consent flow. No-op unless src is a per-CID subdomain.
+  useInteractiveBridge(frameRef, src, title)
 
   // Minimising drops the (now-redundant) NFT browser; expanding re-opens it so
   // the artifact docks back into its art column alongside the details panel.
@@ -127,10 +136,11 @@ export function ArtifactPlayer() {
       </div>
 
       <iframe
+        ref={frameRef}
         className="artplayer__frame"
         src={src}
         title={title ?? 'Interactive artifact'}
-        sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
         allow="autoplay; fullscreen; xr-spatial-tracking; gamepad"
         referrerPolicy="no-referrer"
       />

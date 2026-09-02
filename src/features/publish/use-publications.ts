@@ -8,7 +8,7 @@ import {
   getPublicationReg,
   deletePublicationReg,
   type PublicationReg,
-} from '@/lib/data/publications'
+} from '@/lib/backend/publications'
 
 export const PUBLICATION_COLLECTION = 'site.standard.publication'
 

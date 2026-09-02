@@ -14,6 +14,7 @@
  * record up, which feeds the did→address lookup the NFT tabs use.
  */
 import type { Agent } from '@atproto/api'
+import { connectWallet, resetWallet, signPayload } from '@/lib/tezos/wallet-session'
 
 export const CRYPTO_ADDRESS_COLLECTION = 'com.tzbsky.cryptoAddress'
 
@@ -74,13 +75,15 @@ export function isUserAbort(err: unknown): boolean {
 }
 
 /**
- * The full linking flow: connect a Tezos wallet (octez.connect picker),
- * have it sign the canonical attestation, and upsert the tezos entry into
- * the user's com.tzbsky.cryptoAddress/self record (preserving entries for
- * other chains). Returns the linked address.
+ * The full linking flow: connect a Tezos wallet, have it sign the canonical
+ * attestation, and upsert the tezos entry into the user's
+ * com.tzbsky.cryptoAddress/self record (preserving entries for other chains).
+ * Returns the linked address.
  *
- * The SDK (and its Buffer dependency) load lazily — they're heavy and only
- * needed here, never on the critical path.
+ * The connection goes through the app-wide wallet session (wallet-session.ts),
+ * so the wallet the user links here is the SAME session interactive artifacts
+ * later operate against — connect once, reused everywhere. A relink forces a
+ * fresh pick (the user is deliberately choosing which wallet to attest).
  */
 export async function linkTezosWallet(
   agent: Agent,
@@ -88,47 +91,28 @@ export async function linkTezosWallet(
   onStatus: (s: LinkStatus) => void,
 ): Promise<string> {
   onStatus('connecting')
-  // octez.connect expects a Node Buffer global; polyfill before the SDK loads.
-  if (!('Buffer' in globalThis)) {
-    const { Buffer } = await import('buffer')
-    ;(globalThis as Record<string, unknown>).Buffer = Buffer
+  // Relinking is an explicit "choose my wallet" action: drop any current
+  // account so the picker always appears and the user can pick deliberately.
+  await resetWallet()
+  const { address, publicKey } = await connectWallet()
+  // A tz address is a hash of the public key; verifiers can't recover the
+  // key from the signature, so the record must carry it.
+  if (!publicKey) throw new Error('Wallet did not provide a public key')
+
+  onStatus('signing')
+  const issuedAt = Math.floor(Date.now() / 1000)
+  const message = buildAddressAttestation(did, address, issuedAt)
+  const signature = await signPayload(packMichelineString(message))
+
+  onStatus('publishing')
+  const entry: CryptoAddressEntry = {
+    chain: 'tezos',
+    address,
+    publicKey,
+    proof: { scheme: 'tezos-micheline', message, signature },
   }
-  const { DAppClient, NetworkType, SigningType } = await import('@tezos-x/octez.connect-sdk')
-
-  // Fresh client per attempt so the wallet picker always appears.
-  const client = new DAppClient({ name: 'Ovoid', network: { type: NetworkType.MAINNET } })
-  try {
-    const perms = await client.requestPermissions()
-    const address = perms.address
-    const publicKey = perms.publicKey
-    // A tz address is a hash of the public key; verifiers can't recover the
-    // key from the signature, so the record must carry it.
-    if (!publicKey) throw new Error('Wallet did not provide a public key')
-
-    onStatus('signing')
-    const issuedAt = Math.floor(Date.now() / 1000)
-    const message = buildAddressAttestation(did, address, issuedAt)
-    const signed = await client.requestSignPayload({
-      signingType: SigningType.MICHELINE,
-      payload: packMichelineString(message),
-    })
-
-    onStatus('publishing')
-    const entry: CryptoAddressEntry = {
-      chain: 'tezos',
-      address,
-      publicKey,
-      proof: { scheme: 'tezos-micheline', message, signature: signed.signature },
-    }
-    await upsertCryptoAddressRecord(agent, did, entry)
-    return address
-  } finally {
-    try {
-      await client.destroy()
-    } catch {
-      /* ignore cleanup errors */
-    }
-  }
+  await upsertCryptoAddressRecord(agent, did, entry)
+  return address
 }
 
 /**
@@ -138,6 +122,9 @@ export async function linkTezosWallet(
  */
 export async function unlinkTezosWallet(agent: Agent, did: string): Promise<void> {
   const remaining = (await readCryptoAddresses(agent, did)).filter((a) => a.chain !== 'tezos')
+  // Also drop the wallet session — the linked address is what artifacts operate
+  // against, so an unlink should leave no active wallet to mismatch it.
+  await resetWallet()
   if (remaining.length === 0) {
     await agent.com.atproto.repo.deleteRecord({
       repo: did,

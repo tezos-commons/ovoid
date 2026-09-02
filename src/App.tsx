@@ -10,7 +10,7 @@ import { router } from '@/routes/router'
 /**
  * Drives settings sync at the top of the tree (inside AuthProvider) rather than
  * in the app shell, so edits made on the public reader pages — which render
- * outside the shell — still write through to data.ovoid.at.
+ * outside the shell — still write through to backend.ovoid.at.
  */
 function SettingsSync() {
   useSettingsSync()

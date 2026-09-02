@@ -14,7 +14,7 @@ import {
   publicationUrl,
   type CreatePublicationInput,
 } from '@/features/publish/use-publications'
-import type { PublicationReg } from '@/lib/data/publications'
+import type { PublicationReg } from '@/lib/backend/publications'
 import { Section, Row } from './components'
 
 /**

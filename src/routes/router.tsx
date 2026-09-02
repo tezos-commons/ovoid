@@ -1,14 +1,9 @@
 import { lazy, type ComponentType } from 'react'
 import { createBrowserRouter, type RouteObject } from 'react-router-dom'
-import * as Sentry from '@sentry/react'
 import { RootLayout } from './RootLayout'
 import { RequireAuth } from './RequireAuth'
 import { RequireAccess } from './RequireAccess'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
-
-// Instruments data-router navigations as Sentry transactions (pageload + route
-// changes), pairing with browserTracingIntegration in instrument.ts.
-const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(createBrowserRouter)
 
 /**
  * Wrap a React.lazy component as a route element. Suspense is provided by
@@ -167,6 +162,13 @@ const shellRoutes: RouteObject[] = [
     path: 'settings/*',
     element: protectedEl(() => import('@/features/settings/SettingsScreen')),
   },
+  {
+    // Interactive-artifact dev harness: /interactive/dev is the source picker
+    // (CID, or localhost port in dev builds), /interactive/<cid> loads a CID in
+    // the ArtifactPlayer sandbox with the bridge + protocol console attached.
+    path: 'interactive/:cid',
+    element: lazyEl(() => import('@/features/interactive/InteractiveDevScreen')),
+  },
 
   { path: '*', element: lazyEl(() => import('./NotFound')) },
 ]
@@ -189,7 +191,7 @@ const studioRoutes: RouteObject[] = [
   },
 ]
 
-export const router = sentryCreateBrowserRouter([
+export const router = createBrowserRouter([
   {
     // Pathless layout route: renders its matched child via the default Outlet,
     // but its errorElement catches errors from EVERY descendant route (a lazy

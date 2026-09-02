@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useRouteError } from 'react-router-dom'
-import * as Sentry from '@sentry/react'
 
 // Don't reload more than once per window: if the page errors again immediately
 // after a reload, the error is deterministic (a real bug, not a stale chunk), so
@@ -11,8 +10,8 @@ const RELOAD_WINDOW_MS = 10_000
 /**
  * Route-level error element. React-router's data router catches errors thrown by
  * a route (most commonly a lazy chunk that 404s after a deploy) before they can
- * reach the app-wide Sentry boundary, and renders its own "💿 Hey developer"
- * screen. We replace that: report the error, then trigger a hard reload to pull
+ * reach the app-wide error boundary, and renders its own "💿 Hey developer"
+ * screen. We replace that: log the error, then trigger a hard reload to pull
  * fresh chunks — the fix for the stale-chunk case — guarding against a reload
  * loop for genuinely broken routes.
  */
@@ -21,7 +20,7 @@ export function RouteErrorBoundary() {
   const [looping, setLooping] = useState(false)
 
   useEffect(() => {
-    Sentry.captureException(error)
+    console.error('Route error:', error)
     const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0)
     if (Date.now() - last < RELOAD_WINDOW_MS) {
       setLooping(true)

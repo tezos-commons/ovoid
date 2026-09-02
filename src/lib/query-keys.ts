@@ -176,23 +176,6 @@ export const qk = {
   /** The account's app passwords (com.atproto.server.listAppPasswords). */
   appPasswords: ['bsky', 'settings', 'appPasswords'] as const,
 
-  // Ovoid notify service (our own push backend, not bsky). Separate `notify`
-  // root so bsky prefix-invalidation never touches it. All reads are
-  // viewer-scoped — the backend resolves state by the authed DID.
-  notifyPrefs: (did?: string) => ['notify', did, 'prefs'] as const,
-
-  notifyDevices: (did?: string) => ['notify', did, 'devices'] as const,
-
-  notifyWatches: (did?: string) => ['notify', did, 'watches'] as const,
-
-  notifyMutes: (did?: string) => ['notify', did, 'mutes'] as const,
-
-  notifyThreadMutes: (did?: string) => ['notify', did, 'threadMutes'] as const,
-
-  notifyChatStatus: (did?: string) => ['notify', did, 'chatStatus'] as const,
-
-  notifyConvoMutes: (did?: string) => ['notify', did, 'convoMutes'] as const,
-
   // External-link unfurl metadata (cardyb extractor). Public and viewer-
   // independent; separate root so bsky prefix-invalidation never touches it.
   linkMeta: (url: string) => ['external', 'linkMeta', { url }] as const,
@@ -262,13 +245,13 @@ export const qk = {
   poll: (id: string) => ['poll', { id }] as const,
   pollResults: (id: string) => ['poll', 'results', { id }] as const,
 
-  // Ovoid Data service (data.ovoid.at — external first-party JSON-blob store).
+  // Ovoid Data service (backend.ovoid.at — external first-party JSON-blob store).
   // Separate `data` root so bsky prefix-invalidation never touches it. Public
   // reads are keyed by the creator DID (the blob's owner), not the viewer.
   walletVisibility: (creatorDid: string) =>
     ['data', 'public', creatorDid, 'wallet-visibility'] as const,
 
-  // The caller's own subdomain→publication registrations (data.ovoid.at).
+  // The caller's own subdomain→publication registrations (backend.ovoid.at).
   publications: (viewerDid: string | undefined) => ['data', 'publications', viewerDid] as const,
   publicationSubdomain: (sub: string) => ['data', 'publications', 'check', { sub }] as const,
 

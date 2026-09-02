@@ -1,5 +1,5 @@
 import type { Agent } from '@atproto/api'
-import { getPrivate, putPrivate } from '@/lib/data/client'
+import { getPrivate, putPrivate } from '@/lib/backend/client'
 import { useUiStore, type Theme } from '@/store/ui-store'
 import {
   useAppearanceStore,
@@ -19,7 +19,7 @@ import {
 } from '@/features/read/reader-prefs'
 
 /**
- * Cross-device settings sync, backed by the data.ovoid.at private namespace.
+ * Cross-device settings sync, backed by the backend.ovoid.at private namespace.
  *
  * The four local settings stores (colour theme in ui-store; appearance, a11y,
  * language in their own stores) remain the live source of truth the UI reads and

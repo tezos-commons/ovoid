@@ -110,7 +110,7 @@ export default function ProfileScreen() {
   const tezosQ = useTezosAddress(profile?.did)
   const tezosAddr = tezosQ.data ?? undefined
 
-  // Owner-published wallet visibility (data.ovoid.at). Only read for other
+  // Owner-published wallet visibility (backend.ovoid.at). Only read for other
   // accounts that have a wallet, and only when authed (public reads still need
   // the viewer's token); otherwise the resolver defaults to fully visible.
   const checkVisibility = isAuthed && !isSelf && !!tezosAddr
